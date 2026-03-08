@@ -1,46 +1,51 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import ConvexClientProvider from "@/components/ConvexClientProvider";
-import AuthProvider from "@/components/AuthProvider";
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+import { Syne } from 'next/font/google'
+import Link from 'next/link'
+import { DialRoot } from 'dialkit'
+import 'dialkit/styles.css'
+import './globals.css'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const syne = Syne({ subsets: ['latin'], weight: ['800'], variable: '--font-headline' })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cheetcode-ctf.firecrawl.dev"),
-  title: "CheetCode CTF",
-  description: "10 problems. 45 seconds. Good luck.",
+  metadataBase: new URL('https://madison-exchange.firecrawl.dev'),
+  title: 'Firecrawl Exchange',
+  description: 'A live 1963 switchboard coding challenge for local agents.',
   openGraph: {
-    title: "CheetCode CTF",
-    description: "10 problems. 45 seconds. Good luck.",
-    url: "https://cheetcode-ctf.firecrawl.dev",
-    siteName: "CheetCode CTF",
-    images: [{ url: "/opengraph-image" }],
-  },
-};
+    title: 'Firecrawl Exchange',
+    description: 'A live 1963 switchboard coding challenge for local agents.',
+    url: 'https://madison-exchange.firecrawl.dev',
+    siteName: 'Firecrawl Exchange',
+    images: [{ url: '/opengraph-image' }]
+  }
+}
 
-export default function RootLayout({
-  children,
+export default function RootLayout ({
+  children
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
-        </AuthProvider>
+    <html lang="en" className={syne.variable}>
+      <body>
+        <header className="firecrawl-header">
+          <div className="status-bar__left">
+            <span className="status-bar__dots">
+              <span className="status-bar__dot status-bar__dot--green" />
+              <span className="status-bar__dot status-bar__dot--amber" />
+              <span className="status-bar__dot status-bar__dot--red" />
+            </span>
+            <Link href="/" className="status-bar__label">Firecrawl Exchange — Central Office</Link>
+          </div>
+          <div className="status-bar__right">
+            <span className="status-bar__dot status-bar__dot--green" />
+            <span className="status-bar__label">System Active</span>
+          </div>
+        </header>
+        {children}
+        {process.env.NODE_ENV === 'development' && <DialRoot position="top-right" />}
       </body>
     </html>
-  );
+  )
 }

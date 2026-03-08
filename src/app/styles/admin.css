@@ -1,0 +1,83 @@
+.admin-grid {
+  display: grid;
+  gap: 24px;
+  margin-top: 28px;
+}
+
+.admin-panel {
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.admin-panel h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.section-heading h2 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+  line-height: 1.05;
+  letter-spacing: normal;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.admin-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--input-bg);
+  color: var(--ink);
+}
+
+.admin-evaluations {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-evaluation-card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--row-line);
+  background: var(--row-bg);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.admin-grid .rule-card {
+  padding: 28px;
+}
+
+@media (max-width: 1100px) {
+  .admin-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-panel,
+  .admin-grid .rule-card {
+    padding: 20px;
+  }
+}

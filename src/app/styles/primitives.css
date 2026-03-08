@@ -1,0 +1,72 @@
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--ink-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rule-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+}
+
+.app-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 15px 36px;
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.92rem;
+  background: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: var(--shadow-btn);
+}
+
+.app-button:hover:not(:disabled) {
+  box-shadow: var(--shadow-btn-hover);
+}
+
+.app-button:active:not(:disabled) {
+  transform: scale(0.995);
+}
+
+.app-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app-button--secondary {
+  color: var(--ink);
+  background: var(--warm-overlay);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.app-button--secondary:hover:not(:disabled) {
+  background: var(--warm-overlay-hover);
+  box-shadow: none;
+}
+
+.rule-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+  line-height: 1.05;
+}
+
+.rule-card p,
+.empty-state {
+  color: var(--ink-secondary);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.empty-state {
+  margin: 0;
+}

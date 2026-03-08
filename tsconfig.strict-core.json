@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "strict": true
+  },
+  "include": [
+    "src/core/domain/**/*.ts",
+    "src/server/auth/**/*.ts",
+    "src/server/repositories/records.ts",
+    "src/features/shift/domain/**/*.ts",
+    "src/features/shift/client/selectors.ts",
+    "src/features/shift/client/types.ts"
+  ],
+  "exclude": [
+    "convex/_generated/**"
+  ]
+}

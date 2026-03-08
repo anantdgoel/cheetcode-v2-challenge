@@ -1,12 +1,24 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config'
+import path from 'node:path'
 
 export default defineConfig({
-  test: {
-    environment: "node",
-    include: ["__tests__/**/*.test.ts"],
-    exclude: ["__tests__/e2e.test.ts"],
-    coverage: {
-      provider: "v8",
-    },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
   },
-});
+  test: {
+    environment: 'node',
+    include: ['__tests__/**/*.test.ts', '__tests__/**/*.test.tsx'],
+    exclude: ['__tests__/e2e.test.ts'],
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
+      }
+    },
+    coverage: {
+      provider: 'v8'
+    }
+  }
+})

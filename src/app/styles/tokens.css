@@ -1,0 +1,80 @@
+:root {
+  --font-sans: "SuisseIntl", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-mono: "Geist Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+
+  /* Base surfaces */
+  --bg-base: #E8E6E3;
+  --bg-surface: #EDE8E0;
+  --bg-raised: #E7E2DA;
+  --body-grid-line: rgba(0, 0, 0, 0.04);
+  --body-bg-end: #EBE6DE;
+
+  /* Ink — 4 tiers only */
+  --ink: #1a1410;
+  --ink-secondary: rgba(26, 20, 16, 0.60);
+  --ink-tertiary: rgba(26, 20, 16, 0.42);
+  --ink-ghost: rgba(26, 20, 16, 0.20);
+
+  /* Accent */
+  --accent: #FA5D19;
+  --accent-deep: #c03c08;
+  --accent-bar: #C4603A;
+
+  /* Heat scale — accent at opacity */
+  --heat-4: rgba(250, 93, 25, 0.04);
+  --heat-8: rgba(250, 93, 25, 0.08);
+  --heat-12: rgba(250, 93, 25, 0.12);
+  --heat-16: rgba(250, 93, 25, 0.16);
+  --heat-20: rgba(250, 93, 25, 0.20);
+
+  /* Gold / amber */
+  --gold: #C49A2A;
+  --amber-bg: rgba(245, 168, 32, 0.07);
+  --amber-border: rgba(210, 140, 30, 0.45);
+
+  /* Signal */
+  --signal: #2a6670;
+  --signal-soft: rgba(42, 102, 112, 0.1);
+
+  /* Lines */
+  --line: rgba(0, 0, 0, 0.12);
+  --line-soft: rgba(0, 0, 0, 0.08);
+  --line-strong: rgba(0, 0, 0, 0.10);
+  --line-faint: rgba(0, 0, 0, 0.07);
+
+  /* Panels */
+  --panel: #fffdf8;
+  --panel-strong: #fffcf4;
+
+  /* Row / input backgrounds */
+  --row-bg: rgba(0, 0, 0, 0.035);
+  --row-bg-hover: rgba(0, 0, 0, 0.06);
+  --row-line: rgba(0, 0, 0, 0.07);
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --surface-micro: rgba(0, 0, 0, 0.02);
+
+  /* Warm overlay (secondary button / action-step) */
+  --warm-overlay: rgba(245, 237, 216, 0.08);
+  --warm-overlay-hover: rgba(245, 237, 216, 0.12);
+
+  /* White (for text on colored backgrounds) */
+  --white: #fff;
+  --white-muted: rgba(255, 255, 255, 0.6);
+
+  /* Status */
+  --danger: #eb3424;
+  --success: #5EA84A;
+
+  /* Shadows */
+  --shadow: 0 20px 60px rgba(20, 10, 0, 0.18);
+  --shadow-md: 0 10px 38px rgba(20, 10, 0, 0.13);
+  --shadow-sm: 0 6px 22px rgba(20, 10, 0, 0.09);
+  --shadow-btn: inset 0 -6px 12px rgba(255, 0, 0, 0.2), 0 2.5px 3.1px rgba(255, 139, 0, 0.16), 0 2px 4px rgba(250, 93, 25, 0.3);
+  --shadow-btn-hover: inset 0 -6px 12px rgba(255, 0, 0, 0.2), 0 3px 4px rgba(255, 139, 0, 0.22), 0 3px 6px rgba(250, 93, 25, 0.4);
+
+  /* Radii */
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+}
