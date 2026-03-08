@@ -10,16 +10,22 @@ import {
   TITLES,
   TRANSFER_WARNINGS,
   URGENCIES
-} from '../src/lib/domain/game'
+} from '../src/core/domain/game'
+
+type LiteralValidator<T extends string> = ReturnType<typeof v.literal<T>>
 
 function literalUnion<T extends string> (values: readonly [T, ...T[]]) {
-  return v.union(...(values.map((value) => v.literal(value)) as any))
+  return v.union(...values.map((value) => v.literal(value)) as [
+    LiteralValidator<T>,
+    LiteralValidator<T>,
+    ...Array<LiteralValidator<T>>
+  ])
 }
 
 export const shiftStateValidator = literalUnion(['active', 'completed', 'expired'])
 export const storedRunKindValidator = literalUnion(['fit', 'stress', 'final'])
 export const storedRunTriggerValidator = literalUnion(['manual', 'auto_expire'])
-export const runStateValidator = literalUnion(['accepted', 'completed'])
+export const runStateValidator = literalUnion(['accepted', 'processing', 'completed'])
 export const titleValidator = literalUnion(TITLES)
 export const boardConditionValidator = literalUnion(BOARD_CONDITIONS)
 export const probeKindValidator = literalUnion(PROBE_KINDS)

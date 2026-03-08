@@ -1,6 +1,6 @@
-import { LandingPageContent } from '@/components/landing/LandingPageContent'
-import { getLandingView } from '@/lib/shifts'
-import { getGithubUsername } from '@/lib/server-auth'
+import { LandingPageContent } from '@/features/landing/client/LandingPageContent'
+import { getCurrentShiftForGithub } from '@/features/shift/server'
+import { getGithubUsername } from '@/server/auth/github'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,6 +10,19 @@ export const metadata = {
 }
 
 export default async function HomePage () {
-  const landing = await getLandingView(getGithubUsername())
-  return <LandingPageContent landing={landing} />
+  const githubPromise = getGithubUsername()
+  const [github, activeShift] = await Promise.all([
+    githubPromise,
+    githubPromise.then(async (currentGithub) => {
+      if (!currentGithub) return null
+      return getCurrentShiftForGithub(currentGithub)
+    })
+  ])
+
+  return (
+    <LandingPageContent
+      activeShiftId={activeShift?.id ?? null}
+      github={github}
+    />
+  )
 }

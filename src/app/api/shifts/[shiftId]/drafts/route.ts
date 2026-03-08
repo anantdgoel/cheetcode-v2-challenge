@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getErrorMessage, jsonError, requireShiftGithub } from '@/app/api/shifts/_utils'
-import { saveDraftForGithub } from '@/lib/shifts'
+import { jsonShiftServiceError, requireShiftGithub } from '@/app/api/shifts/_utils'
+import { saveDraftForGithub } from '@/features/shift/server'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +27,6 @@ export async function POST (
     })
     return NextResponse.json({ ok: true, savedAt: shift?.latestDraftSavedAt ?? Date.now() })
   } catch (error) {
-    return jsonError(getErrorMessage(error, 'Draft save failed'), 400)
+    return jsonShiftServiceError(error, 'Draft save failed')
   }
 }

@@ -9,7 +9,7 @@ import {
   createPressureCurve,
   createTraffic,
   getTitleForScore
-} from '../src/lib/engine/index'
+} from '../src/core/engine/index'
 
 function buildBoardSnapshot (seed: string) {
   const board = createBoard(seed)

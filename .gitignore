@@ -20,3 +20,9 @@ package-lock.json
 # Browser test artifacts
 playwright-report/
 test-results/
+
+# Local assistant guidance
+AGENTS.md
+CLAUDE.md
+
+scripts/

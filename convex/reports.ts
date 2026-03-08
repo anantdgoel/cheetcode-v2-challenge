@@ -54,14 +54,14 @@ export const adminLookup = internalQuery({
     const leaderboardRow = args.github
       ? await ctx.db
         .query('leaderboardBest')
-        .withIndex('by_github', (query) => query.eq('github', args.github!))
+        .withIndex('by_github', (query) => query.eq('github', args.github))
         .unique()
       : null
 
     const report = args.publicId
       ? await ctx.db
         .query('reports')
-        .withIndex('by_publicId', (query) => query.eq('publicId', args.publicId!))
+        .withIndex('by_publicId', (query) => query.eq('publicId', args.publicId))
         .unique()
       : null
 

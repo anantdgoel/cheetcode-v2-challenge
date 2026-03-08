@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildShiftArtifacts, buildStarterPolicy, runFinal, validatePolicy } from '../src/lib/engine/index'
+import { buildShiftArtifacts, buildStarterPolicy, runFinal, validatePolicy } from '../src/core/engine/index'
 import { buildHiringBarPolicySource } from '../scripts/v3-agent-policies.mjs'
 
 describe('policy validation', () => {

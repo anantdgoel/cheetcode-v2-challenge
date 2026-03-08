@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { PolicyInput } from '../src/lib/domain/game'
-import { createBoard, simulateExchange, summarizeProbe } from '../src/lib/engine'
+import type { PolicyInput } from '../src/core/domain/game'
+import { createBoard, simulateExchange, summarizeProbe } from '../src/core/engine'
 
 function firstIdleDecision (input: PolicyInput) {
   const idle = input.lines.filter((line) => line.status === 'idle')

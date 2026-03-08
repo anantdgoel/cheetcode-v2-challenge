@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildShiftArtifacts, buildStarterPolicy, simulateExchange, summarizeProbe, validatePolicy } from '../src/lib/engine/index'
+import { buildShiftArtifacts, buildStarterPolicy, simulateExchange, summarizeProbe, validatePolicy } from '../src/core/engine/index'
 import {
   BENCHMARK_SEEDS,
   createHiringBarDecision,

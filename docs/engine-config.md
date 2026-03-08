@@ -2,9 +2,9 @@
 
 The engine is configured in three files:
 
-- `src/lib/engine/config/constants.ts`
-- `src/lib/engine/config/profiles.ts`
-- `src/lib/engine/config/balance.ts`
+- `src/core/engine/config/constants.ts`
+- `src/core/engine/config/profiles.ts`
+- `src/core/engine/config/balance.ts`
 
 ## How The Board Is Generated
 

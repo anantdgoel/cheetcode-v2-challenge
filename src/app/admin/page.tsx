@@ -1,15 +1,19 @@
 import { redirect } from 'next/navigation'
-import { AdminPageContent } from '@/components/admin/AdminPageContent'
-import { getAdminSnapshot } from '@/lib/shifts'
-import { getGithubUsername, isAdminGithub } from '@/lib/server-auth'
-import { normalizeSearchParam } from '@/lib/validation'
+import {
+  AdminPageContent,
+  type AdminFieldDefaults
+} from '@/features/admin/client/AdminPageContent'
+import { getAdminSnapshot } from '@/features/admin/server/queries'
+import { getGithubUsername, isAdminGithub } from '@/server/auth/github'
 
 export const dynamic = 'force-dynamic'
 
 function parseParam (params: Record<string, string | string[] | undefined>, name: string) {
-  return normalizeSearchParam(
-    Array.isArray(params[name]) ? params[name][0] : params[name] ?? null
-  )
+  const raw = Array.isArray(params[name]) ? params[name][0] : params[name] ?? null
+  if (!raw) return null
+
+  const value = raw.trim()
+  return value.length ? value : null
 }
 
 export default async function AdminPage ({
@@ -31,7 +35,7 @@ export default async function AdminPage ({
     publicId
   })
 
-  const fieldDefaults: Record<string, string> = {
+  const fieldDefaults: AdminFieldDefaults = {
     github: lookupGithub ?? '',
     shiftId: shiftId ?? '',
     publicId: publicId ?? ''

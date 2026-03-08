@@ -1,9 +1,9 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import ShiftConsole from '@/features/shift/ShiftConsole'
-import { getOwnedShiftForGithub } from '@/lib/shifts'
-import { getGithubUsername } from '@/lib/server-auth'
-import { isDesktopUserAgent } from '@/lib/validation'
+import ShiftConsole from '@/features/shift/client/ShiftConsole'
+import { getOwnedShiftForGithub } from '@/features/shift/server'
+import { getGithubUsername } from '@/server/auth/github'
+import { isDesktopUserAgent } from '@/server/http/user-agent'
 
 export const dynamic = 'force-dynamic'
 

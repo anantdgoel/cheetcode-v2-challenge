@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getCurrentShiftForGithub } from '@/lib/shifts'
-import { getGithubUsername } from '@/lib/server-auth'
+import { getCurrentShiftForGithub } from '@/features/shift/server'
+import { getGithubUsername } from '@/server/auth/github'
 
 export const runtime = 'nodejs'
 

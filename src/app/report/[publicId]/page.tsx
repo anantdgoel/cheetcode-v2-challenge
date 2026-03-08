@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { ReportCard } from '@/components/report/ReportCard'
-import { getReportView } from '@/lib/shifts'
+import { ReportCard } from '@/features/report/client/ReportCard'
+import { getReportView } from '@/features/report/server/queries'
 
 export const dynamic = 'force-dynamic'
 

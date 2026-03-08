@@ -5,18 +5,28 @@ import GitHub from 'next-auth/providers/github'
  * Auth.js v5 config — GitHub OAuth only.
  * Requires AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, and AUTH_SECRET env vars.
  */
+function requireEnv (name: 'AUTH_GITHUB_ID' | 'AUTH_GITHUB_SECRET') {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is not configured`)
+  }
+
+  return value
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET
+      clientId: requireEnv('AUTH_GITHUB_ID'),
+      clientSecret: requireEnv('AUTH_GITHUB_SECRET')
     })
   ],
   callbacks: {
     // Expose the GitHub username in the session so the client can use it
     session ({ session, token }) {
       if (token.githubUsername) {
-        session.user.githubUsername = token.githubUsername as string
+        const sessionUser = session.user as typeof session.user & { githubUsername?: string }
+        sessionUser.githubUsername = token.githubUsername as string
       }
       return session
     },

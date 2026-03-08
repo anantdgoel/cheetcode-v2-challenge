@@ -42,7 +42,7 @@ export default tseslint.config(
       'no-undef': 'off',
       'no-unused-vars': 'off',
       'no-void': ['error', { allowAsStatement: true }],
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
@@ -74,7 +74,47 @@ export default tseslint.config(
     }
   },
   {
-    files: ['src/lib/engine/policy-vm.ts'],
+    files: ['src/app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          '@/lib/shifts',
+          '@/lib/server-auth',
+          '@/lib/repositories/*',
+          '@/server/repositories/*',
+          '@/server/convex/*'
+        ]
+      }]
+    }
+  },
+  {
+    files: ['src/features/**/client/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          '@/server/*',
+          '@/lib/repositories/*'
+        ]
+      }]
+    }
+  },
+  {
+    files: ['src/core/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          'convex',
+          'convex/*',
+          'next',
+          'next/*',
+          'react',
+          'react-dom'
+        ]
+      }]
+    }
+  },
+  {
+    files: ['src/core/engine/policy-vm.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

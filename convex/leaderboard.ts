@@ -20,6 +20,31 @@ function isBetterLeaderboardCandidate (
   return candidate.achievedAt < current.achievedAt
 }
 
+export function compareLeaderboardEntries (
+  left: {
+    hiddenScore: number;
+    boardEfficiency: number;
+    achievedAt: number;
+  },
+  right: {
+    hiddenScore: number;
+    boardEfficiency: number;
+    achievedAt: number;
+  }
+) {
+  if (right.hiddenScore !== left.hiddenScore) return right.hiddenScore - left.hiddenScore
+  if (right.boardEfficiency !== left.boardEfficiency) return right.boardEfficiency - left.boardEfficiency
+  return left.achievedAt - right.achievedAt
+}
+
+export function toPublicLeaderboard<T extends {
+  hiddenScore: number;
+  boardEfficiency: number;
+  achievedAt: number;
+}> (entries: T[]) {
+  return entries.sort(compareLeaderboardEntries).slice(0, 100)
+}
+
 export const getPublic = query({
   args: {},
   handler: async (ctx) => {
@@ -27,13 +52,9 @@ export const getPublic = query({
       .query('leaderboardBest')
       .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
       .order('desc')
-      .take(100)
+      .collect()
 
-    return entries.sort((left, right) => {
-      if (right.hiddenScore !== left.hiddenScore) return right.hiddenScore - left.hiddenScore
-      if (right.boardEfficiency !== left.boardEfficiency) return right.boardEfficiency - left.boardEfficiency
-      return left.achievedAt - right.achievedAt
-    })
+    return toPublicLeaderboard(entries)
   }
 })
 

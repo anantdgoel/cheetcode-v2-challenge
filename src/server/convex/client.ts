@@ -1,0 +1,91 @@
+import { ConvexHttpClient } from 'convex/browser'
+import type { FunctionArgs, FunctionReference, FunctionReturnType } from 'convex/server'
+import { api, internal } from '../../../convex/_generated/api'
+
+type ShiftId = FunctionArgs<typeof internal.sessions.getOwnedShift>['shiftId']
+
+type AdminAuthClient = ConvexHttpClient & {
+  setAdminAuth(token: string): void;
+}
+
+type FunctionKind = 'action' | 'mutation' | 'query'
+
+function getConvexDeploymentUrl () {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL
+  if (!url) throw new Error('NEXT_PUBLIC_CONVEX_URL is not configured')
+  return url
+}
+
+function getConvexAdminKey () {
+  const key = process.env.CONVEX_ADMIN_KEY ?? process.env.CONVEX_MUTATION_SECRET
+  if (!key) throw new Error('CONVEX_ADMIN_KEY or CONVEX_MUTATION_SECRET is not configured')
+  return key
+}
+
+export function parseShiftId (shiftId: string): ShiftId {
+  const normalizedShiftId = shiftId.trim()
+  if (!normalizedShiftId) {
+    throw new Error('shift id is required')
+  }
+  if (normalizedShiftId !== shiftId) {
+    throw new Error('shift id must not include surrounding whitespace')
+  }
+
+  return normalizedShiftId as ShiftId
+}
+
+export const asShiftId = parseShiftId
+
+function getAdminClient () {
+  const client = new ConvexHttpClient(getConvexDeploymentUrl()) as AdminAuthClient
+  client.setAdminAuth(getConvexAdminKey())
+  return client
+}
+
+function getPublicClient () {
+  return new ConvexHttpClient(getConvexDeploymentUrl())
+}
+
+function coerceFunctionReference<Kind extends FunctionKind> (
+  reference: FunctionReference<Kind, 'public' | 'internal'>
+): FunctionReference<Kind> {
+  if (!reference) {
+    throw new Error('convex function reference is required')
+  }
+
+  return reference as unknown as FunctionReference<Kind>
+}
+
+export async function fetchPublicQuery<Query extends FunctionReference<'query', 'public'>> (
+  query: Query,
+  args: FunctionArgs<Query>
+): Promise<FunctionReturnType<Query>> {
+  return getPublicClient().query(query, args)
+}
+
+export async function fetchInternalQuery<Query extends FunctionReference<'query', 'public' | 'internal'>> (
+  query: Query,
+  args: FunctionArgs<Query>
+): Promise<FunctionReturnType<Query>> {
+  return getAdminClient().query(coerceFunctionReference(query), args) as Promise<FunctionReturnType<Query>>
+}
+
+export async function fetchInternalMutation<
+  Mutation extends FunctionReference<'mutation', 'public' | 'internal'>,
+> (
+  mutation: Mutation,
+  args: FunctionArgs<Mutation>
+): Promise<FunctionReturnType<Mutation>> {
+  return getAdminClient().mutation(coerceFunctionReference(mutation), args) as Promise<FunctionReturnType<Mutation>>
+}
+
+export async function fetchInternalAction<
+  Action extends FunctionReference<'action', 'public' | 'internal'>,
+> (
+  action: Action,
+  args: FunctionArgs<Action>
+): Promise<FunctionReturnType<Action>> {
+  return getAdminClient().action(coerceFunctionReference(action), args) as Promise<FunctionReturnType<Action>>
+}
+
+export { api, internal }

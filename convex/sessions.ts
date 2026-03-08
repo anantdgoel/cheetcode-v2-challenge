@@ -24,11 +24,27 @@ function artifactFieldName (name: 'manual.md' | 'starter.js' | 'lines.json' | 'o
 }
 
 function getAcceptedRun (shift: Pick<ShiftDoc, 'runs'>) {
-  return shift.runs.find((run) => run.state === 'accepted')
+  return shift.runs.find((run) => run.state === 'accepted' || run.state === 'processing')
 }
 
 function getRunById (shift: Pick<ShiftDoc, 'runs'>, runId: string) {
   return shift.runs.find((run) => run.id === runId)
+}
+
+function mapRuns (
+  shift: Pick<ShiftDoc, '_id' | 'runs'>,
+  runId: string,
+  update: (run: ShiftRunDoc) => ShiftRunDoc
+) {
+  const run = getRunById(shift, runId)
+  if (!run) return null
+
+  return {
+    run,
+    runs: shift.runs.map((candidate: ShiftRunDoc) =>
+      candidate.id === runId ? update(candidate) : candidate
+    )
+  }
 }
 
 function hasFinalRun (shift: Pick<ShiftDoc, 'runs'>) {
@@ -83,6 +99,19 @@ export const start = internalMutation({
     expiresAt: v.number()
   },
   handler: async (ctx, args) => {
+    const latest = await ctx.db
+      .query('shifts')
+      .withIndex('by_github_and_startedAt', (query) => query.eq('github', args.github))
+      .order('desc')
+      .first()
+
+    if (latest?.state === 'active') {
+      return {
+        activeShiftId: latest._id,
+        kind: 'active_shift_exists' as const
+      }
+    }
+
     const shiftId = await ctx.db.insert('shifts', {
       github: args.github,
       seed: args.seed,
@@ -102,7 +131,10 @@ export const start = internalMutation({
       reportPublicId: undefined
     })
 
-    return toShiftRecord(await loadShiftById(ctx.db, shiftId))
+    return {
+      kind: 'started' as const,
+      shift: toShiftRecord(await loadShiftById(ctx.db, shiftId))
+    }
   }
 })
 
@@ -201,6 +233,9 @@ export const acceptRun = internalMutation({
     if (args.run.trigger === 'manual' && Date.now() >= shift.expiresAt) {
       throw new Error('shift expired')
     }
+    if (args.run.kind !== 'final' && Date.now() >= shift.phase1EndsAt) {
+      throw new Error('trial window closed')
+    }
     if (getAcceptedRun(shift)) {
       throw new Error('evaluation already in progress')
     }
@@ -234,18 +269,66 @@ export const completeProbeRun = internalMutation({
     if (!shift) {
       throw new Error('shift not found')
     }
-    const run = getRunById(shift, args.runId)
-    if (!run || run.state !== 'accepted' || run.kind === 'final') {
+    const next = mapRuns(shift, args.runId, (candidate) => ({
+      ...candidate,
+      state: 'completed' as const,
+      resolvedAt: args.resolvedAt,
+      probeSummary: args.summary
+    }))
+    if (!next || next.run.kind === 'final') {
+      throw new Error('accepted probe run not found')
+    }
+    if (next.run.state === 'completed') {
+      return toShiftRecord(shift)
+    }
+    if (next.run.state !== 'accepted' && next.run.state !== 'processing') {
       throw new Error('accepted probe run not found')
     }
 
-    const runs = shift.runs.map((candidate: ShiftRunDoc) =>
-      candidate.id === args.runId
-        ? { ...candidate, state: 'completed' as const, resolvedAt: args.resolvedAt, probeSummary: args.summary }
-        : candidate
-    )
-    await ctx.db.patch(shift._id, { runs })
+    await ctx.db.patch(shift._id, { runs: next.runs })
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
+  }
+})
+
+export const claimRunForProcessing = internalMutation({
+  args: {
+    shiftId: v.id('shifts'),
+    runId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const shift = await loadShiftById(ctx.db, args.shiftId)
+    if (!shift) {
+      throw new Error('shift not found')
+    }
+
+    const next = mapRuns(shift, args.runId, (candidate) => ({
+      ...candidate,
+      state: 'processing' as const
+    }))
+    if (!next) {
+      return {
+        kind: 'missing' as const,
+        shift: toShiftRecord(shift)
+      }
+    }
+    if (next.run.state === 'completed') {
+      return {
+        kind: 'completed' as const,
+        shift: toShiftRecord(shift)
+      }
+    }
+    if (next.run.state === 'processing') {
+      return {
+        kind: 'busy' as const,
+        shift: toShiftRecord(shift)
+      }
+    }
+
+    await ctx.db.patch(shift._id, { runs: next.runs })
+    return {
+      kind: 'claimed' as const,
+      shift: toShiftRecord(await loadShiftById(ctx.db, shift._id))
+    }
   }
 })
 
@@ -264,26 +347,27 @@ export const completeFinalRun = internalMutation({
     if (!shift) {
       throw new Error('shift not found')
     }
-    const run = getRunById(shift, args.runId)
-    if (!run || run.state !== 'accepted' || run.kind !== 'final') {
+    const next = mapRuns(shift, args.runId, (candidate) => ({
+      ...candidate,
+      state: 'completed' as const,
+      resolvedAt: args.resolvedAt,
+      reportPublicId: args.reportPublicId,
+      title: args.title,
+      metrics: args.metrics,
+      chiefOperatorNote: args.chiefOperatorNote
+    }))
+    if (!next || next.run.kind !== 'final') {
+      throw new Error('accepted final run not found')
+    }
+    if (next.run.state === 'completed') {
+      return toShiftRecord(shift)
+    }
+    if (next.run.state !== 'accepted' && next.run.state !== 'processing') {
       throw new Error('accepted final run not found')
     }
 
-    const runs = shift.runs.map((candidate: ShiftRunDoc) =>
-      candidate.id === args.runId
-        ? {
-            ...candidate,
-            state: 'completed' as const,
-            resolvedAt: args.resolvedAt,
-            reportPublicId: args.reportPublicId,
-            title: args.title,
-            metrics: args.metrics,
-            chiefOperatorNote: args.chiefOperatorNote
-          }
-        : candidate
-    )
     await ctx.db.patch(shift._id, {
-      runs,
+      runs: next.runs,
       state: 'completed',
       completedAt: args.resolvedAt,
       reportPublicId: args.reportPublicId

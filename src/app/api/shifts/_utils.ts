@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getGithubUsername } from '@/lib/server-auth'
-import { isDesktopUserAgent } from '@/lib/validation'
+import { normalizeShiftServiceError } from '@/features/shift/domain/errors'
+import { getGithubUsername } from '@/server/auth/github'
+import { isDesktopUserAgent } from '@/server/http/user-agent'
 
 const DESKTOP_ONLY_ERROR =
   'Official play is desktop-only. Public reports remain browseable on mobile.'
@@ -19,6 +20,25 @@ export function jsonError (
 
 export function getErrorMessage (error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
+}
+
+export function jsonShiftServiceError (error: unknown, fallback: string) {
+  const normalizedError = normalizeShiftServiceError(error)
+  if (!normalizedError) {
+    return jsonError(getErrorMessage(error, fallback), 400)
+  }
+
+  if (normalizedError.code === 'active_shift_exists') {
+    return jsonError(normalizedError.message, 409, {
+      activeShiftId: normalizedError.activeShiftId
+    })
+  }
+
+  if (normalizedError.code === 'shift_not_found') {
+    return jsonError(normalizedError.message, 404)
+  }
+
+  return jsonError(normalizedError.message, 400)
 }
 
 export async function requireShiftGithub (

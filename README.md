@@ -74,7 +74,15 @@ Those are acceptance gates for the simulator and benchmark harness, not public p
 - Next.js app in `src/`
 - Auth.js GitHub sign-in in `auth.ts`
 - Convex persistence in `convex/`
-- QuickJS policy validation and evaluation in [src/lib/policy.ts](/Users/anant/dev/firecrawl-takehome/src/lib/policy.ts)
+- QuickJS policy validation and evaluation in [src/core/engine/policy-vm.ts](src/core/engine/policy-vm.ts)
+
+## Architecture
+
+- `src/features/*`: feature slices for `shift`, `landing`, `report`, and `admin`
+- `src/core/*`: pure domain and engine code
+- `src/server/*`: auth, Convex client adapters, and HTTP/request helpers
+
+See [docs/architecture.md](docs/architecture.md) for dependency rules.
 
 ## Local setup
 
@@ -89,7 +97,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Environment
 
 - `NEXT_PUBLIC_CONVEX_URL`
-- `CONVEX_MUTATION_SECRET`
+- `CONVEX_ADMIN_KEY`
 - `AUTH_GITHUB_ID`
 - `AUTH_GITHUB_SECRET`
 - `AUTH_SECRET`
@@ -100,6 +108,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm run dev
 npm run test
+npm run typecheck
+npm run typecheck:core
+npm run lint:core
 npx tsc --noEmit
 npm run test:e2e
 npm run agent:baseline
@@ -111,13 +122,13 @@ npm run agent:oracle:eval
 
 ## Important files
 
-- [src/lib/types.ts](/Users/anant/dev/firecrawl-takehome/src/lib/types.ts): shared v3 domain types
-- [src/lib/exchange.ts](/Users/anant/dev/firecrawl-takehome/src/lib/exchange.ts): board generation, artifacts, probes, scoring
-- [src/lib/policy.ts](/Users/anant/dev/firecrawl-takehome/src/lib/policy.ts): sandboxed policy validation and execution
-- [src/lib/shift-service.ts](/Users/anant/dev/firecrawl-takehome/src/lib/shift-service.ts): server orchestration
-- [src/components/ShiftConsole.tsx](/Users/anant/dev/firecrawl-takehome/src/components/ShiftConsole.tsx): active Shift UI
-- [scripts/v3-agent-policies.mjs](/Users/anant/dev/firecrawl-takehome/scripts/v3-agent-policies.mjs): benchmark policy definitions
-- [__tests__/simulation.test.ts](/Users/anant/dev/firecrawl-takehome/__tests__/simulation.test.ts): score-band verification
+- [src/features/shift/server/index.ts](src/features/shift/server/index.ts): shift server entrypoints used by routes and pages
+- [src/features/shift/domain/view.ts](src/features/shift/domain/view.ts): shift DTO shaping
+- [src/features/shift/client/ShiftConsole.tsx](src/features/shift/client/ShiftConsole.tsx): active Shift UI entrypoint
+- [src/server/convex/client.ts](src/server/convex/client.ts): Convex transport boundary
+- [src/core/engine/index.ts](src/core/engine/index.ts): pure engine entrypoint
+- [scripts/v3-agent-policies.mjs](scripts/v3-agent-policies.mjs): benchmark policy definitions
+- [__tests__/shift/server/runtime.test.ts](__tests__/shift/server/runtime.test.ts): shift runtime concurrency coverage
 
 ## Benchmarks
 

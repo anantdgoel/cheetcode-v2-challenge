@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getErrorMessage, jsonError, requireShiftGithub } from '@/app/api/shifts/_utils'
-import { goLiveForGithub } from '@/lib/shifts'
+import { jsonShiftServiceError, requireShiftGithub } from '@/app/api/shifts/_utils'
+import { goLiveForGithub } from '@/features/shift/server'
 
 export const runtime = 'nodejs'
 
@@ -22,6 +22,6 @@ export async function POST (
     const result = await goLiveForGithub({ github, shiftId })
     return NextResponse.json(result, { status: 200 })
   } catch (error) {
-    return jsonError(getErrorMessage(error, 'Go Live failed'), 400)
+    return jsonShiftServiceError(error, 'Go Live failed')
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildShiftArtifacts, createBoard, runFinal, simulateExchange } from '../src/lib/engine/index'
+import { buildShiftArtifacts, createBoard, runFinal, simulateExchange } from '../src/core/engine/index'
 import {
   BENCHMARK_SEEDS,
   buildHiringBarPolicySource,
@@ -14,10 +14,16 @@ function average (values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+function buildPriorArtifacts (seed: string) {
+  return BENCHMARK_SEEDS
+    .filter((candidate) => candidate !== seed)
+    .map((candidate) => buildShiftArtifacts(candidate))
+}
+
 async function expectPolicyParity (seed: string, kind: 'artifact' | 'warm-start') {
   const board = createBoard(seed)
   const artifacts = buildShiftArtifacts(board)
-  const priorArtifacts = BENCHMARK_SEEDS.filter((candidate) => candidate !== seed).map((candidate) => buildShiftArtifacts(candidate))
+  const priorArtifacts = buildPriorArtifacts(seed)
   const source =
     kind === 'artifact'
       ? buildHiringBarPolicySource(artifacts)
@@ -82,7 +88,7 @@ describe('artifact-driven hiring-bar agent', () => {
 
     for (const seed of BENCHMARK_SEEDS.slice(4)) {
       const artifacts = buildShiftArtifacts(seed)
-      const priorArtifacts = BENCHMARK_SEEDS.filter((candidate) => candidate !== seed).map((candidate) => buildShiftArtifacts(candidate))
+      const priorArtifacts = buildPriorArtifacts(seed)
       const artifactOnly = createHiringBarDecision(artifacts)
       const warmStart = createWarmStartDecision(artifacts, priorArtifacts)
 

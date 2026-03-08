@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getErrorMessage, jsonError, requireShiftGithub } from '@/app/api/shifts/_utils'
-import { startShiftForGithub } from '@/lib/shifts'
+import { jsonShiftServiceError, requireShiftGithub } from '@/app/api/shifts/_utils'
+import { startShiftForGithub } from '@/features/shift/server'
 
 export const runtime = 'nodejs'
 
@@ -15,9 +15,6 @@ export async function POST (request: Request) {
     const shift = await startShiftForGithub(github)
     return NextResponse.json({ shift })
   } catch (error) {
-    const message = getErrorMessage(error, 'Failed to start shift')
-    const status = message.startsWith('active shift:') ? 409 : 400
-    const activeShiftId = message.startsWith('active shift:') ? message.split(':')[1] : undefined
-    return jsonError(message, status, { activeShiftId })
+    return jsonShiftServiceError(error, 'Failed to start shift')
   }
 }
