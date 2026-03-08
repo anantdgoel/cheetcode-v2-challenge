@@ -12,7 +12,7 @@ describe("public surface source", () => {
   it("the app no longer imports the old problem bank", () => {
     const sourceFiles = [
       "src/app/page.tsx",
-      "src/lib/shift-service.ts",
+      "src/lib/app/shift-service.ts",
       "src/app/api/shifts/start/route.ts",
       "src/app/api/shifts/[shiftId]/validate/route.ts",
     ];

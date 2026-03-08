@@ -1,66 +1,31 @@
 import { v } from "convex/values";
+import {
+  ARTIFACT_NAMES,
+  BILLING_MODES,
+  BOARD_CONDITIONS,
+  LOAD_BANDS,
+  PROBE_KINDS,
+  ROUTE_CODES,
+  TITLES,
+  URGENCIES,
+} from "../src/lib/contracts/game";
 
-export const shiftStatusValidator = v.union(
-  v.literal("active_phase_1"),
-  v.literal("active_phase_2"),
-  v.literal("evaluating"),
-  v.literal("completed"),
-  v.literal("expired_no_result"),
-);
+function literalUnion<T extends string>(values: readonly [T, ...T[]]) {
+  return v.union(...(values.map((value) => v.literal(value)) as any));
+}
 
-export const evaluationKindValidator = v.union(
-  v.literal("fit"),
-  v.literal("stress"),
-  v.literal("final"),
-  v.literal("auto_final"),
-);
-
-export const evaluationStateValidator = v.union(v.literal("accepted"), v.literal("completed"));
-
-export const titleValidator = v.union(
-  v.literal("chief_operator"),
-  v.literal("senior_operator"),
-  v.literal("operator"),
-  v.literal("trainee"),
-  v.literal("off_the_board"),
-);
-
-export const boardConditionValidator = v.union(
-  v.literal("steady"),
-  v.literal("strained"),
-  v.literal("overrun"),
-);
-
-export const probeKindValidator = v.union(v.literal("fit"), v.literal("stress"));
-
-export const artifactNameValidator = v.union(
-  v.literal("manual.md"),
-  v.literal("starter.js"),
-  v.literal("lines.json"),
-  v.literal("observations.jsonl"),
-);
-
-export const routeCodeValidator = v.union(
-  v.literal("local"),
-  v.literal("intercity"),
-  v.literal("relay"),
-  v.literal("priority"),
-);
-
-export const billingModeValidator = v.union(
-  v.literal("standard"),
-  v.literal("verified"),
-  v.literal("collect"),
-);
-
-export const urgencyValidator = v.union(v.literal("routine"), v.literal("priority"));
-
-export const loadBandValidator = v.union(
-  v.literal("low"),
-  v.literal("medium"),
-  v.literal("high"),
-  v.literal("peak"),
-);
+export const shiftStateValidator = literalUnion(["active", "completed", "expired"]);
+export const storedRunKindValidator = literalUnion(["fit", "stress", "final"]);
+export const storedRunTriggerValidator = literalUnion(["manual", "auto_expire"]);
+export const runStateValidator = literalUnion(["accepted", "completed"]);
+export const titleValidator = literalUnion(TITLES);
+export const boardConditionValidator = literalUnion(BOARD_CONDITIONS);
+export const probeKindValidator = literalUnion(PROBE_KINDS);
+export const artifactNameValidator = literalUnion(ARTIFACT_NAMES);
+export const routeCodeValidator = literalUnion(ROUTE_CODES);
+export const billingModeValidator = literalUnion(BILLING_MODES);
+export const urgencyValidator = literalUnion(URGENCIES);
+export const loadBandValidator = literalUnion(LOAD_BANDS);
 
 export const probeSummaryMetricsValidator = v.object({
   connectedCalls: v.number(),
@@ -69,15 +34,6 @@ export const probeSummaryMetricsValidator = v.object({
   avgHoldSeconds: v.number(),
   premiumUsageRate: v.number(),
   efficiency: v.number(),
-});
-
-export const probeTableRowValidator = v.object({
-  bucketId: v.string(),
-  attempts: v.number(),
-  connectRate: v.number(),
-  dropRate: v.number(),
-  avgHoldSeconds: v.number(),
-  premiumUsageRate: v.number(),
 });
 
 export const probeSummaryValidator = v.object({
@@ -121,12 +77,12 @@ export const probeSummaryValidator = v.object({
     v.object({
       bucketId: v.string(),
       count: v.number(),
-      dominantReason: v.union(
-        v.literal("hold_too_long"),
-        v.literal("fault_under_load"),
-        v.literal("premium_misuse"),
-        v.literal("low_margin_routing"),
-      ),
+      dominantReason: literalUnion([
+        "hold_too_long",
+        "fault_under_load",
+        "premium_misuse",
+        "low_margin_routing",
+      ]),
       confidence: v.number(),
     }),
   ),
@@ -149,4 +105,32 @@ export const simulationMetricsValidator = v.object({
   trunkMisuseCount: v.number(),
   efficiency: v.number(),
   hiddenScore: v.number(),
+});
+
+export const policyValidationResultValidator = v.union(
+  v.object({
+    ok: v.literal(true),
+    normalizedSource: v.string(),
+    sourceHash: v.string(),
+  }),
+  v.object({
+    ok: v.literal(false),
+    error: v.string(),
+  }),
+);
+
+export const storedRunValidator = v.object({
+  id: v.string(),
+  kind: storedRunKindValidator,
+  trigger: storedRunTriggerValidator,
+  state: runStateValidator,
+  acceptedAt: v.number(),
+  resolvedAt: v.optional(v.number()),
+  sourceHash: v.string(),
+  sourceSnapshot: v.string(),
+  probeSummary: v.optional(probeSummaryValidator),
+  metrics: v.optional(simulationMetricsValidator),
+  title: v.optional(titleValidator),
+  chiefOperatorNote: v.optional(v.string()),
+  reportPublicId: v.optional(v.string()),
 });

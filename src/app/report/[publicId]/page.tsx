@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { formatPercent, formatTitle } from "@/lib/exchange";
-import { getReportView } from "@/lib/shift-service";
-import type { Title } from "@/lib/types";
+import { getReportView } from "@/lib/app/shift-service";
+import { formatPercent, formatTitle } from "@/lib/engine/report";
+import type { Title } from "@/lib/contracts/game";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStarterPolicy } from "../src/lib/exchange";
-import { runFinal, validatePolicy } from "../src/lib/policy";
+import { buildShiftArtifacts, buildStarterPolicy, runFinal, validatePolicy } from "../src/lib/engine/index";
 import { buildHiringBarPolicySource } from "../scripts/v3-agent-policies.mjs";
 
 describe("policy validation", () => {
@@ -33,12 +32,13 @@ describe("policy validation", () => {
   });
 
   it("can execute the same submitted policy across a full shift", async () => {
+    const artifacts = buildShiftArtifacts("alpha-switch");
     const result = await runFinal({
-      source: buildHiringBarPolicySource(),
+      source: buildHiringBarPolicySource(artifacts),
       seed: "alpha-switch",
     });
 
-    expect(result.metrics.efficiency).toBeGreaterThan(0.5);
-    expect(result.metrics.connectedCalls).toBeGreaterThan(150);
+    expect(result.metrics.efficiency).toBeGreaterThan(0.7);
+    expect(result.metrics.connectedCalls).toBeGreaterThan(220);
   });
 });

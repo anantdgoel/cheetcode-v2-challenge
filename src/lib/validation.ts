@@ -1,6 +1,6 @@
 const GITHUB_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 const GITHUB_MAX = 39;
-const SOURCE_MAX_BYTES = 12_000;
+const SOURCE_MAX_BYTES = 16_000;
 
 export function validateGithub(
   raw: string,
@@ -25,7 +25,7 @@ export function validateDraftSource(
   const value = raw.replace(/\r\n/g, "\n").trim();
   if (!value) return { ok: false, error: "Paste a `connect(input)` policy first." };
   if (new TextEncoder().encode(value).length > SOURCE_MAX_BYTES) {
-    return { ok: false, error: "Operator policy exceeds the 12 KB draft limit." };
+    return { ok: false, error: "Operator policy exceeds the 16 KB draft limit." };
   }
   return { ok: true, value };
 }

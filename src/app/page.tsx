@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { HeroSection } from "@/components/HeroSection";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { formatPercent, formatTitle } from "@/lib/exchange";
-import { getLandingView } from "@/lib/shift-service";
+import { getLandingView } from "@/lib/app/shift-service";
+import { formatPercent, formatTitle } from "@/lib/engine/report";
 import { getGithubUsername } from "@/lib/server-auth";
-import type { LeaderboardEntry } from "@/lib/types";
+import type { LeaderboardEntry } from "@/lib/contracts/views";
 
 export const dynamic = "force-dynamic";
 

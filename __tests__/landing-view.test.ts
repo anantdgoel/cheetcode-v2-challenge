@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => {
   return {
     query: vi.fn(),
-    action: vi.fn(),
     mutation: vi.fn(),
   };
 });
@@ -20,7 +19,6 @@ vi.mock("../src/lib/convex-server", () => ({
 describe("getLandingView", () => {
   beforeEach(() => {
     mocks.query.mockReset();
-    mocks.action.mockReset();
     mocks.mutation.mockReset();
   });
 
@@ -41,10 +39,12 @@ describe("getLandingView", () => {
       },
     ];
 
-    mocks.query.mockResolvedValue(leaderboard);
-    mocks.action.mockRejectedValue(new Error("current shift unavailable"));
+    mocks.query.mockImplementation(async (ref: string) => {
+      if (ref === "leaderboard:getPublic") return leaderboard;
+      throw new Error("current shift unavailable");
+    });
 
-    const { getLandingView } = await import("../src/lib/shift-service");
+    const { getLandingView } = await import("../src/lib/app/shift-service");
     const view = await getLandingView("benchmark-agent");
 
     expect(view.leaderboard).toEqual(leaderboard);

@@ -32,7 +32,7 @@ vi.mock("@/lib/server-auth", () => ({
   getGithubUsername: getGithubUsernameMock,
 }));
 
-vi.mock("@/lib/shift-service", () => ({
+vi.mock("@/lib/app/shift-service", () => ({
   getOwnedShiftForGithub: getOwnedShiftForGithubMock,
   saveDraftForGithub: saveDraftForGithubMock,
   getArtifactForShift: getArtifactForShiftMock,

@@ -1,22 +1,19 @@
 import { getQuickJS, type QuickJSContext, type QuickJSWASMModule } from "quickjs-emscripten";
-import {
-  buildReport,
-  buildGameSnapshot,
-  summarizeProbe,
-  type SimulationResult,
-  simulateExchange,
-  stableHash,
-} from "@/lib/exchange";
 import type {
   FinalReport,
-  GeneratedGameSnapshot,
   PolicyInitContext,
   PolicyInput,
   PolicyValidationResult,
   ProbeKind,
   ProbeSummary,
-} from "@/lib/types";
+} from "@/lib/contracts/game";
 import { validateDraftSource } from "@/lib/validation";
+import { buildReport } from "./report";
+import { createBoard } from "./board";
+import { summarizeProbe } from "./probe-summary";
+import { simulateExchange } from "./runtime";
+import { stableHash } from "./shared";
+import type { BoardModel, SimulationResult } from "./types";
 
 let quickJsModule: Promise<QuickJSWASMModule> | null = null;
 
@@ -28,7 +25,7 @@ function getQuickJsModule() {
 }
 
 function primeContext(vm: QuickJSContext) {
-  const anyVm = vm as unknown as {
+  const anyVm = vm as QuickJSContext & {
     setMemoryLimit?: (limit: number) => void;
     setMaxStackSize?: (size: number) => void;
   };
@@ -66,7 +63,6 @@ async function evaluatePolicyShape(source: string) {
       if (typeof init !== "undefined" && typeof init !== "function") {
         throw new Error("init, if present, must be a function.");
       }
-      globalThis.__draft__ = connect;
     `);
     if ("error" in compiled) {
       const error = vm.dump(compiled.error) ?? "Failed to compile operator policy.";
@@ -77,7 +73,7 @@ async function evaluatePolicyShape(source: string) {
 
     const sampleInput: PolicyInput = {
       clock: { second: 3, remainingSeconds: 177 },
-      board: { load: 0.42, queueDepth: 2, callsHandled: 9 },
+      board: { load: 0.42, queueDepth: 2, callsHandled: 9, tempo: "steady" },
       call: {
         id: "shape-call",
         routeCode: "local",
@@ -146,7 +142,6 @@ async function evaluatePolicyShape(source: string) {
       ) {
         throw new Error("Returned lineId is not present on the active board.");
       }
-      JSON.stringify(__shapeResult__);
     `);
 
     if ("error" in invocation) {
@@ -250,44 +245,45 @@ async function createPolicyRunner(params: {
   };
 }
 
-async function executeRun(params: {
-  source: string;
-  gameSnapshot: GeneratedGameSnapshot;
-  mode: ProbeKind | "final";
-}) {
-  const groups = Array.from(
-    params.gameSnapshot.lines.reduce((acc, line) => {
-      const entry = acc.get(line.lineGroupId) ?? {
+function buildInitContext(board: BoardModel, mode: ProbeKind | "final"): PolicyInitContext {
+  const lineGroups = Array.from(
+    board.lines.reduce((groups, line) => {
+      const entry = groups.get(line.lineGroupId) ?? {
         groupId: line.lineGroupId,
         label: `${line.switchMark} ${line.classTags[0] ?? "group"}`,
         lineIds: [] as string[],
       };
       entry.lineIds.push(line.id);
-      acc.set(line.lineGroupId, entry);
-      return acc;
+      groups.set(line.lineGroupId, entry);
+      return groups;
     }, new Map<string, { groupId: string; label: string; lineIds: string[] }>()),
   ).map(([, value]) => value);
 
-  const durationSeconds =
-    params.mode === "final"
-      ? params.gameSnapshot.pressureCurveFinal.duration
-      : params.gameSnapshot.probePressureCurves[params.mode].duration;
+  const durationSeconds = mode === "final" ? 420 : 180;
 
+  return {
+    shift: { durationSeconds, probeKind: mode },
+    board: {
+      lineCount: board.lines.length,
+      premiumCount: board.lines.filter((line) => line.isPremiumTrunk).length,
+      lineGroups,
+    },
+  };
+}
+
+async function executeRun(params: {
+  source: string;
+  board: BoardModel;
+  mode: ProbeKind | "final";
+}) {
   const runner = await createPolicyRunner({
     source: params.source,
-    initContext: {
-      shift: { durationSeconds, probeKind: params.mode },
-      board: {
-        lineCount: params.gameSnapshot.lines.length,
-        premiumCount: params.gameSnapshot.lines.filter((line) => line.isPremiumTrunk).length,
-        lineGroups: groups,
-      },
-    },
+    initContext: buildInitContext(params.board, params.mode),
   });
 
   try {
     return await simulateExchange({
-      gameSnapshot: params.gameSnapshot,
+      board: params.board,
       mode: params.mode,
       decide: (input) => runner.decide(input),
     });
@@ -300,13 +296,13 @@ export async function runProbe(params: {
   source: string;
   probeKind: ProbeKind;
   seed?: string;
-  gameSnapshot?: GeneratedGameSnapshot;
+  board?: BoardModel;
 }): Promise<{ result: SimulationResult; summary: ProbeSummary }> {
-  const gameSnapshot = params.gameSnapshot ?? buildGameSnapshot(params.seed ?? "default-seed");
+  const board = params.board ?? createBoard(params.seed ?? "default-seed");
   const result = await executeRun({
     source: params.source,
     mode: params.probeKind,
-    gameSnapshot,
+    board,
   });
   return { result, summary: summarizeProbe(result, params.probeKind) };
 }
@@ -314,12 +310,12 @@ export async function runProbe(params: {
 export async function runFinal(params: {
   source: string;
   seed?: string;
-  gameSnapshot?: GeneratedGameSnapshot;
+  board?: BoardModel;
 }): Promise<SimulationResult> {
   return executeRun({
     source: params.source,
     mode: "final",
-    gameSnapshot: params.gameSnapshot ?? buildGameSnapshot(params.seed ?? "default-seed"),
+    board: params.board ?? createBoard(params.seed ?? "default-seed"),
   });
 }
 

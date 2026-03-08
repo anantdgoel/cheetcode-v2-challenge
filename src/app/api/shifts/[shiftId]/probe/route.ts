@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getErrorMessage, jsonError, requireShiftGithub } from "@/app/api/shifts/_utils";
-import { runProbeForGithub } from "@/lib/shift-service";
+import { runProbeForGithub } from "@/lib/app/shift-service";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ export async function POST(
   const { shiftId } = await context.params;
 
   try {
-    const result = await runProbeForGithub(github, shiftId);
+    const result = await runProbeForGithub({ github, shiftId });
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     return jsonError(getErrorMessage(error, "Probe failed"), 400);

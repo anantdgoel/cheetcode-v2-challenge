@@ -1,0 +1,22 @@
+import type { ActionStep } from "./types";
+
+export function ShiftConsoleActionBar({ steps }: { steps: ActionStep[] }) {
+  return (
+    <div className="console-action-bar">
+      {steps.map((step, index) => (
+        <span key={step.number} style={{ display: "contents" }}>
+          {index > 0 && <span className="action-bar__chevron">&rarr;</span>}
+          <button
+            type="button"
+            className={`action-step action-step--${step.state}`}
+            disabled={step.state === "disabled" || step.state === "completed" || step.state === "upcoming" || step.loading}
+            onClick={step.action}
+          >
+            <span className="action-step__number">{step.number}</span>
+            {step.loading ? step.loadingLabel : step.state === "completed" ? `${step.label} \u2713` : step.label}
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}

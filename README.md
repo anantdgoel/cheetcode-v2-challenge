@@ -34,6 +34,7 @@ The live runtime exposes:
 - `clock.second`
 - `clock.remainingSeconds`
 - `board.load`
+- `board.tempo`
 - `board.queueDepth`
 - visible `call` fields
 - visible `lines` fields, including `lineGroupId`
@@ -55,15 +56,16 @@ Each Shift exposes exactly four live artifacts:
 - `lines.json`
   The visible inventory for the active board.
 - `observations.jsonl`
-  Historical evidence from the same model family, not a replay of the active board.
+  Historical evidence generated from the active board's own hidden parameters, with seeded noise.
 
 ## Benchmark targets
 
-The v3 implementation is balanced against a fixed benchmark seed suite.
+The v3.1 implementation is balanced against a fixed benchmark seed suite.
 
 - `starter.js`: under `10%` average score
-- snapshot baseline agent: around `30%`
-- hiring-bar agent: around `80%`
+- snapshot baseline agent: roughly `25-35%`
+- old static heuristic: `40%` or lower
+- artifact-driven hiring-bar agent: roughly `75-85%`
 
 Those are acceptance gates for the simulator and benchmark harness, not public promises to players.
 
@@ -120,6 +122,6 @@ npm run agent:oracle:eval
 ## Benchmarks
 
 - `npm run agent:hiring-bar`
-  Offline deterministic benchmark. Runs the policy directly against the local simulator and does not touch Next.js, Auth.js, or Convex.
+  Offline deterministic benchmark. Builds a board-specific policy from `lines.json` and `observations.jsonl`, then runs it directly against the local simulator without touching Next.js, Auth.js, or Convex.
 - `npm run agent:user-flow`
   End-user-flow harness. Mints a local Auth.js session cookie from `AUTH_SECRET`, then uses the same `/api/shifts/*` routes the browser uses. This is intended for local/dev benchmarking against the real app surface, not for bypassing production auth.
