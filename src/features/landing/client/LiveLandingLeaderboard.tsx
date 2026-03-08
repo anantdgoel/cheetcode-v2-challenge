@@ -7,7 +7,7 @@ import { normalizePaginatedLeaderboard } from '@/core/domain/normalizers'
 import type { PaginatedLeaderboard } from '@/core/domain/views'
 import { LandingLeaderboard } from './LandingLeaderboard'
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 7
 
 export function LiveLandingLeaderboard ({
   initialLeaderboard

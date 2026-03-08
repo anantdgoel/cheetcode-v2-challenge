@@ -147,7 +147,7 @@ export function LandingLeaderboard ({
   onPageChange: (page: number) => void;
 }) {
   const { topEntries, dispatchEntries, totalEntries, dispatchPage, totalDispatchPages } = leaderboard
-  const pageSize = dispatchEntries.length || 5
+  const pageSize = dispatchEntries.length || 7
   const showStart = dispatchPage * pageSize + 4
   const showEnd = showStart + dispatchEntries.length - 1
 
@@ -169,11 +169,7 @@ export function LandingLeaderboard ({
 
       {dispatchEntries.length > 0 && (
         <div className="dispatch-log">
-          <FadeIn delay={0.4}>
-            <span className="dispatch-log__label">— Board Dispatch Log</span>
-          </FadeIn>
-
-          <FadeIn delay={0.5} className="dispatch-log__head">
+          <FadeIn delay={0.4} className="dispatch-log__head">
             <span className="dispatch-log__col--line">Line</span>
             <span className="dispatch-log__col--callsign">Callsign</span>
             <span className="dispatch-log__col--class">Classification</span>

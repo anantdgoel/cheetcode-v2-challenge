@@ -66,7 +66,7 @@ export const getPublic = query({
     dispatchPageSize: v.optional(v.number())
   },
   handler: async (ctx, args) => {
-    const pageSize = args.dispatchPageSize ?? 5
+    const pageSize = args.dispatchPageSize ?? 7
     const page = args.dispatchPage ?? 0
     const needed = 3 + page * pageSize + pageSize
 
@@ -76,7 +76,7 @@ export const getPublic = query({
       .order('desc')
       .take(needed)
 
-    const totalEntries = await getLeaderboardCount(ctx) || entries.length
+    const totalEntries = await getLeaderboardCount(ctx)
 
     const topEntries = entries.slice(0, 3)
     const dispatchStart = 3 + page * pageSize
