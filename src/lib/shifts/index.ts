@@ -9,5 +9,5 @@ export {
   runProbeForGithub,
   saveDraftForGithub,
   startShiftForGithub,
-  validateDraftForGithub,
-} from "./service";
+  validateDraftForGithub
+} from './service'

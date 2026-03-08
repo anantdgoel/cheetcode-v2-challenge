@@ -1,16 +1,16 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
-  testDir: "__tests__",
+  testDir: '__tests__',
   testMatch: /.*e2e\.test\.ts/,
   timeout: 30_000,
   webServer: {
-    command: "npm run dev",
+    command: 'npm run dev',
     port: 3000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI
   },
   use: {
-    baseURL: "http://127.0.0.1:3000",
-    headless: true,
-  },
-});
+    baseURL: 'http://127.0.0.1:3000',
+    headless: true
+  }
+})

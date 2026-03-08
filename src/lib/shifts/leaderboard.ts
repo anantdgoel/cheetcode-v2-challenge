@@ -1,13 +1,13 @@
 import {
   getLeaderboardEntryForGithub,
-  upsertLeaderboardEntry,
-} from "@/lib/repositories/leaderboard-repository";
-import type { StoredReportRecord } from "@/lib/repositories/records";
+  upsertLeaderboardEntry
+} from '@/lib/repositories/leaderboard-repository'
+import type { StoredReportRecord } from '@/lib/repositories/records'
 
-export async function maybeStoreLeaderboard(report: StoredReportRecord | null) {
-  if (!report) return;
+export async function maybeStoreLeaderboard (report: StoredReportRecord | null) {
+  if (!report) return
 
-  const current = await getLeaderboardEntryForGithub(report.github);
+  const current = await getLeaderboardEntryForGithub(report.github)
   if (
     current &&
     (report.hiddenScore < current.hiddenScore ||
@@ -16,7 +16,7 @@ export async function maybeStoreLeaderboard(report: StoredReportRecord | null) {
           (report.boardEfficiency === current.boardEfficiency &&
             report.achievedAt >= current.achievedAt))))
   ) {
-    return;
+    return
   }
 
   await upsertLeaderboardEntry({
@@ -30,6 +30,6 @@ export async function maybeStoreLeaderboard(report: StoredReportRecord | null) {
     connectedCalls: report.connectedCalls,
     totalCalls: report.totalCalls,
     droppedCalls: report.droppedCalls,
-    avgHoldSeconds: report.avgHoldSeconds,
-  });
+    avgHoldSeconds: report.avgHoldSeconds
+  })
 }

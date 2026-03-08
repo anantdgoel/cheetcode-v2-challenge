@@ -1,30 +1,32 @@
-import { NextResponse } from "next/server";
-import { getErrorMessage, jsonError, requireShiftGithub } from "@/app/api/shifts/_utils";
-import { validateDraftForGithub } from "@/lib/shifts";
+import { NextResponse } from 'next/server'
+import { getErrorMessage, jsonError, requireShiftGithub } from '@/app/api/shifts/_utils'
+import { validateDraftForGithub } from '@/lib/shifts'
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs'
 
-export async function POST(
+export async function POST (
   request: Request,
-  context: { params: Promise<{ shiftId: string }> },
+  context: { params: Promise<{ shiftId: string }> }
 ) {
-  const auth = await requireShiftGithub(request, { desktopOnly: true });
-  if ("response" in auth) {
-    return auth.response;
+  const authPromise = requireShiftGithub(request, { desktopOnly: true })
+  const bodyPromise = request.json() as Promise<{ source?: string }>
+  const paramsPromise = context.params
+  const auth = await authPromise
+  if ('response' in auth) {
+    return auth.response
   }
-  const { github } = auth;
+  const { github } = auth
 
-  const { source } = (await request.json()) as { source?: string };
-  const { shiftId } = await context.params;
+  const [{ source }, { shiftId }] = await Promise.all([bodyPromise, paramsPromise])
 
   try {
     const result = await validateDraftForGithub({
       github,
       shiftId,
-      source: source ?? "",
-    });
-    return NextResponse.json(result, { status: 200 });
+      source: source ?? ''
+    })
+    return NextResponse.json(result, { status: 200 })
   } catch (error) {
-    return jsonError(getErrorMessage(error, "Validation failed"), 400);
+    return jsonError(getErrorMessage(error, 'Validation failed'), 400)
   }
 }

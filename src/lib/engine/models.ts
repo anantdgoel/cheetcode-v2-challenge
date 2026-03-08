@@ -1,25 +1,21 @@
 import type {
-  ArtifactName,
   BillingMode,
   BoardProfile,
   FinalShiftKind,
   LineFamily,
   LoadBand,
-  MaintenanceBand,
   OperatorGrade,
   PressureBand,
   PremiumReuseBand,
-  ProbeKind,
   PublicLine,
   QueueBand,
   RouteCode,
-  RuntimeLineView,
   SimulationMetrics,
   SubscriberClass,
   TrafficRegime,
-  Urgency,
-} from "@/lib/domain/game";
-import type { Title } from "@/lib/domain/game";
+  Urgency
+  , Title
+} from '@/lib/domain/game'
 
 export type TrafficEvent = {
   id: string;
@@ -68,12 +64,12 @@ export type ObservationRow = {
     recentIncidentsNearLine: number;
   };
   decision: {
-    action: "route" | "hold";
+    action: 'route' | 'hold';
     usedPremium: boolean;
   };
   outcome: {
-    result: "connected" | "held" | "fault" | "dropped";
-    holdBand?: "brief" | "moderate" | "long";
+    result: 'connected' | 'held' | 'fault' | 'dropped';
+    holdBand?: 'brief' | 'moderate' | 'long';
   };
 };
 
@@ -107,12 +103,12 @@ export type BoardModel = {
 };
 
 export type FailureReason =
-  | "policy_hold"
-  | "dropped_on_hold"
-  | "busy_line"
-  | "faulted_line"
-  | "invalid_line"
-  | "low_margin_fault";
+  | 'policy_hold'
+  | 'dropped_on_hold'
+  | 'busy_line'
+  | 'faulted_line'
+  | 'invalid_line'
+  | 'low_margin_fault';
 
 export type FailureEvent = {
   atSecond: number;
@@ -144,7 +140,7 @@ export type SimulationTraceEvent = {
   selectedLineGroupId: string | null;
   selectedLinePremium: boolean;
   selectedLineAvailable: boolean;
-  outcome: "connected" | "held" | "dropped" | "fault";
+  outcome: 'connected' | 'held' | 'dropped' | 'fault';
   lineId: string | null;
   reason: string;
 };

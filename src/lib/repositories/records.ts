@@ -1,10 +1,10 @@
-import type { ProbeKind, ProbeSummary, SimulationMetrics, Title } from "../domain/game";
-import type { LeaderboardEntry, ReportView } from "../domain/views";
+import type { ProbeKind, ProbeSummary, SimulationMetrics, Title } from '../domain/game'
+import type { LeaderboardEntry, ReportView } from '../domain/views'
 
-export type StoredShiftState = "active" | "completed" | "expired";
-export type StoredRunKind = ProbeKind | "final";
-export type StoredRunTrigger = "manual" | "auto_expire";
-export type StoredRunState = "accepted" | "completed";
+export type StoredShiftState = 'active' | 'completed' | 'expired';
+export type StoredRunKind = ProbeKind | 'final';
+export type StoredRunTrigger = 'manual' | 'auto_expire';
+export type StoredRunState = 'accepted' | 'completed';
 
 export type StoredRunRecord = {
   id: string;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   redirectMock,
@@ -7,110 +7,110 @@ const {
   getOwnedShiftForGithubMock,
   saveDraftForGithubMock,
   getArtifactForShiftMock,
-  isDesktopUserAgentMock,
+  isDesktopUserAgentMock
 } = vi.hoisted(() => ({
   redirectMock: vi.fn((location: string) => {
-    throw new Error(`redirect:${location}`);
+    throw new Error(`redirect:${location}`)
   }),
   headersMock: vi.fn(),
   getGithubUsernameMock: vi.fn(),
   getOwnedShiftForGithubMock: vi.fn(),
   saveDraftForGithubMock: vi.fn(),
   getArtifactForShiftMock: vi.fn(),
-  isDesktopUserAgentMock: vi.fn(),
-}));
+  isDesktopUserAgentMock: vi.fn()
+}))
 
-vi.mock("next/navigation", () => ({
-  redirect: redirectMock,
-}));
+vi.mock('next/navigation', () => ({
+  redirect: redirectMock
+}))
 
-vi.mock("next/headers", () => ({
-  headers: headersMock,
-}));
+vi.mock('next/headers', () => ({
+  headers: headersMock
+}))
 
-vi.mock("@/lib/server-auth", () => ({
-  getGithubUsername: getGithubUsernameMock,
-}));
+vi.mock('@/lib/server-auth', () => ({
+  getGithubUsername: getGithubUsernameMock
+}))
 
-vi.mock("@/lib/shifts", () => ({
+vi.mock('@/lib/shifts', () => ({
   getOwnedShiftForGithub: getOwnedShiftForGithubMock,
   saveDraftForGithub: saveDraftForGithubMock,
-  getArtifactForShift: getArtifactForShiftMock,
-}));
+  getArtifactForShift: getArtifactForShiftMock
+}))
 
-vi.mock("@/lib/validation", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/lib/validation")>();
+vi.mock('@/lib/validation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/lib/validation')>()
   return {
     ...actual,
-    isDesktopUserAgent: isDesktopUserAgentMock,
-  };
-});
+    isDesktopUserAgent: isDesktopUserAgentMock
+  }
+})
 
-describe("active play desktop gating", () => {
+describe('active play desktop gating', () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-  });
+    vi.resetModules()
+    vi.clearAllMocks()
+  })
 
-  it("redirects mobile users away from the active Shift page", async () => {
-    headersMock.mockResolvedValue(new Headers({ "user-agent": "iPhone" }));
-    getGithubUsernameMock.mockResolvedValue("operator");
-    isDesktopUserAgentMock.mockReturnValue(false);
+  it('redirects mobile users away from the active Shift page', async () => {
+    headersMock.mockResolvedValue(new Headers({ 'user-agent': 'iPhone' }))
+    getGithubUsernameMock.mockResolvedValue('operator')
+    isDesktopUserAgentMock.mockReturnValue(false)
 
-    const { default: ShiftPage } = await import("../src/app/shift/[shiftId]/page");
+    const { default: ShiftPage } = await import('../src/app/shift/[shiftId]/page')
 
     await expect(
       ShiftPage({
-        params: Promise.resolve({ shiftId: "shift_123" }),
-      }),
-    ).rejects.toThrow("redirect:/");
+        params: Promise.resolve({ shiftId: 'shift_123' })
+      })
+    ).rejects.toThrow('redirect:/')
 
-    expect(redirectMock).toHaveBeenCalledWith("/");
-    expect(getOwnedShiftForGithubMock).not.toHaveBeenCalled();
-  });
+    expect(redirectMock).toHaveBeenCalledWith('/')
+    expect(getOwnedShiftForGithubMock).not.toHaveBeenCalled()
+  })
 
-  it("blocks mobile draft saves on shift-only routes", async () => {
-    getGithubUsernameMock.mockResolvedValue("operator");
-    isDesktopUserAgentMock.mockReturnValue(false);
+  it('blocks mobile draft saves on shift-only routes', async () => {
+    getGithubUsernameMock.mockResolvedValue('operator')
+    isDesktopUserAgentMock.mockReturnValue(false)
 
-    const { POST } = await import("../src/app/api/shifts/[shiftId]/drafts/route");
+    const { POST } = await import('../src/app/api/shifts/[shiftId]/drafts/route')
     const response = await POST(
-      new Request("http://localhost/api/shifts/shift_123/drafts", {
-        method: "POST",
+      new Request('http://localhost/api/shifts/shift_123/drafts', {
+        method: 'POST',
         headers: {
-          "content-type": "application/json",
-          "user-agent": "iPhone",
+          'content-type': 'application/json',
+          'user-agent': 'iPhone'
         },
-        body: JSON.stringify({ source: "export function connect() { return { lineId: null }; }" }),
+        body: JSON.stringify({ source: 'export function connect() { return { lineId: null }; }' })
       }),
-      { params: Promise.resolve({ shiftId: "shift_123" }) },
-    );
+      { params: Promise.resolve({ shiftId: 'shift_123' }) }
+    )
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(403)
     await expect(response.json()).resolves.toEqual({
-      error: "Official play is desktop-only. Public reports remain browseable on mobile.",
-    });
-    expect(saveDraftForGithubMock).not.toHaveBeenCalled();
-  });
+      error: 'Official play is desktop-only. Public reports remain browseable on mobile.'
+    })
+    expect(saveDraftForGithubMock).not.toHaveBeenCalled()
+  })
 
-  it("returns raw text for successful artifact fetches", async () => {
-    getGithubUsernameMock.mockResolvedValue("operator");
-    isDesktopUserAgentMock.mockReturnValue(true);
+  it('returns raw text for successful artifact fetches', async () => {
+    getGithubUsernameMock.mockResolvedValue('operator')
+    isDesktopUserAgentMock.mockReturnValue(true)
     getArtifactForShiftMock.mockResolvedValue({
-      content: "# Manual\nRoute the calls.",
-      type: "text/markdown",
-    });
+      content: '# Manual\nRoute the calls.',
+      type: 'text/markdown'
+    })
 
-    const { GET } = await import("../src/app/api/shifts/[shiftId]/artifacts/[name]/route");
+    const { GET } = await import('../src/app/api/shifts/[shiftId]/artifacts/[name]/route')
     const response = await GET(
-      new Request("http://localhost/api/shifts/shift_123/artifacts/manual.md", {
-        headers: { "user-agent": "Mozilla/5.0" },
+      new Request('http://localhost/api/shifts/shift_123/artifacts/manual.md', {
+        headers: { 'user-agent': 'Mozilla/5.0' }
       }),
-      { params: Promise.resolve({ shiftId: "shift_123", name: "manual.md" }) },
-    );
+      { params: Promise.resolve({ shiftId: 'shift_123', name: 'manual.md' }) }
+    )
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get("content-type")).toContain("text/markdown");
-    await expect(response.text()).resolves.toBe("# Manual\nRoute the calls.");
-  });
-});
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/markdown')
+    await expect(response.text()).resolves.toBe('# Manual\nRoute the calls.')
+  })
+})

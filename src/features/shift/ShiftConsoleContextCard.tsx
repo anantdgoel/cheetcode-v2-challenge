@@ -1,31 +1,37 @@
-import Link from "next/link";
-import type { ProbeSummary } from "@/lib/domain/game";
-import type { ShiftView } from "@/lib/domain/views";
-import { formatPercent, formatTitle } from "@/lib/engine/report";
-import { getTitlePresentation } from "@/lib/frontend/title-display";
-import type { ClockTone } from "./shift-console-state";
-import { conditionDotClass, formatIncidents } from "./shift-console-state";
+import Link from 'next/link'
+import type { ProbeSummary } from '@/lib/domain/game'
+import type { ShiftView } from '@/lib/domain/views'
+import { formatPercent, formatTitle } from '@/lib/engine/report'
+import { getTitlePresentation } from '@/lib/frontend/title-display'
+import { conditionDotClass, formatIncidents } from './shift-console-state'
+import { useShiftConsoleTiming } from './shift-console-timing'
 
-function formatTransferWarning(value: ProbeSummary["transferWarning"]) {
+function formatTransferWarning (value: ProbeSummary['transferWarning']) {
   switch (value) {
-    case "stable":
-      return "Stable";
-    case "stress_only":
-      return "Stress-only";
-    case "likely_final_shift_sensitive":
-      return "Likely final-shift sensitive";
+    case 'stable':
+      return 'Stable'
+    case 'stress_only':
+      return 'Stress-only'
+    case 'likely_final_shift_sensitive':
+      return 'Likely final-shift sensitive'
   }
 }
 
-export function ShiftConsoleContextCard(props: {
+type TrialMetric = {
+  danger?: boolean;
+  label: string;
+  large?: boolean;
+  value: string;
+};
+
+export function ShiftConsoleContextCard (props: {
   activeProbeSummary?: ProbeSummary;
-  clockTone: ClockTone;
-  statusNotice: string;
   shift: ShiftView;
 }) {
+  const timing = useShiftConsoleTiming()
   if (props.shift.finalEvaluation?.metrics) {
-    const title = props.shift.finalEvaluation.title ?? "off_the_board";
-    const { line } = getTitlePresentation(title);
+    const title = props.shift.finalEvaluation.title ?? 'off_the_board'
+    const { line } = getTitlePresentation(title)
 
     return (
       <div className="console-context-card console-context-card--final">
@@ -34,7 +40,7 @@ export function ShiftConsoleContextCard(props: {
           <span className="console-metric-label">Classification</span>
           <h2 className="console-final__title">{formatTitle(title)}</h2>
           <div className="console-final__badges">
-            {line !== "—" && <span className="console-final__line-badge">Line {line}</span>}
+            {line !== '—' && <span className="console-final__line-badge">Line {line}</span>}
             <span className="console-final__board-certified">Board Certified</span>
           </div>
         </div>
@@ -48,18 +54,18 @@ export function ShiftConsoleContextCard(props: {
         <div className="console-final__calls">
           {[
             {
-              label: "Connected",
-              value: `${props.shift.finalEvaluation.metrics.connectedCalls} / ${props.shift.finalEvaluation.metrics.totalCalls}`,
+              label: 'Connected',
+              value: `${props.shift.finalEvaluation.metrics.connectedCalls} / ${props.shift.finalEvaluation.metrics.totalCalls}`
             },
             {
               danger: true,
-              label: "Dropped",
-              value: String(props.shift.finalEvaluation.metrics.droppedCalls),
-            },
+              label: 'Dropped',
+              value: String(props.shift.finalEvaluation.metrics.droppedCalls)
+            }
           ].map((metric) => (
             <div key={metric.label} className="console-final__call-metric">
               <span className="console-metric-label">{metric.label}</span>
-              <span className={`console-metric-value${metric.danger ? " console-metric-value--danger" : ""}`}>
+              <span className={`console-metric-value${metric.danger ? ' console-metric-value--danger' : ''}`}>
                 {metric.value}
               </span>
             </div>
@@ -72,18 +78,39 @@ export function ShiftConsoleContextCard(props: {
           </Link>
         )}
       </div>
-    );
+    )
   }
 
-  const showTimingNotice = props.clockTone === "critical";
+  const showTimingNotice = timing.clockTone === 'critical'
 
   if (props.activeProbeSummary) {
+    const metricRows: TrialMetric[][] = [
+      [
+        { label: 'Efficiency', large: true, value: formatPercent(props.activeProbeSummary.metrics.efficiency) },
+        {
+          label: 'Connected',
+          value: `${props.activeProbeSummary.metrics.connectedCalls} / ${props.activeProbeSummary.metrics.totalCalls}`
+        }
+      ],
+      [
+        {
+          danger: true,
+          label: 'Dropped',
+          value: String(props.activeProbeSummary.metrics.droppedCalls)
+        },
+        {
+          label: 'Avg Hold',
+          value: `${props.activeProbeSummary.metrics.avgHoldSeconds.toFixed(1)}s`
+        }
+      ]
+    ]
+
     return (
       <div className="console-context-card">
         <p className="console-card-eyebrow">Trial Shift Results</p>
         {showTimingNotice && (
           <p className="console-context-card__notice console-context-card__notice--warning">
-            {props.statusNotice}
+            {timing.statusNotice}
           </p>
         )}
         <div className="console-trial__condition">
@@ -98,31 +125,12 @@ export function ShiftConsoleContextCard(props: {
             {formatTransferWarning(props.activeProbeSummary.transferWarning)}
           </span>
         </div>
-        {[
-          [
-            { label: "Efficiency", large: true, value: formatPercent(props.activeProbeSummary.metrics.efficiency) },
-            {
-              label: "Connected",
-              value: `${props.activeProbeSummary.metrics.connectedCalls} / ${props.activeProbeSummary.metrics.totalCalls}`,
-            },
-          ],
-          [
-            {
-              danger: true,
-              label: "Dropped",
-              value: String(props.activeProbeSummary.metrics.droppedCalls),
-            },
-            {
-              label: "Avg Hold",
-              value: `${props.activeProbeSummary.metrics.avgHoldSeconds.toFixed(1)}s`,
-            },
-          ],
-        ].map((row, rowIndex) => (
+        {metricRows.map((row, rowIndex) => (
           <div key={rowIndex} className="console-trial__metrics">
             {row.map((metric) => (
               <div key={metric.label} className="console-trial__metric">
                 <span className="console-metric-label">{metric.label}</span>
-                <span className={`console-metric-value${metric.large ? " console-metric-value--large" : ""}${metric.danger ? " console-metric-value--danger" : ""}`}>
+                <span className={`console-metric-value${metric.large ? ' console-metric-value--large' : ''}${metric.danger ? ' console-metric-value--danger' : ''}`}>
                   {metric.value}
                 </span>
               </div>
@@ -160,28 +168,28 @@ export function ShiftConsoleContextCard(props: {
           <p className="console-trial__log-text">
             {props.activeProbeSummary.incidents.length > 0
               ? formatIncidents(props.activeProbeSummary.incidents.slice(0, 8))
-              : "No incidents recorded."}
+              : 'No incidents recorded.'}
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="console-context-card">
       <p className="console-card-eyebrow">Supervisor Console</p>
-      {props.clockTone === "critical" && props.statusNotice && (
-        <p className={`console-context-card__notice${props.clockTone === "critical" ? " console-context-card__notice--warning" : ""}`}>
-          {props.statusNotice}
+      {timing.clockTone === 'critical' && timing.statusNotice && (
+        <p className="console-context-card__notice console-context-card__notice--warning">
+          {timing.statusNotice}
         </p>
       )}
       <p className="console-supervisor__empty">
-        {props.clockTone === "critical"
-          ? "The last bell is ringing. Only a valid draft reaches the live room."
-          : props.clockTone === "tight"
-            ? "The trial floor is shut. Work the evidence you have and call the room."
-            : "No trial dispatched yet.\nStudy the dossier. Write your policy. Validate when ready."}
+        {timing.clockTone === 'critical'
+          ? 'The last bell is ringing. Only a valid draft reaches the live room.'
+          : timing.clockTone === 'tight'
+            ? 'The trial floor is shut. Work the evidence you have and call the room.'
+            : 'No trial dispatched yet.\nStudy the dossier. Write your policy. Validate when ready.'}
       </p>
     </div>
-  );
+  )
 }

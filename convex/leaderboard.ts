@@ -1,8 +1,8 @@
-import { v } from "convex/values";
-import { internalMutation, internalQuery, query } from "./_generated/server";
-import { finalReportValidator, leaderboardEntryValidator } from "./validators";
+import { v } from 'convex/values'
+import { internalMutation, internalQuery, query } from './_generated/server'
+import { finalReportValidator, leaderboardEntryValidator } from './validators'
 
-function isBetterLeaderboardCandidate(
+function isBetterLeaderboardCandidate (
   current: {
     hiddenScore: number;
     boardEfficiency: number;
@@ -12,79 +12,79 @@ function isBetterLeaderboardCandidate(
     hiddenScore: number;
     boardEfficiency: number;
     achievedAt: number;
-  },
+  }
 ) {
-  if (!current) return true;
-  if (candidate.hiddenScore !== current.hiddenScore) return candidate.hiddenScore > current.hiddenScore;
-  if (candidate.boardEfficiency !== current.boardEfficiency) return candidate.boardEfficiency > current.boardEfficiency;
-  return candidate.achievedAt < current.achievedAt;
+  if (!current) return true
+  if (candidate.hiddenScore !== current.hiddenScore) return candidate.hiddenScore > current.hiddenScore
+  if (candidate.boardEfficiency !== current.boardEfficiency) return candidate.boardEfficiency > current.boardEfficiency
+  return candidate.achievedAt < current.achievedAt
 }
 
 export const getPublic = query({
   args: {},
   handler: async (ctx) => {
     const entries = await ctx.db
-      .query("leaderboardBest")
-      .withIndex("by_hiddenScore_and_boardEfficiency_and_achievedAt")
-      .order("desc")
-      .take(100);
+      .query('leaderboardBest')
+      .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
+      .order('desc')
+      .take(100)
 
     return entries.sort((left, right) => {
-      if (right.hiddenScore !== left.hiddenScore) return right.hiddenScore - left.hiddenScore;
-      if (right.boardEfficiency !== left.boardEfficiency) return right.boardEfficiency - left.boardEfficiency;
-      return left.achievedAt - right.achievedAt;
-    });
-  },
-});
+      if (right.hiddenScore !== left.hiddenScore) return right.hiddenScore - left.hiddenScore
+      if (right.boardEfficiency !== left.boardEfficiency) return right.boardEfficiency - left.boardEfficiency
+      return left.achievedAt - right.achievedAt
+    })
+  }
+})
 
 export const getForGithub = internalQuery({
   args: { github: v.string() },
   handler: async (ctx, args) => {
     return ctx.db
-      .query("leaderboardBest")
-      .withIndex("by_github", (query) => query.eq("github", args.github))
-      .unique();
-  },
-});
+      .query('leaderboardBest')
+      .withIndex('by_github', (query) => query.eq('github', args.github))
+      .unique()
+  }
+})
 
 export const upsertBest = internalMutation({
   args: {
-    entry: leaderboardEntryValidator,
+    entry: leaderboardEntryValidator
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("leaderboardBest")
-      .withIndex("by_github", (query) => query.eq("github", args.entry.github))
-      .unique();
+      .query('leaderboardBest')
+      .withIndex('by_github', (query) => query.eq('github', args.entry.github))
+      .unique()
 
     if (existing) {
-      await ctx.db.patch(existing._id, args.entry);
-      return await ctx.db.get(existing._id);
+      await ctx.db.patch(existing._id, args.entry)
+      return await ctx.db.get(existing._id)
     }
 
-    const id = await ctx.db.insert("leaderboardBest", args.entry);
-    return await ctx.db.get(id);
-  },
-});
+    const id = await ctx.db.insert('leaderboardBest', args.entry)
+    return await ctx.db.get(id)
+  }
+})
 
 export const maybeUpsertFromReport = internalMutation({
   args: {
-    report: finalReportValidator,
+    report: finalReportValidator
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("leaderboardBest")
-      .withIndex("by_github", (query) => query.eq("github", args.report.github))
-      .unique();
+      .query('leaderboardBest')
+      .withIndex('by_github', (query) => query.eq('github', args.report.github))
+      .unique()
 
     if (
       !isBetterLeaderboardCandidate(existing, {
         hiddenScore: args.report.hiddenScore,
         boardEfficiency: args.report.boardEfficiency,
-        achievedAt: args.report.achievedAt,
+        achievedAt: args.report.achievedAt
       })
     ) {
-      return existing;
+      return existing
     }
 
     const entry = {
@@ -98,15 +98,15 @@ export const maybeUpsertFromReport = internalMutation({
       connectedCalls: args.report.connectedCalls,
       totalCalls: args.report.totalCalls,
       droppedCalls: args.report.droppedCalls,
-      avgHoldSeconds: args.report.avgHoldSeconds,
-    };
-
-    if (existing) {
-      await ctx.db.patch(existing._id, entry);
-      return await ctx.db.get(existing._id);
+      avgHoldSeconds: args.report.avgHoldSeconds
     }
 
-    const id = await ctx.db.insert("leaderboardBest", entry);
-    return await ctx.db.get(id);
-  },
-});
+    if (existing) {
+      await ctx.db.patch(existing._id, entry)
+      return await ctx.db.get(existing._id)
+    }
+
+    const id = await ctx.db.insert('leaderboardBest', entry)
+    return await ctx.db.get(id)
+  }
+})

@@ -38,11 +38,11 @@
 - Starting a new Shift while one is active is rejected.
 
 ## Evidence Bundle
-- The bundle always contains exactly four artifacts: `manual.md`, `starter.js`, `lines.json`, and `history.jsonl`.
+- The bundle always contains exactly four artifacts: `manual.md`, `starter.js`, `lines.json`, and `observations.jsonl`.
 - `manual.md` explains the world, the rules, call types, hold behavior, visible line fields, and submission contract.
 - `starter.js` is weak but valid, so every player begins with an executable baseline.
 - `lines.json` contains only coarse visible line metadata and class tags, including premium trunk status.
-- `history.jsonl` is the large artifact. It is the main anti-manual-play mechanism and the main source of inferential signal for the local agent.
+- `observations.jsonl` is the large artifact. It is the main anti-manual-play mechanism and the main source of inferential signal for the local agent.
 - The bundle is available only during the active Shift.
 - After the Shift ends, the bundle is no longer accessible. Only the final Shift Report remains publicly viewable.
 

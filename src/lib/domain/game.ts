@@ -1,47 +1,47 @@
-export const PROBE_KINDS = ["fit", "stress"] as const;
+export const PROBE_KINDS = ['fit', 'stress'] as const
 export const TITLES = [
-  "chief_operator",
-  "senior_operator",
-  "operator",
-  "trainee",
-  "off_the_board",
-] as const;
-export const ROUTE_CODES = ["local", "intercity", "relay", "priority"] as const;
-export const SUBSCRIBER_CLASSES = ["residence", "business", "hotel", "government"] as const;
-export const BILLING_MODES = ["standard", "verified", "collect"] as const;
-export const URGENCIES = ["routine", "priority"] as const;
-export const MAINTENANCE_BANDS = ["steady", "temperamental", "recently_serviced"] as const;
+  'chief_operator',
+  'senior_operator',
+  'operator',
+  'trainee',
+  'off_the_board'
+] as const
+export const ROUTE_CODES = ['local', 'intercity', 'relay', 'priority'] as const
+export const SUBSCRIBER_CLASSES = ['residence', 'business', 'hotel', 'government'] as const
+export const BILLING_MODES = ['standard', 'verified', 'collect'] as const
+export const URGENCIES = ['routine', 'priority'] as const
+export const MAINTENANCE_BANDS = ['steady', 'temperamental', 'recently_serviced'] as const
 export const BOARD_PROFILES = [
-  "switchboard",
-  "front-office",
-  "night-rush",
-  "civic-desk",
-  "commuter-belt",
-  "storm-watch",
-] as const;
-export const LINE_FAMILIES = ["district", "relay", "trunk", "exchange", "suburban"] as const;
-export const BOARD_CONDITIONS = ["steady", "strained", "overrun"] as const;
-export const BOARD_TEMPOS = ["steady", "surging", "cooling"] as const;
-export const LOAD_BANDS = ["low", "medium", "high", "peak"] as const;
-export const QUEUE_BANDS = ["short", "rising", "long"] as const;
-export const TRAFFIC_REGIMES = ["lunchtime", "closing_bell", "storm_hour", "late_quiet"] as const;
-export const OPERATOR_GRADES = ["senior", "operator", "trainee"] as const;
-export const PRESSURE_BANDS = ["calm", "building", "hot"] as const;
-export const PREMIUM_REUSE_BANDS = ["fresh", "warm", "hot"] as const;
-export const FINAL_SHIFT_KINDS = ["traffic_mix", "cap_swing"] as const;
-export const ARTIFACT_NAMES = ["manual.md", "starter.js", "lines.json", "observations.jsonl"] as const;
-export const PROBE_RECOMMENDED_QUESTION_COUNT = 2 as const;
-export const PROBE_CHIEF_OPERATOR_NOTE_COUNT = 5 as const;
-export const PROBE_COUNTERFACTUAL_NOTE_COUNT = 2 as const;
+  'switchboard',
+  'front-office',
+  'night-rush',
+  'civic-desk',
+  'commuter-belt',
+  'storm-watch'
+] as const
+export const LINE_FAMILIES = ['district', 'relay', 'trunk', 'exchange', 'suburban'] as const
+export const BOARD_CONDITIONS = ['steady', 'strained', 'overrun'] as const
+export const BOARD_TEMPOS = ['steady', 'surging', 'cooling'] as const
+export const LOAD_BANDS = ['low', 'medium', 'high', 'peak'] as const
+export const QUEUE_BANDS = ['short', 'rising', 'long'] as const
+export const TRAFFIC_REGIMES = ['lunchtime', 'closing_bell', 'storm_hour', 'late_quiet'] as const
+export const OPERATOR_GRADES = ['senior', 'operator', 'trainee'] as const
+export const PRESSURE_BANDS = ['calm', 'building', 'hot'] as const
+export const PREMIUM_REUSE_BANDS = ['fresh', 'warm', 'hot'] as const
+export const FINAL_SHIFT_KINDS = ['traffic_mix', 'cap_swing'] as const
+export const ARTIFACT_NAMES = ['manual.md', 'starter.js', 'lines.json', 'observations.jsonl'] as const
+export const PROBE_RECOMMENDED_QUESTION_COUNT = 2 as const
+export const PROBE_CHIEF_OPERATOR_NOTE_COUNT = 5 as const
+export const PROBE_COUNTERFACTUAL_NOTE_COUNT = 2 as const
 export const FAILURE_MODES = [
-  "collapse_under_pressure",
-  "premium_thrash",
-  "overholding",
-  "false_generalist",
-  "tempo_lag",
-  "misleading_history",
-] as const;
-export const TRANSFER_WARNINGS = ["stable", "stress_only", "likely_final_shift_sensitive"] as const;
+  'collapse_under_pressure',
+  'premium_thrash',
+  'overholding',
+  'false_generalist',
+  'tempo_lag',
+  'misleading_history'
+] as const
+export const TRANSFER_WARNINGS = ['stable', 'stress_only', 'likely_final_shift_sensitive'] as const
 
 export type ProbeKind = (typeof PROBE_KINDS)[number];
 export type Title = (typeof TITLES)[number];
@@ -76,7 +76,7 @@ export type PublicLine = {
 };
 
 export type RuntimeLineView = PublicLine & {
-  status: "idle" | "busy" | "fault";
+  status: 'idle' | 'busy' | 'fault';
   secondsUntilBusyClears: number;
   secondsUntilFaultClears: number;
 };
@@ -114,7 +114,7 @@ export type PolicyInput = {
 export type PolicyInitContext = {
   shift: {
     durationSeconds: number;
-    probeKind: ProbeKind | "final";
+    probeKind: ProbeKind | 'final';
   };
   board: {
     lineCount: number;
@@ -182,7 +182,7 @@ export type ProbeSummary = {
   failureBuckets: Array<{
     bucketId: string;
     count: number;
-    dominantReason: "hold_too_long" | "fault_under_load" | "premium_misuse" | "low_margin_routing";
+    dominantReason: 'hold_too_long' | 'fault_under_load' | 'premium_misuse' | 'low_margin_routing';
     confidence: number;
   }>;
   failureModes: FailureMode[];
@@ -211,7 +211,7 @@ export type FinalReport = {
   chiefOperatorNote: string;
   achievedAt: number;
   hiddenScore: number;
-  kind: "final" | "auto_final";
+  kind: 'final' | 'auto_final';
 };
 
 export type PolicyValidationResult =

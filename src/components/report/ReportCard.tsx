@@ -1,48 +1,48 @@
-import type { ReportView } from "@/lib/domain/views";
-import { formatPercent, formatTitle } from "@/lib/engine/report";
-import { getTitlePresentation } from "@/lib/frontend/title-display";
+import type { ReportView } from '@/lib/domain/views'
+import { formatPercent, formatTitle } from '@/lib/engine/report'
+import { getTitlePresentation } from '@/lib/frontend/title-display'
 
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December'
+] as const
 
-function formatLongDate(timestamp: number) {
-  const date = new Date(timestamp);
-  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+function formatLongDate (timestamp: number) {
+  const date = new Date(timestamp)
+  return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
 }
 
-export function ReportCard({ publicId, report }: { publicId: string; report: ReportView }) {
-  const { isTop, line, tone } = getTitlePresentation(report.title);
+export function ReportCard ({ publicId, report }: { publicId: string; report: ReportView }) {
+  const { isTop, line, tone } = getTitlePresentation(report.title)
   const barClass = isTop
-    ? "report-card__bar-fill--gold"
-    : report.title === "off_the_board"
-      ? "report-card__bar-fill--muted"
-      : "report-card__bar-fill--accent";
+    ? 'report-card__bar-fill--gold'
+    : report.title === 'off_the_board'
+      ? 'report-card__bar-fill--muted'
+      : 'report-card__bar-fill--accent'
   const metrics = [
-    { label: "Connected", value: `${report.connectedCalls} / ${report.totalCalls}` },
+    { label: 'Connected', value: `${report.connectedCalls} / ${report.totalCalls}` },
     {
-      label: "Dropped",
-      modifier: "report-card__metric-value--danger",
-      value: String(report.droppedCalls),
+      label: 'Dropped',
+      modifier: 'report-card__metric-value--danger',
+      value: String(report.droppedCalls)
     },
-    { label: "Avg Hold", value: `${report.avgHoldSeconds.toFixed(1)}s` },
+    { label: 'Avg Hold', value: `${report.avgHoldSeconds.toFixed(1)}s` },
     {
-      label: "Premium Trunk",
-      modifier: "report-card__metric-value--gold",
-      value: `${report.premiumTrunkUsage} uses`,
-    },
-  ];
+      label: 'Premium Trunk',
+      modifier: 'report-card__metric-value--gold',
+      value: `${report.premiumTrunkUsage} uses`
+    }
+  ]
 
   return (
     <main className="report-shell">
@@ -111,7 +111,7 @@ export function ReportCard({ publicId, report }: { publicId: string; report: Rep
           {metrics.map((metric) => (
             <div key={metric.label} className="report-card__metric">
               <span className="report-card__metric-label">{metric.label}</span>
-              <span className={`report-card__metric-value${metric.modifier ? ` ${metric.modifier}` : ""}`}>
+              <span className={`report-card__metric-value${metric.modifier ? ` ${metric.modifier}` : ''}`}>
                 {metric.value}
               </span>
             </div>
@@ -133,7 +133,7 @@ export function ReportCard({ publicId, report }: { publicId: string; report: Rep
 
         <div className="report-card__footer">
           <div className="report-card__dots">
-            {[...Array(6)].map((_, index) => (
+            {Array.from({ length: 6 }, (_, index) => (
               <span key={index} className="report-card__dot" />
             ))}
           </div>
@@ -142,5 +142,5 @@ export function ReportCard({ publicId, report }: { publicId: string; report: Rep
         </div>
       </section>
     </main>
-  );
+  )
 }

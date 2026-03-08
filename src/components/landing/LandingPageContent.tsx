@@ -1,18 +1,18 @@
-import type { LandingView } from "@/lib/domain/views";
-import { ConvexPublicProvider } from "@/components/providers/ConvexPublicProvider";
-import { HeroSection, SwitchboardPattern } from "./HeroSection";
-import { LiveLandingLeaderboard } from "./LiveLandingLeaderboard";
+import type { LandingView } from '@/lib/domain/views'
+import { ConvexPublicProvider } from '@/components/providers/ConvexPublicProvider'
+import { HeroSection, SwitchboardPattern } from './HeroSection'
+import { LiveLandingLeaderboard } from './LiveLandingLeaderboard'
 
-function Footer() {
+function Footer () {
   return (
     <footer className="landing-footer">
       <span className="landing-footer__text">A game of connections</span>
       <span className="landing-footer__text">24 Lines / 1 Operator / Your Shift</span>
     </footer>
-  );
+  )
 }
 
-export function LandingPageContent({ landing }: { landing: LandingView }) {
+export function LandingPageContent ({ landing }: { landing: LandingView }) {
   return (
     <main className="landing-shell">
       <SwitchboardPattern />
@@ -22,5 +22,5 @@ export function LandingPageContent({ landing }: { landing: LandingView }) {
       </ConvexPublicProvider>
       <Footer />
     </main>
-  );
+  )
 }

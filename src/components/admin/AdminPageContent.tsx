@@ -1,15 +1,15 @@
-import { formatPercent, formatTitle } from "@/lib/engine/report";
-import type { AdminSnapshot } from "@/lib/domain/views";
+import { formatPercent, formatTitle } from '@/lib/engine/report'
+import type { AdminSnapshot } from '@/lib/domain/views'
 
 const FIELDS = [
-  { name: "github", placeholder: "GitHub login" },
-  { name: "shiftId", placeholder: "Shift id" },
-  { name: "publicId", placeholder: "Report public id" },
-] as const;
+  { name: 'github', placeholder: 'GitHub login' },
+  { name: 'shiftId', placeholder: 'Shift id' },
+  { name: 'publicId', placeholder: 'Report public id' }
+] as const
 
-export function AdminPageContent({
+export function AdminPageContent ({
   fieldDefaults,
-  snapshot,
+  snapshot
 }: {
   fieldDefaults: Record<string, string>;
   snapshot: AdminSnapshot;
@@ -42,42 +42,48 @@ export function AdminPageContent({
         <div className="admin-grid">
           <article className="rule-card">
             <p className="eyebrow">Shift</p>
-            {snapshot.shift ? (
+            {snapshot.shift
+              ? (
               <>
                 <h2>{snapshot.shift.id.slice(-8).toUpperCase()}</h2>
                 <p>Status: {snapshot.shift.state}</p>
                 <p>Owner: {snapshot.shift.github}</p>
                 <p>Expires: {new Date(snapshot.shift.expiresAt).toLocaleString()}</p>
               </>
-            ) : (
+                )
+              : (
               <p>No matching shift.</p>
-            )}
+                )}
           </article>
 
           <article className="rule-card">
             <p className="eyebrow">Leaderboard</p>
-            {snapshot.leaderboardRow ? (
+            {snapshot.leaderboardRow
+              ? (
               <>
                 <h2>{snapshot.leaderboardRow.github}</h2>
                 <p>{formatTitle(snapshot.leaderboardRow.title)}</p>
                 <p>{formatPercent(snapshot.leaderboardRow.boardEfficiency)}</p>
               </>
-            ) : (
+                )
+              : (
               <p>No leaderboard row for this lookup.</p>
-            )}
+                )}
           </article>
 
           <article className="rule-card">
             <p className="eyebrow">Report</p>
-            {snapshot.report ? (
+            {snapshot.report
+              ? (
               <>
                 <h2>{snapshot.report.publicId}</h2>
                 <p>{formatTitle(snapshot.report.title)}</p>
                 <p>{formatPercent(snapshot.report.boardEfficiency)}</p>
               </>
-            ) : (
+                )
+              : (
               <p>No public report matched.</p>
-            )}
+                )}
           </article>
         </div>
 
@@ -88,8 +94,9 @@ export function AdminPageContent({
               <h2>Accepted Runs</h2>
             </div>
           </div>
-          {snapshot.runs.length ? (
-            snapshot.runs.map((evaluation) => (
+          {snapshot.runs.length
+            ? (
+                snapshot.runs.map((evaluation) => (
               <article key={evaluation.id} className="admin-evaluation-card">
                 <h3>
                   {evaluation.kind} · {evaluation.state}
@@ -97,12 +104,13 @@ export function AdminPageContent({
                 <p>{evaluation.id}</p>
                 <p>Accepted: {new Date(evaluation.acceptedAt).toLocaleString()}</p>
               </article>
-            ))
-          ) : (
+                ))
+              )
+            : (
             <p className="empty-state">No evaluations available for the selected lookup.</p>
-          )}
+              )}
         </section>
       </section>
     </main>
-  );
+  )
 }

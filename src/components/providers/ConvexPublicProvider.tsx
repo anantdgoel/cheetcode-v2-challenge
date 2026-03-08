@@ -1,27 +1,28 @@
-"use client";
+'use client'
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import type { ReactNode } from 'react'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
 
-let convexClient: ConvexReactClient | null = null;
+let convexClient: ConvexReactClient | null = null
 
-function getConvexClient() {
+function getConvexClient () {
   if (convexClient) {
-    return convexClient;
+    return convexClient
   }
 
-  const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL
   if (!deploymentUrl) {
-    throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+    throw new Error('NEXT_PUBLIC_CONVEX_URL is not configured')
   }
 
-  convexClient = new ConvexReactClient(deploymentUrl);
-  return convexClient;
+  convexClient = new ConvexReactClient(deploymentUrl)
+  return convexClient
 }
 
-export function ConvexPublicProvider({
-  children,
+export function ConvexPublicProvider ({
+  children
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  return <ConvexProvider client={getConvexClient()}>{children}</ConvexProvider>;
+  return <ConvexProvider client={getConvexClient()}>{children}</ConvexProvider>
 }

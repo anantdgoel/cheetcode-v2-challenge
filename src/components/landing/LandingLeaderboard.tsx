@@ -1,20 +1,20 @@
-"use client";
+'use client'
 
-import { motion } from "framer-motion";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { formatPercent, formatTitle } from "@/lib/engine/report";
-import type { LeaderboardEntry } from "@/lib/domain/views";
+import { motion } from 'framer-motion'
+import Link from 'next/link'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { formatPercent, formatTitle } from '@/lib/engine/report'
+import type { LeaderboardEntry } from '@/lib/domain/views'
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 5
 
 /* ─── Animation helpers ─── */
 
-const FADE_SPRING = { type: "spring" as const, stiffness: 300, damping: 30 };
-const FADE_VARIANTS = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } };
-const VIEWPORT = { once: true, margin: "-60px" as const };
+const FADE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 30 }
+const FADE_VARIANTS = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }
+const VIEWPORT = { once: true, margin: '-60px' as const }
 
-function FadeIn({ children, delay = 0, className, style }: { children: React.ReactNode; delay?: number; className?: string; style?: React.CSSProperties }) {
+function FadeIn ({ children, delay = 0, className, style }: { children: ReactNode; delay?: number; className?: string; style?: CSSProperties }) {
   return (
     <motion.div
       className={className}
@@ -27,33 +27,32 @@ function FadeIn({ children, delay = 0, className, style }: { children: React.Rea
     >
       {children}
     </motion.div>
-  );
+  )
 }
-
 
 /* ─── Data formatting ─── */
 
-function formatHold(seconds?: number) {
-  return seconds == null ? "—" : `${seconds.toFixed(1)}s`;
+function formatHold (seconds?: number) {
+  return seconds == null ? '—' : `${seconds.toFixed(1)}s`
 }
 
-function lineNumber(index: number) {
-  return String(index + 1).padStart(2, "0");
+function lineNumber (index: number) {
+  return String(index + 1).padStart(2, '0')
 }
 
-function connectedDisplay(e: LeaderboardEntry) {
-  return e.connectedCalls != null && e.totalCalls != null ? `${e.connectedCalls} / ${e.totalCalls}` : "—";
+function connectedDisplay (e: LeaderboardEntry) {
+  return e.connectedCalls != null && e.totalCalls != null ? `${e.connectedCalls} / ${e.totalCalls}` : '—'
 }
 
-function efficiencyFillClass(index: number, title: LeaderboardEntry["title"]) {
-  if (title === "off_the_board") return "line-efficiency__fill--muted";
-  if (index === 0) return "line-efficiency__fill--gold";
-  return "";
+function efficiencyFillClass (index: number, title: LeaderboardEntry['title']) {
+  if (title === 'off_the_board') return 'line-efficiency__fill--muted'
+  if (index === 0) return 'line-efficiency__fill--gold'
+  return ''
 }
 
 /* ─── Sub-components ─── */
 
-function LineTile({ entry, index }: { entry?: LeaderboardEntry; index: number }) {
+function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }) {
   if (!entry) {
     return (
       <div className="line-tile line-tile--vacant">
@@ -66,7 +65,7 @@ function LineTile({ entry, index }: { entry?: LeaderboardEntry; index: number })
         <p className="line-callsign">No signal</p>
         <div className="line-stats">
           <div className="line-stats__row">
-            {(["Connected", "Dropped", "Avg Hold"] as const).map((label) => (
+            {(['Connected', 'Dropped', 'Avg Hold'] as const).map((label) => (
               <div key={label} className="line-stat">
                 <span className="line-stat__label">{label}</span>
                 <span className="line-stat__value">—</span>
@@ -81,18 +80,18 @@ function LineTile({ entry, index }: { entry?: LeaderboardEntry; index: number })
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const isTop = index === 0;
-  const isMuted = entry.title === "off_the_board";
+  const isTop = index === 0
+  const isMuted = entry.title === 'off_the_board'
 
   return (
-    <Link href={`/report/${entry.publicId}`} className={`line-tile${isTop ? " line-tile--top" : ""}`}>
+    <Link href={`/report/${entry.publicId}`} className={`line-tile${isTop ? ' line-tile--top' : ''}`}>
       <div className="line-tile__header">
         <div className="line-tile__indicator">
-          <div className={`line-dot${isTop ? " line-dot--gold" : ""}`} />
-          <span className={`line-number${isTop ? " line-number--gold" : ""}`}>Line {lineNumber(index)}</span>
+          <div className={`line-dot${isTop ? ' line-dot--gold' : ''}`} />
+          <span className={`line-number${isTop ? ' line-number--gold' : ''}`}>Line {lineNumber(index)}</span>
         </div>
         <span className="line-classification">{formatTitle(entry.title)}</span>
       </div>
@@ -101,21 +100,21 @@ function LineTile({ entry, index }: { entry?: LeaderboardEntry; index: number })
         <div className="line-stats__row">
           <div className="line-stat">
             <span className="line-stat__label">Connected</span>
-            <span className={`line-stat__value${isMuted ? " line-stat__value--muted" : ""}`}>{connectedDisplay(entry)}</span>
+            <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{connectedDisplay(entry)}</span>
           </div>
           <div className="line-stat">
             <span className="line-stat__label">Dropped</span>
-            <span className={`line-stat__value${isMuted ? " line-stat__value--muted" : ""}`}>{entry.droppedCalls ?? "—"}</span>
+            <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{entry.droppedCalls ?? '—'}</span>
           </div>
           <div className="line-stat">
             <span className="line-stat__label">Avg Hold</span>
-            <span className={`line-stat__value${isMuted ? " line-stat__value--muted" : ""}`}>{formatHold(entry.avgHoldSeconds)}</span>
+            <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{formatHold(entry.avgHoldSeconds)}</span>
           </div>
         </div>
         <div className="line-efficiency">
           <div className="line-efficiency__header">
             <span className="line-efficiency__label">Board Efficiency</span>
-            <span className={`line-efficiency__value${isTop ? " line-efficiency__value--gold" : ""}`}>
+            <span className={`line-efficiency__value${isTop ? ' line-efficiency__value--gold' : ''}`}>
               {formatPercent(entry.boardEfficiency)}
             </span>
           </div>
@@ -128,31 +127,28 @@ function LineTile({ entry, index }: { entry?: LeaderboardEntry; index: number })
         </div>
       </div>
     </Link>
-  );
+  )
 }
 
-function Chevron({ direction }: { direction: "left" | "right" }) {
-  const d = direction === "left" ? "M7.5 2.5L4 6l3.5 3.5" : "M4.5 2.5L8 6l-3.5 3.5";
+function Chevron ({ direction }: { direction: 'left' | 'right' }) {
+  const d = direction === 'left' ? 'M7.5 2.5L4 6l3.5 3.5' : 'M4.5 2.5L8 6l-3.5 3.5'
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d={d} />
     </svg>
-  );
+  )
 }
 
 /* ─── Main component ─── */
 
-export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
-  const [page, setPage] = useState(0);
-  const rest = leaderboard.slice(3);
-  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
-  const pageEntries = rest.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const showStart = page * PAGE_SIZE + 4;
-  const showEnd = Math.min((page + 1) * PAGE_SIZE + 3, rest.length + 3);
-
-  useEffect(() => {
-    setPage((currentPage) => Math.min(currentPage, totalPages - 1));
-  }, [totalPages]);
+export function LandingLeaderboard ({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
+  const [page, setPage] = useState(0)
+  const rest = leaderboard.slice(3)
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages - 1)
+  const pageEntries = rest.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
+  const showStart = currentPage * PAGE_SIZE + 4
+  const showEnd = Math.min((currentPage + 1) * PAGE_SIZE + 3, rest.length + 3)
 
   return (
     <div className="leaderboard-card">
@@ -186,15 +182,15 @@ export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEn
           </FadeIn>
 
           {pageEntries.map((entry, i) => {
-            const globalIndex = page * PAGE_SIZE + i + 3;
-            const isOff = entry.title === "off_the_board";
-            const pct = Math.round(entry.boardEfficiency * 100);
+            const globalIndex = currentPage * PAGE_SIZE + i + 3
+            const isOff = entry.title === 'off_the_board'
+            const pct = Math.round(entry.boardEfficiency * 100)
 
             return (
               <FadeIn key={entry.publicId} delay={0.55 + i * 0.07}>
                 <Link
                   href={`/report/${entry.publicId}`}
-                  className={`dispatch-log__row${isOff ? " dispatch-log__row--muted" : ""}`}
+                  className={`dispatch-log__row${isOff ? ' dispatch-log__row--muted' : ''}`}
                 >
                   <span className="dispatch-log__col--line">{lineNumber(globalIndex)}</span>
                   <span className="dispatch-log__col--callsign">{entry.github}</span>
@@ -205,14 +201,14 @@ export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEn
                     <div className="dispatch-log__bar-track">
                       <div
                         className="dispatch-log__bar-fill"
-                        style={{ backgroundColor: isOff ? "rgba(26,20,16,0.12)" : "var(--accent-bar)", width: `${pct}%` }}
+                        style={{ backgroundColor: isOff ? 'rgba(26,20,16,0.12)' : 'var(--accent-bar)', width: `${pct}%` }}
                       />
                     </div>
                     <span className="dispatch-log__pct">{formatPercent(entry.boardEfficiency)}</span>
                   </div>
                 </Link>
               </FadeIn>
-            );
+            )
           })}
 
           {totalPages > 1 && (
@@ -221,11 +217,11 @@ export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEn
                 Showing {showStart}–{showEnd} of {leaderboard.length}
               </span>
               <div className="dispatch-log__pagination-controls">
-                <button type="button" className="dispatch-log__pagination-btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                <button type="button" className="dispatch-log__pagination-btn" disabled={currentPage === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
                   <Chevron direction="left" />
                 </button>
-                <span className="dispatch-log__pagination-label">Page {page + 1} of {totalPages}</span>
-                <button type="button" className="dispatch-log__pagination-btn" disabled={page === totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+                <span className="dispatch-log__pagination-label">Page {currentPage + 1} of {totalPages}</span>
+                <button type="button" className="dispatch-log__pagination-btn" disabled={currentPage === totalPages - 1} onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}>
                   <Chevron direction="right" />
                 </button>
               </div>
@@ -234,5 +230,5 @@ export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEn
         </div>
       )}
     </div>
-  );
+  )
 }

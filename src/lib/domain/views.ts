@@ -1,8 +1,8 @@
-import type { FinalReport, ProbeKind, ProbeSummary, SimulationMetrics, Title } from "./game";
+import type { FinalReport, ProbeKind, ProbeSummary, SimulationMetrics, Title } from './game'
 
-export type ShiftStatus = "active_phase_1" | "active_phase_2" | "evaluating" | "completed" | "expired_no_result";
-export type EvaluationKind = ProbeKind | "final" | "auto_final";
-export type EvaluationState = "accepted" | "completed";
+export type ShiftStatus = 'active_phase_1' | 'active_phase_2' | 'evaluating' | 'completed' | 'expired_no_result';
+export type EvaluationKind = ProbeKind | 'final' | 'auto_final';
+export type EvaluationState = 'accepted' | 'completed';
 
 export type EvaluationRecordView = {
   id: string;
@@ -37,7 +37,7 @@ export type ShiftView = {
   probeAcceptedAt?: number;
   finalAcceptedAt?: number;
   reportPublicId?: string;
-  currentPhase: "active" | "evaluating" | "completed" | "expired";
+  currentPhase: 'active' | 'evaluating' | 'completed' | 'expired';
   probesUsed: number;
   maxProbes: number;
   remainingProbes: number;

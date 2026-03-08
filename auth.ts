@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
-import GitHub from "next-auth/providers/github";
+import NextAuth from 'next-auth'
+import GitHub from 'next-auth/providers/github'
 
 /**
  * Auth.js v5 config — GitHub OAuth only.
@@ -9,23 +9,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
-    }),
+      clientSecret: process.env.AUTH_GITHUB_SECRET
+    })
   ],
   callbacks: {
     // Expose the GitHub username in the session so the client can use it
-    async session({ session, token }) {
+    session ({ session, token }) {
       if (token.githubUsername) {
-        session.user.githubUsername = token.githubUsername as string;
+        session.user.githubUsername = token.githubUsername as string
       }
-      return session;
+      return session
     },
-    async jwt({ token, profile }) {
+    jwt ({ token, profile }) {
       // On initial sign-in, persist the GitHub login (username) in the JWT
       if (profile?.login) {
-        token.githubUsername = profile.login;
+        token.githubUsername = profile.login
       }
-      return token;
-    },
-  },
-});
+      return token
+    }
+  }
+})

@@ -1,11 +1,10 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
 import {
-  policyValidationResultValidator,
   shiftStateValidator,
   storedRunValidator,
-  titleValidator,
-} from "./validators";
+  titleValidator
+} from './validators'
 
 export default defineSchema({
   shifts: defineTable({
@@ -28,17 +27,17 @@ export default defineSchema({
       manualMd: v.optional(v.number()),
       starterJs: v.optional(v.number()),
       linesJson: v.optional(v.number()),
-      observationsJsonl: v.optional(v.number()),
+      observationsJsonl: v.optional(v.number())
     }),
     runs: v.array(storedRunValidator),
-    reportPublicId: v.optional(v.string()),
+    reportPublicId: v.optional(v.string())
   })
-    .index("by_github_and_startedAt", ["github", "startedAt"])
-    .index("by_state_and_expiresAt", ["state", "expiresAt"]),
+    .index('by_github_and_startedAt', ['github', 'startedAt'])
+    .index('by_state_and_expiresAt', ['state', 'expiresAt']),
 
   reports: defineTable({
     publicId: v.string(),
-    shiftId: v.id("shifts"),
+    shiftId: v.id('shifts'),
     github: v.string(),
     title: titleValidator,
     boardEfficiency: v.number(),
@@ -50,10 +49,10 @@ export default defineSchema({
     chiefOperatorNote: v.string(),
     achievedAt: v.number(),
     hiddenScore: v.number(),
-    kind: v.union(v.literal("final"), v.literal("auto_final")),
+    kind: v.union(v.literal('final'), v.literal('auto_final'))
   })
-    .index("by_publicId", ["publicId"])
-    .index("by_achievedAt", ["achievedAt"]),
+    .index('by_publicId', ['publicId'])
+    .index('by_achievedAt', ['achievedAt']),
 
   leaderboardBest: defineTable({
     github: v.string(),
@@ -61,17 +60,17 @@ export default defineSchema({
     hiddenScore: v.number(),
     boardEfficiency: v.number(),
     achievedAt: v.number(),
-    shiftId: v.id("shifts"),
+    shiftId: v.id('shifts'),
     publicId: v.string(),
     connectedCalls: v.optional(v.number()),
     totalCalls: v.optional(v.number()),
     droppedCalls: v.optional(v.number()),
-    avgHoldSeconds: v.optional(v.number()),
+    avgHoldSeconds: v.optional(v.number())
   })
-    .index("by_github", ["github"])
-    .index("by_hiddenScore_and_boardEfficiency_and_achievedAt", [
-      "hiddenScore",
-      "boardEfficiency",
-      "achievedAt",
-    ]),
-});
+    .index('by_github', ['github'])
+    .index('by_hiddenScore_and_boardEfficiency_and_achievedAt', [
+      'hiddenScore',
+      'boardEfficiency',
+      'achievedAt'
+    ])
+})

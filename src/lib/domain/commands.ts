@@ -1,5 +1,5 @@
-import type { PolicyValidationResult, ProbeSummary, ProbeKind } from "./game";
-import type { ShiftView } from "./views";
+import type { PolicyValidationResult, ProbeSummary, ProbeKind } from './game'
+import type { ShiftView } from './views'
 
 export type SaveDraftCommand = {
   github: string;

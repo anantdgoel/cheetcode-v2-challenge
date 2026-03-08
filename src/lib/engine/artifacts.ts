@@ -1,9 +1,9 @@
-import type { ArtifactName, PublicLine } from "@/lib/domain/game";
-import type { BoardModel, LineModel, ObservationRow, ShiftArtifacts } from "./models";
-import { createBoard } from "./board-generation";
-import { createObservations } from "./observation-generation";
+import type { ArtifactName, PublicLine } from '@/lib/domain/game'
+import type { BoardModel, LineModel, ObservationRow, ShiftArtifacts } from './models'
+import { createBoard } from './board-generation'
+import { createObservations } from './observation-generation'
 
-function stringifyLines(board: BoardModel) {
+function stringifyLines (board: BoardModel) {
   return JSON.stringify(
     board.lines.map<PublicLine>(
       ({ id, label, switchMark, classTags, lineGroupId, isPremiumTrunk, maintenanceBand }: LineModel) => ({
@@ -13,20 +13,20 @@ function stringifyLines(board: BoardModel) {
         classTags,
         lineGroupId,
         isPremiumTrunk,
-        maintenanceBand,
-      }),
+        maintenanceBand
+      })
     ),
     null,
-    2,
-  );
+    2
+  )
 }
 
-function stringifyObservations(board: BoardModel) {
-  return createObservations(board).map((row: ObservationRow) => JSON.stringify(row)).join("\n");
+function stringifyObservations (board: BoardModel) {
+  return createObservations(board).map((row: ObservationRow) => JSON.stringify(row)).join('\n')
 }
 
-function buildManual(board: BoardModel) {
-  const lineGroups = Array.from(new Set(board.lines.map((line) => line.lineGroupId))).length;
+function buildManual (board: BoardModel) {
+  const lineGroups = Array.from(new Set(board.lines.map((line) => line.lineGroupId))).length
   return `# Madison Exchange — Operator Manual
 
 The room opens hot and crowded, with the old Madison Avenue board humming
@@ -127,10 +127,10 @@ You are judged in public on Board Efficiency. The full score remains private.
 
 There are ${board.lines.length} live lines on this board, spread across ${lineGroups} visible groups.
 The board will not explain itself. It will, however, repeat its habits if you watch closely enough.
-`;
+`
 }
 
-export function buildStarterPolicy() {
+export function buildStarterPolicy () {
   return `function connect(input) {
   const idle = input.lines.filter((line) => line.status === "idle");
   if (!idle.length) return { lineId: null };
@@ -141,31 +141,31 @@ export function buildStarterPolicy() {
   }
 
   return { lineId: null };
-}`;
+}`
 }
 
 const ARTIFACT_BUILDERS: Record<ArtifactName, (board: BoardModel) => string> = {
-  "manual.md": buildManual,
-  "starter.js": () => buildStarterPolicy(),
-  "lines.json": stringifyLines,
-  "observations.jsonl": stringifyObservations,
-};
+  'manual.md': buildManual,
+  'starter.js': () => buildStarterPolicy(),
+  'lines.json': stringifyLines,
+  'observations.jsonl': stringifyObservations
+}
 
-export function buildShiftArtifacts(seedOrBoard: string | BoardModel): ShiftArtifacts {
-  const board = typeof seedOrBoard === "string" ? createBoard(seedOrBoard) : seedOrBoard;
+export function buildShiftArtifacts (seedOrBoard: string | BoardModel): ShiftArtifacts {
+  const board = typeof seedOrBoard === 'string' ? createBoard(seedOrBoard) : seedOrBoard
   return {
     board,
     manualMd: buildManual(board),
     starterJs: buildStarterPolicy(),
     linesJson: stringifyLines(board),
-    observationsJsonl: stringifyObservations(board),
-  };
+    observationsJsonl: stringifyObservations(board)
+  }
 }
 
-export function buildArtifactContent(
+export function buildArtifactContent (
   name: ArtifactName,
-  seedOrBoard: string | BoardModel,
+  seedOrBoard: string | BoardModel
 ): string {
-  const board = typeof seedOrBoard === "string" ? createBoard(seedOrBoard) : seedOrBoard;
-  return ARTIFACT_BUILDERS[name](board);
+  const board = typeof seedOrBoard === 'string' ? createBoard(seedOrBoard) : seedOrBoard
+  return ARTIFACT_BUILDERS[name](board)
 }

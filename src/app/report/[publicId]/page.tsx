@@ -1,19 +1,19 @@
-import { notFound } from "next/navigation";
-import { ReportCard } from "@/components/report/ReportCard";
-import { getReportView } from "@/lib/shifts";
+import { notFound } from 'next/navigation'
+import { ReportCard } from '@/components/report/ReportCard'
+import { getReportView } from '@/lib/shifts'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
-export default async function ReportPage({
-  params,
+export default async function ReportPage ({
+  params
 }: {
   params: Promise<{ publicId: string }>;
 }) {
-  const { publicId } = await params;
-  const report = await getReportView(publicId);
+  const { publicId } = await params
+  const report = await getReportView(publicId)
 
   if (!report) {
-    notFound();
+    notFound()
   }
-  return <ReportCard publicId={publicId} report={report} />;
+  return <ReportCard publicId={publicId} report={report} />
 }
