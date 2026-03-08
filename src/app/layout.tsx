@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Syne } from "next/font/google";
+import Link from "next/link";
 import { DialRoot } from "dialkit";
 import "dialkit/styles.css";
 import "./globals.css";
@@ -34,7 +35,7 @@ export default function RootLayout({
               <span className="status-bar__dot status-bar__dot--amber" />
               <span className="status-bar__dot status-bar__dot--red" />
             </span>
-            <span className="status-bar__label">Firecrawl Exchange — Central Office</span>
+            <Link href="/" className="status-bar__label">Firecrawl Exchange — Central Office</Link>
           </div>
           <div className="status-bar__right">
             <span className="status-bar__dot status-bar__dot--green" />

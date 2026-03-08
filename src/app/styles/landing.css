@@ -454,12 +454,21 @@
 /* ─── Responsive ─── */
 
 @media (max-width: 1100px) {
-  .switchboard-pattern { display: none; }
+  .switchboard-pattern {
+    right: 50%;
+    transform: translateX(50%);
+    opacity: 0.35;
+  }
   .hero__firecrawl,
   .hero__exchange { font-size: clamp(3rem, 7vw, 80px); }
 }
 
 @media (max-width: 760px) {
+  .switchboard-pattern {
+    transform: translateX(50%) scale(0.7);
+    transform-origin: top center;
+    opacity: 0.25;
+  }
   .hero { padding: 40px 20px 0; }
   .hero-lede { padding: 24px 20px 32px; }
   .hero-lede__cta-row { flex-direction: column; align-items: flex-start; gap: 16px; }

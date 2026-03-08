@@ -48,6 +48,7 @@ body:has(.console-shell) .firecrawl-header {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink);
+  text-decoration: none;
 }
 
 .status-bar__right .status-bar__label {
