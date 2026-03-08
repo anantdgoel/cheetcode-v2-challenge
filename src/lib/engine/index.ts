@@ -1,6 +1,6 @@
 export { createBoard, createObservations, createPressureCurve, createTraffic } from "./board";
 export { buildArtifactContent, buildShiftArtifacts, buildStarterPolicy } from "./artifacts";
-export { formatPercent, formatTitle, presentLeaderboardEntry, buildReport } from "./report";
+export { formatPercent, formatTitle, buildReport } from "./report";
 export { computeHiddenScore, getTitleForScore } from "./scoring";
 export { summarizeProbe } from "./probe-summary";
 export { simulateExchange } from "./runtime";

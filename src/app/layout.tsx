@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { Syne } from "next/font/google";
+import { DialRoot } from "dialkit";
+import "dialkit/styles.css";
 import "./globals.css";
-import AuthProvider from "@/components/AuthProvider";
+
+const syne = Syne({ subsets: ["latin"], weight: ["800"], variable: "--font-headline" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://madison-exchange.firecrawl.dev"),
@@ -21,14 +25,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={syne.variable}>
       <body>
-        <AuthProvider>
-          <header className="firecrawl-header">
-            <span className="firecrawl-wordmark">Firecrawl</span>
-          </header>
-          {children}
-        </AuthProvider>
+        <header className="firecrawl-header">
+          <div className="status-bar__left">
+            <span className="status-bar__dots">
+              <span className="status-bar__dot status-bar__dot--green" />
+              <span className="status-bar__dot status-bar__dot--amber" />
+              <span className="status-bar__dot status-bar__dot--red" />
+            </span>
+            <span className="status-bar__label">Firecrawl Exchange — Central Office</span>
+          </div>
+          <div className="status-bar__right">
+            <span className="status-bar__dot status-bar__dot--green" />
+            <span className="status-bar__label">System Active</span>
+          </div>
+        </header>
+        {children}
+        {process.env.NODE_ENV === "development" && <DialRoot position="top-right" />}
       </body>
     </html>
   );

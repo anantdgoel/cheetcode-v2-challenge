@@ -1,16 +1,20 @@
 import type { ArtifactName, PolicyValidationResult, ProbeSummary } from "@/lib/contracts/game";
-import { api } from "@/lib/convex-server";
+import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/convex-server";
 import type { StoredRunKind, StoredRunRecord, StoredRunTrigger, StoredShiftRecord } from "./types";
-import { getDataClient } from "./client";
 
 export async function getLatestShiftRecord(github: string): Promise<StoredShiftRecord | null> {
-  const { convex, secret } = getDataClient();
-  return convex.query(api.sessions.getCurrentOwned, { secret, github });
+  return getConvexServerClient().query(api.sessions.getCurrentOwned, {
+    github,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function getOwnedShiftRecord(github: string, shiftId: string): Promise<StoredShiftRecord | null> {
-  const { convex, secret } = getDataClient();
-  return convex.query(api.sessions.getOwnedShift, { secret, github, shiftId });
+  return getConvexServerClient().query(api.sessions.getOwnedShift, {
+    github,
+    secret: getConvexMutationSecret(),
+    shiftId,
+  });
 }
 
 export async function createShiftRecord(params: {
@@ -23,8 +27,10 @@ export async function createShiftRecord(params: {
   phase1EndsAt: number;
   expiresAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.start, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.start, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function saveDraftRecord(params: {
@@ -33,8 +39,10 @@ export async function saveDraftRecord(params: {
   source: string;
   savedAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.saveDraft, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.saveDraft, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function storeValidationRecord(params: {
@@ -44,8 +52,10 @@ export async function storeValidationRecord(params: {
   validation: PolicyValidationResult;
   checkedAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.storeValidation, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.storeValidation, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function recordArtifactFetch(params: {
@@ -54,8 +64,10 @@ export async function recordArtifactFetch(params: {
   name: ArtifactName;
   at: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.recordArtifactFetch, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.recordArtifactFetch, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function acceptRunRecord(params: {
@@ -70,8 +82,10 @@ export async function acceptRunRecord(params: {
     sourceSnapshot: string;
   };
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.acceptRun, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.acceptRun, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function completeProbeRunRecord(params: {
@@ -81,8 +95,10 @@ export async function completeProbeRunRecord(params: {
   summary: ProbeSummary;
   resolvedAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.completeProbeRun, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.completeProbeRun, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function completeFinalRunRecord(params: {
@@ -95,8 +111,10 @@ export async function completeFinalRunRecord(params: {
   chiefOperatorNote: string;
   resolvedAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.completeFinalRun, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.completeFinalRun, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }
 
 export async function markExpiredNoResult(params: {
@@ -104,6 +122,8 @@ export async function markExpiredNoResult(params: {
   shiftId: string;
   completedAt: number;
 }) {
-  const { convex, secret } = getDataClient();
-  return convex.mutation(api.sessions.markExpiredNoResult, { secret, ...params });
+  return getConvexServerClient().mutation(api.sessions.markExpiredNoResult, {
+    ...params,
+    secret: getConvexMutationSecret(),
+  });
 }

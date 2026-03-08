@@ -19,7 +19,6 @@ import {
   storeValidationRecord,
 } from "@/lib/data/shift-repository";
 import type { StoredRunRecord, StoredShiftRecord } from "@/lib/data/types";
-import { shapeLandingView } from "./landing-view";
 import { canEditShift, PHASE_1_MS, PROBE_ORDER, SHIFT_MS, shouldAutoFinalize, shouldExpireWithoutResult } from "./shift-lifecycle";
 import { shapeShiftView } from "./shift-view";
 
@@ -354,11 +353,11 @@ export async function getLandingView(github: string | null): Promise<LandingView
     github ? getCurrentShiftForGithub(github) : Promise.resolve(null),
   ]);
 
-  return shapeLandingView({
+  return {
     leaderboard: leaderboardResult.status === "fulfilled" ? leaderboardResult.value : [],
     activeShiftId: currentShiftResult.status === "fulfilled" ? currentShiftResult.value?.id ?? null : null,
     github,
-  });
+  };
 }
 
 export async function getReportView(publicId: string) {

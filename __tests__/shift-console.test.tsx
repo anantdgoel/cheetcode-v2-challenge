@@ -3,7 +3,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import ShiftConsole from "../src/components/ShiftConsole";
+import ShiftConsole from "../src/features/shift/ShiftConsole";
 import type { ShiftView } from "../src/lib/contracts/views";
 
 const pushMock = vi.fn();

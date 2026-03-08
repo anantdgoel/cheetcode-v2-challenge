@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import ShiftConsole from "@/components/ShiftConsole";
+import ShiftConsole from "@/features/shift/ShiftConsole";
 import { getOwnedShiftForGithub } from "@/lib/app/shift-service";
 import { getGithubUsername } from "@/lib/server-auth";
 import { isDesktopUserAgent } from "@/lib/validation";

@@ -1,5 +1,4 @@
 import type { FinalReport, Title } from "@/lib/contracts/game";
-import type { LeaderboardEntry } from "@/lib/contracts/views";
 import { createRng } from "./shared";
 import { getTitleForScore } from "./scoring";
 
@@ -65,12 +64,4 @@ export function formatTitle(title: Title) {
 
 export function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
-}
-
-export function presentLeaderboardEntry(entry: LeaderboardEntry) {
-  return {
-    ...entry,
-    displayEfficiency: formatPercent(entry.boardEfficiency),
-    displayTitle: formatTitle(entry.title),
-  };
 }

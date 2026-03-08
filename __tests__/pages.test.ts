@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 describe("public surface source", () => {
   it("landing page references Firecrawl Exchange rather than CheetCode", () => {
-    const pageSource = fs.readFileSync("src/components/HeroSection.tsx", "utf8");
+    const pageSource = fs.readFileSync("src/components/landing/HeroSection.tsx", "utf8");
     expect(pageSource.includes("Firecrawl")).toBe(true);
     expect(pageSource.includes("Exchange")).toBe(true);
     expect(pageSource.includes("CheetCode")).toBe(false);

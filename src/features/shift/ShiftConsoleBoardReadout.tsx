@@ -1,4 +1,4 @@
-import type { ReadoutField } from "./types";
+import type { ReadoutField } from "./shift-console-state";
 
 export function ShiftConsoleBoardReadout({ readoutFields }: { readoutFields: ReadoutField[][] }) {
   return (
@@ -11,7 +11,7 @@ export function ShiftConsoleBoardReadout({ readoutFields }: { readoutFields: Rea
             {row.map((field) => (
               <div key={field.label} className="console-readout__field">
                 <span className="console-readout__label">{field.label}</span>
-                <span className={`console-readout__value${field.modifier}`}>{field.value}</span>
+                <span className={`console-readout__value${field.modifier ?? ""}`}>{field.value}</span>
               </div>
             ))}
           </div>

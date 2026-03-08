@@ -1,14 +1,16 @@
-import type { ActiveTab, SavingState } from "./types";
-import { ARTIFACT_DISPLAY, ARTIFACTS } from "./useShiftConsoleController";
-import type { ArtifactName } from "@/lib/contracts/game";
 import type { ReactNode } from "react";
+import type { ArtifactName } from "@/lib/contracts/game";
+import {
+  SHIFT_ARTIFACT_LABELS,
+  SHIFT_ARTIFACTS,
+  type ActiveTab,
+  type SavingState,
+} from "./shift-console-state";
 
 function inlineCode(text: string): ReactNode {
   const parts = text.split(/`([^`]+)`/);
   if (parts.length === 1) return text;
-  return parts.map((part, index) =>
-    index % 2 === 1 ? <code key={index}>{part}</code> : part,
-  );
+  return parts.map((part, index) => (index % 2 === 1 ? <code key={index}>{part}</code> : part));
 }
 
 function renderManual(raw: string) {
@@ -21,26 +23,40 @@ function renderManual(raw: string) {
     const line = lines[index];
 
     if (line.startsWith("# ")) {
-      elements.push(<h2 key={key++} className="console-manual__title">{line.slice(2)}</h2>);
+      elements.push(
+        <h2 key={key++} className="console-manual__title">
+          {line.slice(2)}
+        </h2>,
+      );
       index += 1;
       continue;
     }
 
     if (line.startsWith("## ")) {
-      const heading = line.slice(3).replace(/^\d+\.\s*/, "");
-      elements.push(<p key={key++} className="console-manual__heading">{heading}</p>);
+      elements.push(
+        <p key={key++} className="console-manual__heading">
+          {line.slice(3).replace(/^\d+\.\s*/, "")}
+        </p>,
+      );
       index += 1;
       continue;
     }
 
     if (line.startsWith("    ")) {
       const codeLines: string[] = [];
-      while (index < lines.length && (lines[index].startsWith("    ") || lines[index].trim() === "")) {
+      while (
+        index < lines.length &&
+        (lines[index].startsWith("    ") || lines[index].trim() === "")
+      ) {
         codeLines.push(lines[index].slice(4));
         index += 1;
       }
-      while (codeLines.length > 0 && codeLines[codeLines.length - 1].trim() === "") codeLines.pop();
-      elements.push(<pre key={key++} className="console-manual__code">{codeLines.join("\n")}</pre>);
+      while (codeLines.at(-1)?.trim() === "") codeLines.pop();
+      elements.push(
+        <pre key={key++} className="console-manual__code">
+          {codeLines.join("\n")}
+        </pre>,
+      );
       continue;
     }
 
@@ -52,7 +68,9 @@ function renderManual(raw: string) {
       }
       elements.push(
         <ul key={key++} className="console-manual__list">
-          {items.map((item, itemIndex) => <li key={itemIndex}>{inlineCode(item)}</li>)}
+          {items.map((item, itemIndex) => (
+            <li key={itemIndex}>{inlineCode(item)}</li>
+          ))}
         </ul>,
       );
       continue;
@@ -74,13 +92,17 @@ function renderManual(raw: string) {
       paragraphLines.push(lines[index]);
       index += 1;
     }
-    elements.push(<p key={key++} className="console-manual__para">{inlineCode(paragraphLines.join("\n"))}</p>);
+    elements.push(
+      <p key={key++} className="console-manual__para">
+        {inlineCode(paragraphLines.join("\n"))}
+      </p>,
+    );
   }
 
   return elements;
 }
 
-function EditorNotice({ type, message }: { type: "success" | "error"; message: string }) {
+function EditorNotice({ type, message }: { message: string; type: "success" | "error" }) {
   return (
     <div className="console-editor__notice">
       <span className={`console-editor__notice-dot console-editor__notice-dot--${type}`} />
@@ -103,24 +125,24 @@ export function ShiftConsoleArtifactPanel(props: {
   savingState: SavingState;
   statusNotice: string;
 }) {
-  const activeArtifact = props.activeTab !== "editor" ? props.activeTab : null;
-  const notice = props.latestValidationError
-    ? <EditorNotice type="error" message={props.latestValidationError} />
-    : props.statusNotice
-      ? <EditorNotice type="success" message={props.statusNotice} />
-      : null;
+  const activeArtifact = props.activeTab === "editor" ? null : props.activeTab;
+  const notice = props.latestValidationError ? (
+    <EditorNotice type="error" message={props.latestValidationError} />
+  ) : props.statusNotice ? (
+    <EditorNotice type="success" message={props.statusNotice} />
+  ) : null;
 
   return (
     <>
       <div className="console-tabs">
-        {ARTIFACTS.map((name) => (
+        {SHIFT_ARTIFACTS.map((artifact) => (
           <button
-            key={name}
+            key={artifact}
             type="button"
-            className={`console-tab${props.activeTab === name ? " console-tab--active" : ""}`}
-            onClick={() => props.onTabChange(name)}
+            className={`console-tab${props.activeTab === artifact ? " console-tab--active" : ""}`}
+            onClick={() => props.onTabChange(artifact)}
           >
-            {ARTIFACT_DISPLAY[name]}
+            {SHIFT_ARTIFACT_LABELS[artifact]}
           </button>
         ))}
         <button

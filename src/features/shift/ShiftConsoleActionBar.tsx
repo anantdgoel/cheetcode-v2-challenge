@@ -1,4 +1,4 @@
-import type { ActionStep } from "./types";
+import type { ActionStep } from "./shift-console-state";
 
 export function ShiftConsoleActionBar({ steps }: { steps: ActionStep[] }) {
   return (
@@ -9,7 +9,12 @@ export function ShiftConsoleActionBar({ steps }: { steps: ActionStep[] }) {
           <button
             type="button"
             className={`action-step action-step--${step.state}`}
-            disabled={step.state === "disabled" || step.state === "completed" || step.state === "upcoming" || step.loading}
+            disabled={
+              step.state === "disabled" ||
+              step.state === "completed" ||
+              step.state === "upcoming" ||
+              step.loading
+            }
             onClick={step.action}
           >
             <span className="action-step__number">{step.number}</span>

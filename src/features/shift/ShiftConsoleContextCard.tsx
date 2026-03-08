@@ -2,15 +2,17 @@ import Link from "next/link";
 import type { ProbeSummary } from "@/lib/contracts/game";
 import type { ShiftView } from "@/lib/contracts/views";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
-import { conditionDotClass, formatIncidents, titleToLineNumber } from "./shift-console-view-model";
+import { getTitlePresentation } from "@/lib/frontend/title-display";
+import { conditionDotClass, formatIncidents } from "./shift-console-state";
 
 export function ShiftConsoleContextCard(props: {
-  shift: ShiftView;
   activeProbeSummary?: ProbeSummary;
+  shift: ShiftView;
 }) {
   if (props.shift.finalEvaluation?.metrics) {
     const title = props.shift.finalEvaluation.title ?? "off_the_board";
-    const line = titleToLineNumber(title);
+    const { line } = getTitlePresentation(title);
+
     return (
       <div className="console-context-card console-context-card--final">
         <p className="console-final__eyebrow">Final Evaluation</p>
@@ -18,7 +20,7 @@ export function ShiftConsoleContextCard(props: {
           <span className="console-metric-label">Classification</span>
           <h2 className="console-final__title">{formatTitle(title)}</h2>
           <div className="console-final__badges">
-            {line && <span className="console-final__line-badge">Line {line}</span>}
+            {line !== "—" && <span className="console-final__line-badge">Line {line}</span>}
             <span className="console-final__board-certified">Board Certified</span>
           </div>
         </div>
@@ -36,14 +38,16 @@ export function ShiftConsoleContextCard(props: {
               value: `${props.shift.finalEvaluation.metrics.connectedCalls} / ${props.shift.finalEvaluation.metrics.totalCalls}`,
             },
             {
+              danger: true,
               label: "Dropped",
               value: String(props.shift.finalEvaluation.metrics.droppedCalls),
-              danger: true,
             },
           ].map((metric) => (
             <div key={metric.label} className="console-final__call-metric">
               <span className="console-metric-label">{metric.label}</span>
-              <span className={`console-metric-value${metric.danger ? " console-metric-value--danger" : ""}`}>{metric.value}</span>
+              <span className={`console-metric-value${metric.danger ? " console-metric-value--danger" : ""}`}>
+                {metric.value}
+              </span>
             </div>
           ))}
         </div>
@@ -58,20 +62,6 @@ export function ShiftConsoleContextCard(props: {
   }
 
   if (props.activeProbeSummary) {
-    const trialMetrics = [
-      [
-        { label: "Efficiency", value: formatPercent(props.activeProbeSummary.metrics.efficiency), large: true },
-        {
-          label: "Connected",
-          value: `${props.activeProbeSummary.metrics.connectedCalls} / ${props.activeProbeSummary.metrics.totalCalls}`,
-        },
-      ],
-      [
-        { label: "Dropped", value: String(props.activeProbeSummary.metrics.droppedCalls), danger: true },
-        { label: "Avg Hold", value: `${props.activeProbeSummary.metrics.avgHoldSeconds.toFixed(1)}s` },
-      ],
-    ];
-
     return (
       <div className="console-context-card">
         <p className="console-card-eyebrow">Trial Shift Results</p>
@@ -81,7 +71,26 @@ export function ShiftConsoleContextCard(props: {
             {props.activeProbeSummary.deskCondition.charAt(0).toUpperCase() + props.activeProbeSummary.deskCondition.slice(1)}
           </span>
         </div>
-        {trialMetrics.map((row, rowIndex) => (
+        {[
+          [
+            { label: "Efficiency", large: true, value: formatPercent(props.activeProbeSummary.metrics.efficiency) },
+            {
+              label: "Connected",
+              value: `${props.activeProbeSummary.metrics.connectedCalls} / ${props.activeProbeSummary.metrics.totalCalls}`,
+            },
+          ],
+          [
+            {
+              danger: true,
+              label: "Dropped",
+              value: String(props.activeProbeSummary.metrics.droppedCalls),
+            },
+            {
+              label: "Avg Hold",
+              value: `${props.activeProbeSummary.metrics.avgHoldSeconds.toFixed(1)}s`,
+            },
+          ],
+        ].map((row, rowIndex) => (
           <div key={rowIndex} className="console-trial__metrics">
             {row.map((metric) => (
               <div key={metric.label} className="console-trial__metric">
