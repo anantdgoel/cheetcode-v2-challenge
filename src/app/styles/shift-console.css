@@ -586,6 +586,16 @@
   gap: 18px;
 }
 
+.console-context-card--tight {
+  border-color: var(--amber-border);
+  box-shadow: 0 0 16px rgba(210, 140, 30, 0.12);
+}
+
+.console-context-card--critical {
+  border-color: var(--danger);
+  box-shadow: 0 0 16px rgba(235, 52, 36, 0.10);
+}
+
 .console-supervisor__empty {
   font-family: var(--font-sans);
   font-size: 14px;
@@ -593,6 +603,7 @@
   color: var(--ink-tertiary);
   margin: 0;
 }
+
 
 .console-trial__condition {
   display: flex;

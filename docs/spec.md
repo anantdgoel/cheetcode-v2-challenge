@@ -1,10 +1,10 @@
-# Madison Exchange v3.2: Canonical Product Spec
+# Firecrawl Exchange v3.2: Canonical Product Spec
 
 ## Executive Summary
 
-Madison Exchange v3.2 is a routing challenge built to measure whether candidates can wield agents well: ingest messy evidence, fit a model, run probes, revise the model, and ship a better routing policy.
+Firecrawl Exchange v3.2 is a routing challenge built to measure whether candidates can wield agents well: ingest messy evidence, fit a model, run probes, revise the model, and ship a better routing policy.
 
-The game remains a 1963 Madison Avenue telephone exchange. The theme matters for product feel, but the authoritative surface is the runtime contract, artifact bundle, probe outputs, and deterministic simulator.
+The game remains a 1963 telephone exchange. The theme matters for product feel, but the authoritative surface is the runtime contract, artifact bundle, probe outputs, and deterministic simulator.
 
 v3.2 replaces the old 3-family permutation puzzle with a broader but simpler hidden model:
 - boards draw from `5` possible line families, with `3-5` active on any given board
@@ -16,14 +16,14 @@ v3.2 replaces the old 3-family permutation puzzle with a broader but simpler hid
 
 ## Product Goals
 
-Madison Exchange v3.2 should:
+Firecrawl Exchange v3.2 should:
 - remain a coding-heavy routing game with one submitted JavaScript policy
 - reward local analysis, probe-feedback loops, and repeated experimentation
 - give strong agent workflows room to improve across many boards
 - make single-board solving depend on robust inference instead of permutation cracking
 - keep the system deterministic and reviewable enough for benchmark-driven balance work
 
-Madison Exchange v3.2 should not:
+Firecrawl Exchange v3.2 should not:
 - collapse into a static visible-family lookup
 - require hidden-state leakage to solve well
 - punish players with arbitrary mid-run rule rewrites
@@ -216,7 +216,7 @@ It is intentionally not a full answer key:
 
 ## Core Game Model
 
-Madison Exchange v3.2 is built around one central question:
+Firecrawl Exchange v3.2 is built around one central question:
 
 Which visible line groups handle which call families well, how fast do they collapse under pressure, and how should the policy adapt when the desk changes shape mid-run?
 
@@ -469,7 +469,7 @@ Narrative rules:
 
 ## Anti-Gameability Rules
 
-Madison Exchange v3.2 should remain hard to trivialize.
+Firecrawl Exchange v3.2 should remain hard to trivialize.
 
 Required protections:
 - no public board seeds
@@ -596,7 +596,7 @@ The implementation should maintain four validation layers.
 
 ## Non-Goals
 
-Madison Exchange v3.2 does not aim to:
+Firecrawl Exchange v3.2 does not aim to:
 - preserve backward compatibility with older challenge internals
 - let manual play compete with a strong toolchain
 - reveal the exact hidden model to players

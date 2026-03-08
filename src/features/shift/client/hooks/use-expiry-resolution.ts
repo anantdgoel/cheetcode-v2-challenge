@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
 import type { ShiftView } from '@/core/domain/views'
 import { fetchShift } from '../api'
 
@@ -12,6 +12,7 @@ export function useShiftExpiryResolution (
 ) {
   const expiryPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const resolvingExpiryRef = useRef(false)
+  const [expired, setExpired] = useState(() => Date.now() >= shift.expiresAt)
 
   useEffect(() => {
     return () => {
@@ -19,9 +20,18 @@ export function useShiftExpiryResolution (
     }
   }, [])
 
+  // Fire a timeout at exactly expiresAt to flip the expired flag
+  useEffect(() => {
+    if (expired) return
+    const delay = Math.max(0, shift.expiresAt - Date.now())
+    const timer = setTimeout(() => setExpired(true), delay)
+    return () => clearTimeout(timer)
+  }, [shift.expiresAt, expired])
+
+  // Start polling once expired — the expired flag changing triggers this effect
   useEffect(() => {
     if (
-      Date.now() < shift.expiresAt ||
+      !expired ||
       shift.status === 'completed' ||
       shift.status === 'expired_no_result' ||
       resolvingExpiryRef.current
@@ -60,5 +70,5 @@ export function useShiftExpiryResolution (
       if (expiryPollTimer.current) clearTimeout(expiryPollTimer.current)
       resolvingExpiryRef.current = false
     }
-  }, [mountedRef, setConsoleError, setShift, shift.expiresAt, shift.id, shift.status])
+  }, [expired, mountedRef, setConsoleError, setShift, shift.id, shift.status])
 }

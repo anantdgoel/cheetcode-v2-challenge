@@ -1,6 +1,6 @@
 # Architecture
 
-Madison Exchange now organizes code around three roots:
+Firecrawl Exchange now organizes code around three roots:
 
 - `src/features/*`: user-facing slices. Each slice owns its feature entrypoints and any client/server modules that are specific to that workflow.
 - `src/core/*`: pure domain and engine code. These modules do not import Next.js, React, or Convex.

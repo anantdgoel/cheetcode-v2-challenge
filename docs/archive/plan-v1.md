@@ -1,7 +1,7 @@
-# Madison Exchange v1: Detailed High-Level Product Spec
+# Firecrawl Exchange v1: Detailed High-Level Product Spec
 
 ## Summary
-- Madison Exchange is one public, repeatable coding challenge with one identity and one fantasy: a live 1963 Madison Avenue telephone exchange operated by submitted code.
+- Firecrawl Exchange is one public, repeatable coding challenge with one identity and one fantasy: a live 1963 telephone exchange operated by submitted code.
 - The browser is the official control surface. There is no public API for starting shifts, fetching bundles, running trials, or submitting results.
 - The player's real work happens locally: ingest the evidence bundle, infer hidden board behavior, generate a routing policy, use one Trial Shift if desired, then Go Live.
 - The product is public to browse, but official play is attributed. Anyone can view the landing page, leaderboard, and public Shift Reports; starting a shift requires GitHub sign-in.
@@ -16,7 +16,7 @@
 - The core fantasy remains literal: calls arrive, lines have visible live state, premium trunk lines are scarce, and the operator must decide whether to connect now or send to hold.
 
 ## Canonical Player Flow
-1. Visitor lands on Madison Exchange, reads the premise, browses the leaderboard, and sees public Shift Reports.
+1. Visitor lands on Firecrawl Exchange, reads the premise, browses the leaderboard, and sees public Shift Reports.
 2. Player signs in with GitHub.
 3. Player starts a Shift and immediately receives a session-specific evidence bundle.
 4. Phase 1 begins: 5 minutes for bundle inspection, local agent execution, code generation, and optional use of the single Trial Shift.
@@ -150,7 +150,7 @@
 - Stored traces for accepted trials and finals, including enough data to debug disputes, failures, and suspicious behavior.
 
 ## Acceptance Scenarios
-- A new visitor can understand that Madison Exchange is a coding challenge for local agents, not a browser puzzle.
+- A new visitor can understand that Firecrawl Exchange is a coding challenge for local agents, not a browser puzzle.
 - A player can complete the full loop from sign-in to Shift Report without needing any hidden documentation.
 - Manual browsing alone feels obviously insufficient compared to using a prebuilt local agent system.
 - A naive "first free line" policy performs meaningfully worse than a policy derived from evidence.

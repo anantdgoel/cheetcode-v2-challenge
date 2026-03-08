@@ -1,6 +1,6 @@
 # Agent Baselines
 
-Madison Exchange v3 is balanced against a fixed benchmark seed suite. These baselines are now the authoritative score bands for simulator tuning and regression checks.
+Firecrawl Exchange v3 is balanced against a fixed benchmark seed suite. These baselines are now the authoritative score bands for simulator tuning and regression checks.
 
 ## Target bands
 
@@ -78,4 +78,4 @@ If the source-generated benchmark policies diverge from the deterministic benchm
 
 ## Historical note
 
-Old v2 live-run numbers around `30-34%` are no longer relevant for balancing decisions. Madison Exchange v3 uses a different runtime contract, a different artifact set, a different probe structure, and a different hidden model.
+Old v2 live-run numbers around `30-34%` are no longer relevant for balancing decisions. Firecrawl Exchange v3 uses a different runtime contract, a different artifact set, a different probe structure, and a different hidden model.

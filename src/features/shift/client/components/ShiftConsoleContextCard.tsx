@@ -87,6 +87,11 @@ export function ShiftConsoleContextCard (props: {
     )
   }
 
+  const toneClass = timing.clockTone === 'tight'
+    ? ' console-context-card--tight'
+    : timing.clockTone === 'critical'
+      ? ' console-context-card--critical'
+      : ''
   const showTimingNotice = timing.clockTone === 'critical'
 
   if (props.activeProbeSummary) {
@@ -112,7 +117,7 @@ export function ShiftConsoleContextCard (props: {
     ]
 
     return (
-      <div className="console-context-card">
+      <div className={`console-context-card${toneClass}`}>
         <p className="console-card-eyebrow">Trial Shift Results</p>
         {showTimingNotice && (
           <p className="console-context-card__notice console-context-card__notice--warning">
@@ -182,7 +187,7 @@ export function ShiftConsoleContextCard (props: {
   }
 
   return (
-    <div className="console-context-card">
+    <div className={`console-context-card${toneClass}`}>
       <p className="console-card-eyebrow">Supervisor Console</p>
       {timing.clockTone === 'critical' && timing.statusNotice && (
         <p className="console-context-card__notice console-context-card__notice--warning">
@@ -193,8 +198,8 @@ export function ShiftConsoleContextCard (props: {
         {timing.clockTone === 'critical'
           ? 'The last bell is ringing. Only a valid draft reaches the live room.'
           : timing.clockTone === 'tight'
-            ? 'The trial floor is shut. Work the evidence you have and call the room.'
-            : 'No trial dispatched yet.\nStudy the dossier. Write your policy. Validate when ready.'}
+            ? 'The trial floor is shut. Work the evidence you have and go live.'
+            : 'No trial dispatched yet. Study the dossier, write your policy, and validate when ready. Trial results will appear here.'}
       </p>
     </div>
   )

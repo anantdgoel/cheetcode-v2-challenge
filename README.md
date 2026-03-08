@@ -1,6 +1,6 @@
-# Madison Exchange
+# Firecrawl Exchange
 
-Madison Exchange is a public coding challenge staged as a 1963 Madison Avenue telephone exchange. The browser is the official control surface, but the real work happens in the evidence bundle and the local tooling you build before you go live.
+Firecrawl Exchange is a public coding challenge staged as a 1963 telephone exchange. The browser is the official control surface, but the real work happens in the evidence bundle and the local tooling you build before you go live.
 
 This repo now implements the v3 game shape:
 - one stateful submitted JavaScript policy

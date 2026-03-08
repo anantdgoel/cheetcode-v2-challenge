@@ -6,7 +6,6 @@ const FINAL_WARNING_MS = 10_000
 
 export const SHIFT_ARTIFACTS: ArtifactName[] = [
   'manual.md',
-  'starter.js',
   'lines.json',
   'observations.jsonl'
 ]
@@ -125,7 +124,7 @@ function getStepStates (shift: ShiftView): [StepState, StepState, StepState] {
     hasValidated ? 'completed' : isTerminal ? 'disabled' : 'active',
     hasUsedAllProbes
       ? 'completed'
-      : !hasValidated || isTerminal || !shift.nextProbeKind
+      : !hasValidated || isTerminal || !shift.nextProbeKind || shift.status === 'active_phase_2'
           ? 'disabled'
           : 'active',
     hasFinal ? 'completed' : shift.canGoLive ? 'active' : isTerminal ? 'disabled' : 'upcoming'
@@ -194,7 +193,9 @@ export function deriveShiftConsoleState (params: {
       },
       {
         action: params.onRunProbe,
-        label: `Trial Shift (${shift.remainingProbes})`,
+        label: shift.status === 'active_phase_2' && shift.remainingProbes > 0
+          ? 'Trial Floor Closed'
+          : `Trial Shift (${shift.remainingProbes})`,
         loading: runningProbe,
         loadingLabel: 'Running...',
         number: '2',
