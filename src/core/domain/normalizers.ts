@@ -1,5 +1,5 @@
 import { TITLES } from './game'
-import type { LeaderboardEntry, ReportView } from './views'
+import type { LeaderboardEntry, PaginatedLeaderboard, ReportView } from './views'
 
 export function expectLiteralValue<T extends string> (
   value: string,
@@ -51,5 +51,21 @@ export function normalizeLeaderboardRecord (entry: {
   return {
     ...entry,
     title: expectLiteralValue(entry.title, TITLES, 'leaderboard.title')
+  }
+}
+
+export function normalizePaginatedLeaderboard (raw: {
+  topEntries: Parameters<typeof normalizeLeaderboardRecord>[0][];
+  dispatchEntries: Parameters<typeof normalizeLeaderboardRecord>[0][];
+  totalEntries: number;
+  dispatchPage: number;
+  totalDispatchPages: number;
+}): PaginatedLeaderboard {
+  return {
+    topEntries: raw.topEntries.map(normalizeLeaderboardRecord),
+    dispatchEntries: raw.dispatchEntries.map(normalizeLeaderboardRecord),
+    totalEntries: raw.totalEntries,
+    dispatchPage: raw.dispatchPage,
+    totalDispatchPages: raw.totalDispatchPages
   }
 }

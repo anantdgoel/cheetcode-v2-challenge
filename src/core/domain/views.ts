@@ -63,6 +63,14 @@ export type LeaderboardEntry = {
   avgHoldSeconds?: number;
 };
 
+export type PaginatedLeaderboard = {
+  topEntries: LeaderboardEntry[];
+  dispatchEntries: LeaderboardEntry[];
+  totalEntries: number;
+  dispatchPage: number;
+  totalDispatchPages: number;
+};
+
 export type LandingView = {
   leaderboard: LeaderboardEntry[];
   activeShiftId?: string | null;

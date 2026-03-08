@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import { internalMutation, internalQuery, query } from './_generated/server'
 import { finalReportValidator, leaderboardEntryValidator } from './validators'
 
@@ -45,16 +46,50 @@ export function toPublicLeaderboard<T extends {
   return entries.sort(compareLeaderboardEntries).slice(0, 100)
 }
 
+async function getLeaderboardCount (ctx: QueryCtx) {
+  const counter = await ctx.db.query('leaderboardMeta').first()
+  return counter?.totalEntries ?? 0
+}
+
+async function incrementLeaderboardCount (ctx: MutationCtx) {
+  const counter = await ctx.db.query('leaderboardMeta').first()
+  if (counter) {
+    await ctx.db.patch(counter._id, { totalEntries: counter.totalEntries + 1 })
+  } else {
+    await ctx.db.insert('leaderboardMeta', { totalEntries: 1 })
+  }
+}
+
 export const getPublic = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    dispatchPage: v.optional(v.number()),
+    dispatchPageSize: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const pageSize = args.dispatchPageSize ?? 5
+    const page = args.dispatchPage ?? 0
+    const needed = 3 + page * pageSize + pageSize
+
     const entries = await ctx.db
       .query('leaderboardBest')
       .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
       .order('desc')
-      .collect()
+      .take(needed)
 
-    return toPublicLeaderboard(entries)
+    const totalEntries = await getLeaderboardCount(ctx) || entries.length
+
+    const topEntries = entries.slice(0, 3)
+    const dispatchStart = 3 + page * pageSize
+    const dispatchEntries = entries.slice(dispatchStart, dispatchStart + pageSize)
+    const totalDispatchPages = Math.max(1, Math.ceil(Math.max(0, totalEntries - 3) / pageSize))
+
+    return {
+      topEntries,
+      dispatchEntries,
+      totalEntries,
+      dispatchPage: page,
+      totalDispatchPages
+    }
   }
 })
 
@@ -84,6 +119,7 @@ export const upsertBest = internalMutation({
     }
 
     const id = await ctx.db.insert('leaderboardBest', args.entry)
+    await incrementLeaderboardCount(ctx)
     return await ctx.db.get(id)
   }
 })
@@ -128,6 +164,7 @@ export const maybeUpsertFromReport = internalMutation({
     }
 
     const id = await ctx.db.insert('leaderboardBest', entry)
+    await incrementLeaderboardCount(ctx)
     return await ctx.db.get(id)
   }
 })

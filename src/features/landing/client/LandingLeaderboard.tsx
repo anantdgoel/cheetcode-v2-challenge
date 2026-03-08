@@ -2,11 +2,9 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode } from 'react'
 import { formatPercent, formatTitle } from '@/core/engine/report'
-import type { LeaderboardEntry } from '@/core/domain/views'
-
-const PAGE_SIZE = 5
+import type { LeaderboardEntry, PaginatedLeaderboard } from '@/core/domain/views'
 
 /* ─── Animation helpers ─── */
 
@@ -141,14 +139,17 @@ function Chevron ({ direction }: { direction: 'left' | 'right' }) {
 
 /* ─── Main component ─── */
 
-export function LandingLeaderboard ({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
-  const [page, setPage] = useState(0)
-  const rest = leaderboard.slice(3)
-  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE))
-  const currentPage = Math.min(page, totalPages - 1)
-  const pageEntries = rest.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
-  const showStart = currentPage * PAGE_SIZE + 4
-  const showEnd = Math.min((currentPage + 1) * PAGE_SIZE + 3, rest.length + 3)
+export function LandingLeaderboard ({
+  leaderboard,
+  onPageChange
+}: {
+  leaderboard: PaginatedLeaderboard;
+  onPageChange: (page: number) => void;
+}) {
+  const { topEntries, dispatchEntries, totalEntries, dispatchPage, totalDispatchPages } = leaderboard
+  const pageSize = dispatchEntries.length || 5
+  const showStart = dispatchPage * pageSize + 4
+  const showEnd = showStart + dispatchEntries.length - 1
 
   return (
     <div className="leaderboard-card">
@@ -160,13 +161,13 @@ export function LandingLeaderboard ({ leaderboard }: { leaderboard: LeaderboardE
 
       <div className="line-tiles">
         {[0, 1, 2].map((i) => (
-          <FadeIn key={leaderboard[i]?.publicId ?? `slot-${i}`} delay={0.1 + i * 0.1} style={{ flex: 1, minWidth: 0 }}>
-            <LineTile entry={leaderboard[i]} index={i} />
+          <FadeIn key={topEntries[i]?.publicId ?? `slot-${i}`} delay={0.1 + i * 0.1} style={{ flex: 1, minWidth: 0 }}>
+            <LineTile entry={topEntries[i]} index={i} />
           </FadeIn>
         ))}
       </div>
 
-      {rest.length > 0 && (
+      {dispatchEntries.length > 0 && (
         <div className="dispatch-log">
           <FadeIn delay={0.4}>
             <span className="dispatch-log__label">— Board Dispatch Log</span>
@@ -181,8 +182,8 @@ export function LandingLeaderboard ({ leaderboard }: { leaderboard: LeaderboardE
             <span className="dispatch-log__col--efficiency">Efficiency</span>
           </FadeIn>
 
-          {pageEntries.map((entry, i) => {
-            const globalIndex = currentPage * PAGE_SIZE + i + 3
+          {dispatchEntries.map((entry, i) => {
+            const globalIndex = dispatchPage * pageSize + i + 3
             const isOff = entry.title === 'off_the_board'
             const pct = Math.round(entry.boardEfficiency * 100)
 
@@ -211,17 +212,17 @@ export function LandingLeaderboard ({ leaderboard }: { leaderboard: LeaderboardE
             )
           })}
 
-          {totalPages > 1 && (
+          {totalDispatchPages > 1 && (
             <div className="dispatch-log__pagination">
               <span className="dispatch-log__pagination-info">
-                Showing {showStart}–{showEnd} of {leaderboard.length}
+                Showing {showStart}–{showEnd} of {totalEntries}
               </span>
               <div className="dispatch-log__pagination-controls">
-                <button type="button" className="dispatch-log__pagination-btn" disabled={currentPage === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+                <button type="button" className="dispatch-log__pagination-btn" disabled={dispatchPage === 0} onClick={() => onPageChange(Math.max(0, dispatchPage - 1))}>
                   <Chevron direction="left" />
                 </button>
-                <span className="dispatch-log__pagination-label">Page {currentPage + 1} of {totalPages}</span>
-                <button type="button" className="dispatch-log__pagination-btn" disabled={currentPage === totalPages - 1} onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}>
+                <span className="dispatch-log__pagination-label">Page {dispatchPage + 1} of {totalDispatchPages}</span>
+                <button type="button" className="dispatch-log__pagination-btn" disabled={dispatchPage === totalDispatchPages - 1} onClick={() => onPageChange(Math.min(totalDispatchPages - 1, dispatchPage + 1))}>
                   <Chevron direction="right" />
                 </button>
               </div>

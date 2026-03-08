@@ -72,5 +72,9 @@ export default defineSchema({
       'hiddenScore',
       'boardEfficiency',
       'achievedAt'
-    ])
+    ]),
+
+  leaderboardMeta: defineTable({
+    totalEntries: v.number()
+  })
 })
