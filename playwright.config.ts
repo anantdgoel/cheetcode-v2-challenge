@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "__tests__",
+  testMatch: /.*e2e\.test\.ts/,
   timeout: 30_000,
   webServer: {
     command: "npm run dev",

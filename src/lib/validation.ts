@@ -1,49 +1,44 @@
-/**
- * Shared input validation — used client-side for instant feedback
- * and server-side to enforce constraints.
- */
-
-// ── GitHub handle ──────────────────────────────────────────
 const GITHUB_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
 const GITHUB_MAX = 39;
+const SOURCE_MAX_BYTES = 12_000;
 
-export function validateGithub(raw: string): { ok: true; value: string } | { ok: false; error: string } {
-  const v = raw.trim();
-  if (!v) return { ok: false, error: "GitHub username is required" };
-  if (v.length > GITHUB_MAX) return { ok: false, error: `Max ${GITHUB_MAX} characters` };
-  if (!GITHUB_RE.test(v)) return { ok: false, error: "Invalid GitHub username — letters, numbers, and hyphens only" };
-  return { ok: true, value: v };
-}
-
-// ── Email ──────────────────────────────────────────────────
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const EMAIL_MAX = 254;
-
-export function validateEmail(raw: string): { ok: true; value: string } | { ok: false; error: string } {
-  const v = raw.trim().toLowerCase();
-  if (!v) return { ok: false, error: "Email is required" };
-  if (v.length > EMAIL_MAX) return { ok: false, error: "Email too long" };
-  if (!EMAIL_RE.test(v)) return { ok: false, error: "Invalid email address" };
-  return { ok: true, value: v };
-}
-
-// ── X / Twitter handle (optional) ──────────────────────────
-const X_HANDLE_RE = /^@?[a-zA-Z0-9_]{1,15}$/;
-
-export function validateXHandle(raw: string): { ok: true; value: string } | { ok: false; error: string } {
-  const v = raw.trim();
-  if (!v) return { ok: true, value: "" }; // optional
-  if (!X_HANDLE_RE.test(v)) return { ok: false, error: "Invalid X handle" };
-  // Normalize: strip leading @ if present
-  return { ok: true, value: v.startsWith("@") ? v.slice(1) : v };
-}
-
-// ── Code submission ────────────────────────────────────────
-const CODE_MAX_BYTES = 10_000; // 10 KB per problem — generous but prevents abuse
-
-export function validateCode(raw: string): { ok: true; value: string } | { ok: false; error: string } {
-  if (new TextEncoder().encode(raw).length > CODE_MAX_BYTES) {
-    return { ok: false, error: "Code exceeds 10 KB limit" };
+export function validateGithub(
+  raw: string,
+): { ok: true; value: string } | { ok: false; error: string } {
+  const value = raw.trim();
+  if (!value) return { ok: false, error: "GitHub username is required" };
+  if (value.length > GITHUB_MAX) {
+    return { ok: false, error: `GitHub usernames max out at ${GITHUB_MAX} characters` };
   }
-  return { ok: true, value: raw };
+  if (!GITHUB_RE.test(value)) {
+    return {
+      ok: false,
+      error: "GitHub usernames may only contain letters, numbers, and hyphens",
+    };
+  }
+  return { ok: true, value };
+}
+
+export function validateDraftSource(
+  raw: string,
+): { ok: true; value: string } | { ok: false; error: string } {
+  const value = raw.replace(/\r\n/g, "\n").trim();
+  if (!value) return { ok: false, error: "Paste a `connect(input)` policy first." };
+  if (new TextEncoder().encode(value).length > SOURCE_MAX_BYTES) {
+    return { ok: false, error: "Operator policy exceeds the 12 KB draft limit." };
+  }
+  return { ok: true, value };
+}
+
+export function isDesktopUserAgent(userAgent: string | null): boolean {
+  if (!userAgent) return true;
+  return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    userAgent,
+  );
+}
+
+export function normalizeSearchParam(raw: string | null): string | null {
+  if (!raw) return null;
+  const value = raw.trim();
+  return value.length ? value : null;
 }

@@ -12,6 +12,7 @@ import type * as leaderboard from "../leaderboard.js";
 import type * as leads from "../leads.js";
 import type * as sessions from "../sessions.js";
 import type * as submissions from "../submissions.js";
+import type * as validators from "../validators.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   leads: typeof leads;
   sessions: typeof sessions;
   submissions: typeof submissions;
+  validators: typeof validators;
 }>;
 
 /**

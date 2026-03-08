@@ -9,10 +9,16 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "agent:baseline": "node --loader ./scripts/ts-path-loader.mjs ./scripts/run-baseline-agent.mjs",
+    "agent:hiring-bar": "node --loader ./scripts/ts-path-loader.mjs ./scripts/run-hiring-bar-agent.mjs",
+    "agent:user-flow": "node ./scripts/run-user-flow-agent.mjs",
+    "agent:hiring-bar:eval": "node --loader ./scripts/ts-path-loader.mjs ./scripts/eval-hiring-bar-agent.mjs",
+    "agent:oracle:eval": "node --loader ./scripts/ts-path-loader.mjs ./scripts/eval-oracle-agent.mjs"
   },
   "dependencies": {
     "convex": "^1.31.7",
+    "framer-motion": "^12.35.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "quickjs-emscripten": "^0.31.0",

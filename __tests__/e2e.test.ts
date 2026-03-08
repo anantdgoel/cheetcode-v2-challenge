@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("landing flow", async ({ page }) => {
+test("landing page presents Firecrawl Exchange", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("🔥 FIRECRAWL CTF")).toBeVisible();
-  const start = page.getByRole("button", { name: "START" });
-  await expect(start).toBeDisabled();
-  await page.getByPlaceholder("your-handle").fill("playwright-user");
-  await expect(start).toBeEnabled();
+
+  await expect(page.getByText("Exchange")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Sign In With GitHub" }),
+  ).toBeVisible();
+  await expect(page.getByText("1963 Switchboard Challenge")).toBeVisible();
 });

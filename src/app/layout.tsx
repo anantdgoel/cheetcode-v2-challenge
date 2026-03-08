@@ -1,28 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConvexClientProvider from "@/components/ConvexClientProvider";
 import AuthProvider from "@/components/AuthProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cheetcode-ctf.firecrawl.dev"),
-  title: "CheetCode CTF",
-  description: "10 problems. 45 seconds. Good luck.",
+  metadataBase: new URL("https://madison-exchange.firecrawl.dev"),
+  title: "Firecrawl Exchange",
+  description: "A live 1963 switchboard coding challenge for local agents.",
   openGraph: {
-    title: "CheetCode CTF",
-    description: "10 problems. 45 seconds. Good luck.",
-    url: "https://cheetcode-ctf.firecrawl.dev",
-    siteName: "CheetCode CTF",
+    title: "Firecrawl Exchange",
+    description: "A live 1963 switchboard coding challenge for local agents.",
+    url: "https://madison-exchange.firecrawl.dev",
+    siteName: "Firecrawl Exchange",
     images: [{ url: "/opengraph-image" }],
   },
 };
@@ -34,11 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body>
         <AuthProvider>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <header className="firecrawl-header">
+            <span className="firecrawl-wordmark">Firecrawl</span>
+          </header>
+          {children}
         </AuthProvider>
       </body>
     </html>
