@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { ReportCard } from '@/features/report/client/ReportCard'
 import { ContactForm } from '@/features/report/client/ContactForm'
 import { getContactSubmission, getReportView } from '@/features/report/server/queries'
+import { getGithubUsername } from '@/server/auth/github'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,16 +18,24 @@ export default async function ReportPage ({
     notFound()
   }
 
-  const contactCheck = await getContactSubmission(publicId)
+  const github = await getGithubUsername()
+  const showContactForm =
+    report.hiddenScore > 0.75 && github != null && github === report.github
+
+  const contactCheck = showContactForm
+    ? await getContactSubmission(publicId)
+    : null
 
   return (
     <main className='report-shell'>
       <ReportCard publicId={publicId} report={report} />
-      <ContactForm
-        github={report.github}
-        reportPublicId={publicId}
-        alreadySubmitted={!!contactCheck}
-      />
+      {showContactForm && (
+        <ContactForm
+          github={report.github}
+          reportPublicId={publicId}
+          alreadySubmitted={!!contactCheck}
+        />
+      )}
     </main>
   )
 }
