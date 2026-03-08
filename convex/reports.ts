@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertSecret } from "./auth";
-import { loadShift, type ShiftRunDoc } from "./shift_records";
+import { loadShift, type ShiftRunDoc } from "./records";
 import { titleValidator } from "./validators";
 
 export const getRecentReports = query({

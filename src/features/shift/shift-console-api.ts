@@ -1,9 +1,9 @@
-import type { ArtifactName } from "@/lib/contracts/game";
+import type { ArtifactName } from "@/lib/domain/game";
 import type {
   GoLiveResult,
   RunProbeResult,
   ValidateDraftResult,
-} from "@/lib/contracts/api";
+} from "@/lib/domain/commands";
 import { readJsonOrThrow } from "@/lib/frontend/http";
 
 export async function fetchArtifactContent(shiftId: string, artifactName: ArtifactName) {

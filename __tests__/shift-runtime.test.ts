@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getNextProbeKind } from "../src/lib/app/shift-lifecycle";
+import { getNextProbeKind } from "../src/lib/shifts/lifecycle";
 
 describe("shift runtime helpers", () => {
   it("advances through the two v3 probes", () => {

@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import type { ArtifactName, BoardCondition, ProbeSummary } from "@/lib/contracts/game";
-import type { ShiftView } from "@/lib/contracts/views";
+import type { ArtifactName, BoardCondition, ProbeSummary } from "@/lib/domain/game";
+import type { ShiftView } from "@/lib/domain/views";
 import {
   fetchArtifactContent,
   goLive,

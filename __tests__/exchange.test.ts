@@ -15,7 +15,7 @@ function buildBoardSnapshot(seed: string) {
   const board = createBoard(seed);
   return {
     ...board,
-    finalShift: board.finalPhaseChange,
+    finalShifts: board.finalPhaseChanges,
     probePressureCurves: {
       fit: createPressureCurve(board, "fit"),
       stress: createPressureCurve(board, "stress"),
@@ -30,7 +30,7 @@ function buildBoardSnapshot(seed: string) {
 }
 
 describe("exchange artifacts", () => {
-  it("builds deterministic v3 artifacts for a fixed seed", () => {
+  it("builds deterministic v3.2 artifacts for a fixed seed", () => {
     const first = buildShiftArtifacts("madison-seed");
     const second = buildShiftArtifacts("madison-seed");
     const firstSnapshot = buildBoardSnapshot("madison-seed");
@@ -43,23 +43,26 @@ describe("exchange artifacts", () => {
     expect(firstSnapshot.probeTrafficPlans.fit).toEqual(secondSnapshot.probeTrafficPlans.fit);
     expect(firstSnapshot.probeTrafficPlans.stress).toEqual(secondSnapshot.probeTrafficPlans.stress);
     expect(firstSnapshot.finalTrafficPlan).toEqual(secondSnapshot.finalTrafficPlan);
-    expect(firstSnapshot.visibleFamilyPermutation).toEqual(secondSnapshot.visibleFamilyPermutation);
+    expect(firstSnapshot.activeFamilies).toEqual(secondSnapshot.activeFamilies);
+    expect(firstSnapshot.visibleFamilyMap).toEqual(secondSnapshot.visibleFamilyMap);
     expect(firstSnapshot.visibleNoiseRate).toBe(secondSnapshot.visibleNoiseRate);
-    expect(firstSnapshot.finalShift).toEqual(secondSnapshot.finalShift);
+    expect(firstSnapshot.finalShifts).toEqual(secondSnapshot.finalShifts);
   });
 
-  it("uses two probes and one final plan", () => {
+  it("keeps two probes and one final, with hidden family count between three and five", () => {
     const snapshot = buildBoardSnapshot("probe-layout");
     expect(Object.keys(snapshot.probePressureCurves)).toEqual(["fit", "stress"]);
     expect(Object.keys(snapshot.probeTrafficPlans)).toEqual(["fit", "stress"]);
     expect(snapshot.probeTrafficPlans.fit.length).toBeGreaterThan(90);
     expect(snapshot.probeTrafficPlans.stress.length).toBeGreaterThan(90);
     expect(snapshot.finalTrafficPlan.length).toBeGreaterThan(300);
-    expect(snapshot.finalShift.shiftPoint).toBeGreaterThanOrEqual(150);
-    expect(snapshot.finalShift.shiftPoint).toBeLessThanOrEqual(270);
+    expect(snapshot.activeFamilies.length).toBeGreaterThanOrEqual(3);
+    expect(snapshot.activeFamilies.length).toBeLessThanOrEqual(5);
+    expect(snapshot.finalShifts.length).toBeGreaterThanOrEqual(0);
+    expect(snapshot.finalShifts.length).toBeLessThanOrEqual(3);
   });
 
-  it("includes public line groups and board-specific observations", () => {
+  it("includes public line groups and graded board-specific observations", () => {
     const artifacts = buildShiftArtifacts("obs-seed");
     const lines = JSON.parse(artifacts.linesJson);
     const firstObservation = JSON.parse(artifacts.observationsJsonl.split("\n")[0]!);
@@ -67,7 +70,10 @@ describe("exchange artifacts", () => {
 
     expect(lines[0].lineGroupId).toBeTruthy();
     expect(firstObservation.historicalLineGroup).toBeTruthy();
+    expect(firstObservation.operatorGrade).toMatch(/senior|operator|trainee/);
     expect(firstObservation.context.loadBand).toMatch(/low|medium|high|peak/);
+    expect(firstObservation.context.pressureBand).toMatch(/calm|building|hot/);
+    expect(firstObservation.context.premiumReuseBand).toMatch(/fresh|warm|hot/);
     expect(lineGroupIds.has(firstObservation.historicalLineGroup)).toBe(true);
   });
 
@@ -75,11 +81,10 @@ describe("exchange artifacts", () => {
     const artifacts = buildShiftArtifacts("manual-seed");
     const manual = artifacts.manualMd;
     const publicBlob = `${manual}\n${artifacts.linesJson}\n${artifacts.observationsJsonl}`;
-    expect(manual).not.toContain("district");
-    expect(manual).not.toContain("relay");
-    expect(publicBlob).not.toContain("visibleFamilyPermutation");
-    expect(publicBlob).not.toContain("visibleNoiseRate");
-    expect(publicBlob).not.toContain("finalShift");
+    expect(manual).not.toContain("activeFamilies");
+    expect(publicBlob).not.toContain("visibleFamilyMap");
+    expect(publicBlob).not.toContain("finalPhaseChanges");
+    expect(publicBlob).not.toContain("blendFamily");
   });
 
   it("keeps hidden board metadata out of artifact route content", () => {
@@ -91,21 +96,21 @@ describe("exchange artifacts", () => {
       buildArtifactContent("observations.jsonl", snapshot).content,
     ].join("\n");
 
-    expect(publicBlob).not.toContain("visibleFamilyPermutation");
-    expect(publicBlob).not.toContain("visibleNoiseRate");
-    expect(publicBlob).not.toContain("finalShift");
+    expect(publicBlob).not.toContain("activeFamilies");
+    expect(publicBlob).not.toContain("visibleFamilyMap");
+    expect(publicBlob).not.toContain("finalPhaseChanges");
   });
 
-  it("keeps the visible rotation noisy but bounded", () => {
-    const seenPermutations = new Set<string>();
+  it("keeps visible metadata noisy but bounded", () => {
+    const seenCounts = new Set<number>();
     for (const seed of ["alpha-switch", "broadway-night", "uptown-rush", "vermont-wire", "switchyard-7"]) {
       const snapshot = createBoard(seed);
-      seenPermutations.add(JSON.stringify(snapshot.visibleFamilyPermutation));
-      expect(snapshot.visibleNoiseRate).toBeGreaterThanOrEqual(0.18);
-      expect(snapshot.visibleNoiseRate).toBeLessThanOrEqual(0.22);
+      seenCounts.add(snapshot.activeFamilies.length);
+      expect(snapshot.visibleNoiseRate).toBeGreaterThanOrEqual(0.2);
+      expect(snapshot.visibleNoiseRate).toBeLessThanOrEqual(0.26);
     }
 
-    expect(seenPermutations.size).toBeGreaterThan(1);
+    expect(seenCounts.size).toBeGreaterThan(1);
   });
 });
 

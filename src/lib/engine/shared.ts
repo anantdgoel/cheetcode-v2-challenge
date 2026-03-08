@@ -1,5 +1,6 @@
-import type { ProbeKind } from "@/lib/contracts/game";
-import type { TrafficEvent } from "./types";
+import type { LoadBand, ProbeKind } from "@/lib/domain/game";
+import { GAME_BALANCE } from "./config/balance";
+import type { TrafficEvent } from "./models";
 
 export type SimulationMode = ProbeKind | "final";
 export type Rng = () => number;
@@ -70,4 +71,15 @@ export function premiumEligible(call: Pick<TrafficEvent, "routeCode" | "billingM
     (call.routeCode === "intercity" && call.billingMode === "verified") ||
     (call.routeCode === "priority" && call.urgency === "priority")
   );
+}
+
+export function loadBandForSimulationLoad(value: number): LoadBand {
+  if (value >= GAME_BALANCE.runtimePenalties.loadBandThresholds.peak) return "peak";
+  if (value >= GAME_BALANCE.runtimePenalties.loadBandThresholds.high) return "high";
+  if (value >= GAME_BALANCE.runtimePenalties.loadBandThresholds.medium) return "medium";
+  return "low";
+}
+
+export function divideAndRound(value: number, total: number, fractionDigits: number) {
+  return Number((value / Math.max(total, 1)).toFixed(fractionDigits));
 }

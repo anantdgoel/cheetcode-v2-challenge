@@ -1,5 +1,5 @@
-import type { TrafficEvent } from "./types";
-import type { LineModel } from "./types";
+import type { TrafficEvent } from "./models";
+import type { LineModel } from "./models";
 import { DROP_THRESHOLDS } from "./config/constants";
 import { GAME_BALANCE } from "./config/balance";
 import { clamp, premiumEligible } from "./shared";
@@ -16,25 +16,49 @@ export function lineScore(
   call: RoutedCall,
   load: number,
   effectiveSoftCap = line.loadSoftCap,
+  premiumHeat = 0,
 ) {
   const compatibility = line.compatibility[getCallKey(call)] ?? 0.4;
   const loadPenalty =
     load <= effectiveSoftCap
       ? 0
       : (load - effectiveSoftCap) * (line.loadSlope * GAME_BALANCE.runtimePenalties.loadPenaltyMultiplier);
+  const premiumHeatPenalty = line.isPremiumTrunk
+    ? GAME_BALANCE.runtimePenalties.premiumHeat.linearPenalty * premiumHeat
+    : 0;
   const premiumValue =
     line.isPremiumTrunk && premiumEligible(call)
-      ? line.premiumBoost
+      ? line.premiumBoost + GAME_BALANCE.runtimePenalties.premiumHeat.baseBoost - premiumHeatPenalty
       : line.isPremiumTrunk
-        ? GAME_BALANCE.runtimePenalties.premiumMisusePenalty
+        ? GAME_BALANCE.runtimePenalties.premiumMisusePenalty +
+          GAME_BALANCE.runtimePenalties.premiumHeat.ineligiblePenalty -
+          premiumHeatPenalty
         : 0;
   const subscriberBias =
     call.subscriberClass === "government" && line.family === "relay"
       ? GAME_BALANCE.runtimePenalties.governmentRelayBias
+      : call.subscriberClass === "government" && line.family === "exchange"
+        ? GAME_BALANCE.runtimePenalties.governmentExchangeBias
       : call.subscriberClass === "business" && line.family === "trunk"
         ? GAME_BALANCE.runtimePenalties.businessTrunkBias
+        : call.urgency === "routine" && line.family === "suburban"
+          ? GAME_BALANCE.runtimePenalties.suburbanRoutineBias
         : 0;
-  return compatibility + line.qualityOffset + line.maintenanceOffset + premiumValue + subscriberBias - loadPenalty;
+  const suburbanPenalty =
+    line.family === "suburban" &&
+    load > GAME_BALANCE.runtimePenalties.suburbanLoadPenalty.loadThreshold &&
+    call.routeCode !== "local"
+      ? GAME_BALANCE.runtimePenalties.suburbanLoadPenalty.penalty
+      : 0;
+  return (
+    compatibility +
+    line.qualityOffset +
+    line.maintenanceOffset +
+    premiumValue +
+    subscriberBias -
+    loadPenalty -
+    suburbanPenalty
+  );
 }
 
 export function connectProbability(
@@ -43,8 +67,9 @@ export function connectProbability(
   load: number,
   queuedForSeconds: number,
   effectiveSoftCap = line.loadSoftCap,
+  premiumHeat = 0,
 ) {
-  const score = lineScore(line, call, load, effectiveSoftCap);
+  const score = lineScore(line, call, load, effectiveSoftCap, premiumHeat);
   const queuePressure = clamp(queuedForSeconds / DROP_THRESHOLDS[call.routeCode], 0, 1);
   return clamp(
     GAME_BALANCE.runtimePenalties.connectionBase +

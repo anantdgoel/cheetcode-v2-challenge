@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ArtifactName } from "@/lib/contracts/game";
+import type { ArtifactName } from "@/lib/domain/game";
 import {
   SHIFT_ARTIFACT_LABELS,
   SHIFT_ARTIFACTS,

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { ProbeSummary } from "@/lib/contracts/game";
-import type { ShiftView } from "@/lib/contracts/views";
+import type { ProbeSummary } from "@/lib/domain/game";
+import type { ShiftView } from "@/lib/domain/views";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
 import { getTitlePresentation } from "@/lib/frontend/title-display";
 import { conditionDotClass, formatIncidents } from "./shift-console-state";

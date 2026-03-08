@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertSecret } from "./auth";
-import { loadOwnedShift, loadShift, toShiftRecord, type ShiftRunDoc } from "./shift_records";
+import { loadOwnedShift, loadShift, toShiftRecord, type ShiftRunDoc } from "./records";
 import { policyValidationResultValidator, probeSummaryValidator, simulationMetricsValidator, storedRunKindValidator, storedRunTriggerValidator, titleValidator } from "./validators";
 
 function artifactFieldName(name: "manual.md" | "starter.js" | "lines.json" | "observations.jsonl") {

@@ -1,6 +1,7 @@
-import type { ArtifactName, PublicLine } from "@/lib/contracts/game";
-import type { ArtifactContent, BoardModel, LineModel, ObservationRow, ShiftArtifacts } from "./types";
-import { createBoard, createObservations } from "./board";
+import type { ArtifactName, PublicLine } from "@/lib/domain/game";
+import type { ArtifactContent, BoardModel, LineModel, ObservationRow, ShiftArtifacts } from "./models";
+import { createBoard } from "./board-generation";
+import { createObservations } from "./observation-generation";
 
 function stringifyLines(board: BoardModel) {
   return JSON.stringify(
@@ -62,6 +63,7 @@ Every decision includes:
 - \`clock.second\`
 - \`clock.remainingSeconds\`
 - \`board.load\` from 0 to 1
+- \`board.pressure\` from 0 to 1, a noisy live gauge
 - \`board.tempo\` to warn when the room is surging or cooling
 - \`board.queueDepth\`
 - \`call\`
@@ -85,9 +87,10 @@ Every visible line includes:
 The room tells on itself if you listen:
 
 - Similar markings often travel together, but never perfectly.
+- Some desks look alike and still fail for different reasons when the room turns.
 - Some groups carry cleanly until the lamps stack up, then fail fast.
 - Premium habit is not premium judgment.
-- Verified intercity and true priority work are where the expensive room usually earns its keep.
+- The expensive room helps most when the call is real trouble, not merely loud trouble.
 
 ## 5. Evidence
 
@@ -97,7 +100,7 @@ The room tells on itself if you listen:
 - \`observations.jsonl\`: this board's own historical traffic, useful but noisy
 
 The history is useful because it teaches the habits of this board, not because it hands you a clean answer key.
-Visible similarities are suggestive, never absolute.
+Visible similarities are suggestive, never absolute. Some operators kept cleaner books than others.
 
 ## 6. Probes
 
@@ -107,7 +110,7 @@ Two live probes are available:
 - \`stress\`: denser traffic to expose collapse thresholds
 
 Probe output is structured on purpose. Use it to tune your model, not to search for one magic replacement line.
-The final can change pace mid-run. A good operator notices before the whole desk notices.
+The final can change pace more than once. A good operator notices before the whole desk notices.
 
 ## 7. Scoring
 

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
-import type { LeaderboardEntry } from "@/lib/contracts/views";
+import type { LeaderboardEntry } from "@/lib/domain/views";
 
 const PAGE_SIZE = 5;
 

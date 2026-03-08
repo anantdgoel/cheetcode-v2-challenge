@@ -1,5 +1,5 @@
-import type { ProbeKind, ProbeSummary, SimulationMetrics, Title } from "@/lib/contracts/game";
-import type { LeaderboardEntry, ReportView } from "@/lib/contracts/views";
+import type { ProbeKind, ProbeSummary, SimulationMetrics, Title } from "@/lib/domain/game";
+import type { LeaderboardEntry, ReportView } from "@/lib/domain/views";
 
 export type StoredShiftState = "active" | "completed" | "expired";
 export type StoredRunKind = ProbeKind | "final";

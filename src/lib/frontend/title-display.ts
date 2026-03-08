@@ -1,4 +1,4 @@
-import type { Title } from "@/lib/contracts/game";
+import type { Title } from "@/lib/domain/game";
 
 export function getTitlePresentation(title: Title) {
   switch (title) {

@@ -8,7 +8,7 @@ import {
   ROUTE_CODES,
   TITLES,
   URGENCIES,
-} from "../src/lib/contracts/game";
+} from "../src/lib/domain/game";
 
 function literalUnion<T extends string>(values: readonly [T, ...T[]]) {
   return v.union(...(values.map((value) => v.literal(value)) as any));

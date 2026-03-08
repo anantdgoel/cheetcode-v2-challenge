@@ -1,6 +1,6 @@
 "use client";
 
-import type { ShiftView } from "@/lib/contracts/views";
+import type { ShiftView } from "@/lib/domain/views";
 import { ShiftConsoleActionBar } from "./ShiftConsoleActionBar";
 import { ShiftConsoleArtifactPanel } from "./ShiftConsoleArtifactPanel";
 import { ShiftConsoleBoardReadout } from "./ShiftConsoleBoardReadout";

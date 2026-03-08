@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("../src/lib/convex-server", () => ({
+vi.mock("../src/lib/repositories/convex", () => ({
   api: {
     leaderboard: { getPublic: "leaderboard:getPublic" },
     sessions: { getCurrentOwned: "sessions:getCurrentOwned" },
@@ -44,7 +44,7 @@ describe("getLandingView", () => {
       throw new Error("current shift unavailable");
     });
 
-    const { getLandingView } = await import("../src/lib/app/shift-service");
+    const { getLandingView } = await import("../src/lib/shifts");
     const view = await getLandingView("benchmark-agent");
 
     expect(view.leaderboard).toEqual(leaderboard);

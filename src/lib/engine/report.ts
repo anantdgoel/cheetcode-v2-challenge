@@ -1,4 +1,4 @@
-import type { FinalReport, Title } from "@/lib/contracts/game";
+import type { FinalReport, Title } from "@/lib/domain/game";
 import { createRng } from "./shared";
 import { getTitleForScore } from "./scoring";
 
@@ -36,7 +36,7 @@ export function buildReport(params: {
   publicId: string;
   achievedAt: number;
   kind: "final" | "auto_final";
-  metrics: import("@/lib/contracts/game").SimulationMetrics;
+  metrics: import("@/lib/domain/game").SimulationMetrics;
   seed: string;
 }): FinalReport {
   const title = getTitleForScore(params.metrics.hiddenScore);

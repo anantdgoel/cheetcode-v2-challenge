@@ -1,4 +1,6 @@
-export { createBoard, createObservations, createPressureCurve, createTraffic } from "./board";
+export { createBoard } from "./board-generation";
+export { createObservations } from "./observation-generation";
+export { createPressureCurve, createTraffic } from "./traffic-generation";
 export { buildArtifactContent, buildShiftArtifacts, buildStarterPolicy } from "./artifacts";
 export { formatPercent, formatTitle, buildReport } from "./report";
 export { computeHiddenScore, getTitleForScore } from "./scoring";
@@ -6,4 +8,4 @@ export { summarizeProbe } from "./probe-summary";
 export { simulateExchange } from "./runtime";
 export { buildFinalReport, runFinal, runProbe, validatePolicy } from "./policy-vm";
 export { stableHash } from "./shared";
-export type { BoardModel, SimulationResult } from "./types";
+export type { BoardModel, SimulationResult } from "./models";

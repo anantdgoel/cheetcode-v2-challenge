@@ -5,11 +5,60 @@ import type {
   ProbeKind,
   QueueBand,
   RouteCode,
-} from "@/lib/contracts/game";
-import type { ClampRange, RangeTuning } from "@/lib/engine/types";
+} from "@/lib/domain/game";
+import type { ClampRange, RangeTuning } from "@/lib/engine/models";
 
 export type JitterRange = RangeTuning;
-export type WeightMap<TKey extends string> = Record<TKey, number>;
+
+const PREMIUM_COUNT_BY_PROFILE = {
+  switchboard: 4,
+  "front-office": 5,
+  "night-rush": 4,
+  "civic-desk": 5,
+  "commuter-belt": 3,
+  "storm-watch": 5,
+} as const satisfies Record<BoardProfile, number>;
+
+const OBSERVATION_NOISE = {
+  visibleNoise: { base: 0.225, spread: 0.025, min: 0.2, max: 0.26 } as JitterRange,
+  compatibilityJitter: { base: 0, spread: 0.1, min: 0.1, max: 0.99 } as JitterRange,
+  deterministicNoiseEvery: 4,
+  traineeOutcomeFlipRate: 0.28,
+} as const;
+
+const FINAL_PRESSURE_PROFILE = {
+  finalBaseline: 0.34,
+  finalBurstCount: 6,
+  finalBurstHeight: { base: 0.16, variance: 0.12 },
+  shiftCountWeights: {
+    0: 0.12,
+    1: 0.42,
+    2: 0.34,
+    3: 0.12,
+  } as const,
+  loadDelta: { base: 0.14, spread: 0.04, min: -0.18, max: 0.18 } as JitterRange,
+  capDelta: { base: 0.1, spread: 0.025, min: -0.14, max: 0.14 } as JitterRange,
+  trafficDelta: { base: 0.14, spread: 0.03, min: -0.18, max: 0.18 } as JitterRange,
+} as const;
+
+const PREMIUM_AND_LOAD_DIFFICULTY = {
+  premiumBoost: { base: 0.11, spread: 0.06, min: 0.03, max: 0.22 } as JitterRange,
+  defaultLoadPenalty: 0.76,
+  loadPenaltyMultiplier: 2.05,
+  premiumHeat: {
+    baseBoost: 0.1,
+    misuseHeat: 0.5,
+    useHeat: 1,
+    decayPerSecond: 0.05,
+    linearPenalty: 0.06,
+    ineligiblePenalty: -0.08,
+  },
+  suburbanLoadPenalty: {
+    loadThreshold: 0.68,
+    queueThreshold: 6,
+    penalty: 0.08,
+  },
+} as const;
 
 /**
  * Tunable gameplay knobs. Each section is grouped by the product question it
@@ -19,23 +68,23 @@ export const GAME_BALANCE = {
   boardGeneration: {
     minLines: 24,
     lineVariance: 5,
-    premiumCountByProfile: {
-      switchboard: 5,
-      "front-office": 6,
-      "night-rush": 5,
-    } as const satisfies Record<BoardProfile, number>,
+    premiumCountByProfile: PREMIUM_COUNT_BY_PROFILE,
     qualityOffset: { base: 0, spread: 0.09, min: -0.14, max: 0.14 } as JitterRange,
     loadSoftCap: {
       district: { base: 0.58, spread: 0.08, min: 0.34, max: 0.9 },
       relay: { base: 0.66, spread: 0.08, min: 0.34, max: 0.9 },
       trunk: { base: 0.78, spread: 0.08, min: 0.34, max: 0.9 },
+      exchange: { base: 0.52, spread: 0.07, min: 0.3, max: 0.84 },
+      suburban: { base: 0.64, spread: 0.07, min: 0.36, max: 0.88 },
     } as const satisfies Record<LineFamily, JitterRange>,
     loadSlope: {
       district: { base: 0.72, spread: 0.1, min: 0.2, max: 0.92 },
       relay: { base: 0.54, spread: 0.1, min: 0.2, max: 0.92 },
       trunk: { base: 0.42, spread: 0.1, min: 0.2, max: 0.92 },
+      exchange: { base: 0.78, spread: 0.08, min: 0.32, max: 0.98 },
+      suburban: { base: 0.56, spread: 0.08, min: 0.24, max: 0.84 },
     } as const satisfies Record<LineFamily, JitterRange>,
-    premiumBoost: { base: 0.14, spread: 0.07, min: 0.04, max: 0.3 } as JitterRange,
+    premiumBoost: PREMIUM_AND_LOAD_DIFFICULTY.premiumBoost,
     maintenanceOffsetByBand: {
       recently_serviced: 0.06,
       steady: 0.02,
@@ -43,8 +92,13 @@ export const GAME_BALANCE = {
     } as const satisfies Record<MaintenanceBand, number>,
   },
   visibleSignal: {
-    visibleNoise: { base: 0.2, spread: 0.02, min: 0.18, max: 0.22 } as JitterRange,
-    compatibilityJitter: { base: 0, spread: 0.04, min: 0.1, max: 0.99 } as JitterRange,
+    visibleNoise: OBSERVATION_NOISE.visibleNoise,
+    compatibilityJitter: OBSERVATION_NOISE.compatibilityJitter,
+    boardFamilyCountWeights: {
+      "3": 0.34,
+      "4": 0.42,
+      "5": 0.24,
+    } as const,
     districtFallback: {
       localStandard: 0.9,
       localOther: 0.82,
@@ -64,12 +118,34 @@ export const GAME_BALANCE = {
       priorityUrgent: 0.86,
       offFamily: 0.08,
     },
+    exchangeFallback: {
+      priorityVerified: 0.88,
+      priorityOther: 0.79,
+      verifiedOther: 0.64,
+      offFamily: 0.22,
+    },
+    suburbanFallback: {
+      localRoutine: 0.74,
+      relayRoutine: 0.68,
+      intercityRoutine: 0.6,
+      offFamily: 0.34,
+    },
   },
   trafficShape: {
     observations: {
       rowCount: 4800,
-      deterministicNoiseEvery: 5,
+      deterministicNoiseEvery: OBSERVATION_NOISE.deterministicNoiseEvery,
       shiftBucketSize: 24,
+      operatorGradeWeights: {
+        senior: 0.22,
+        operator: 0.53,
+        trainee: 0.25,
+      } as const,
+      traineeAdversarial: {
+        outcomeFlipRate: OBSERVATION_NOISE.traineeOutcomeFlipRate,
+        borderlineMin: 0.42,
+        borderlineMax: 0.68,
+      },
       representativeLoadByBand: {
         low: 0.24,
         medium: 0.5,
@@ -85,6 +161,8 @@ export const GAME_BALANCE = {
         district: { preferred: 1.2, fallback: 0.45 },
         relay: { preferred: 1.05, fallback: 0.55 },
         trunk: { preferred: 1.15, fallback: 0.5 },
+        exchange: { preferred: 1.12, fallback: 0.46 },
+        suburban: { preferred: 1.08, fallback: 0.62 },
       },
       premiumEligibleWeight: 1.08,
       faultWeight: { additive: 0.1, min: 0.15, max: 0.78 } as ClampRange & { additive: number },
@@ -104,7 +182,7 @@ export const GAME_BALANCE = {
       baselineByMode: {
         fit: 0.22,
         stress: 0.44,
-        final: 0.3,
+        final: FINAL_PRESSURE_PROFILE.finalBaseline,
       } as const satisfies Record<ProbeKind | "final", number>,
       wave: {
         primaryDivisor: 18,
@@ -113,25 +191,29 @@ export const GAME_BALANCE = {
         secondaryAmplitude: 0.04,
       },
       curveClamp: { min: 0.1, max: 0.95 } as ClampRange,
+      publicNoise: { base: 0, spread: 0.035, min: 0.1, max: 0.98 } as JitterRange,
       burstCountByMode: {
         fit: 2,
         stress: 4,
-        final: 5,
+        final: FINAL_PRESSURE_PROFILE.finalBurstCount,
       } as const satisfies Record<ProbeKind | "final", number>,
       burstWidth: { base: 10, variance: 20 },
       burstHeight: {
         fit: { base: 0.12, variance: 0.1 },
         stress: { base: 0.22, variance: 0.12 },
-        final: { base: 0.12, variance: 0.1 },
+        final: FINAL_PRESSURE_PROFILE.finalBurstHeight,
       } as const,
       burstClamp: { min: 0.1, max: 0.98 } as ClampRange,
     },
     finalPhaseChange: {
       transitionWindowSeconds: 15,
-      shiftPointMin: 150,
-      shiftPointRange: 121,
-      loadDelta: { base: 0.15, spread: 0.03, min: -0.18, max: 0.18 } as JitterRange,
-      capDelta: { base: 0.08, spread: 0.015, min: -0.095, max: 0.095 } as JitterRange,
+      shiftCountWeights: FINAL_PRESSURE_PROFILE.shiftCountWeights,
+      shiftPointMin: 90,
+      shiftPointRange: 240,
+      durationSeconds: { base: 18, variance: 14 },
+      loadDelta: FINAL_PRESSURE_PROFILE.loadDelta,
+      capDelta: FINAL_PRESSURE_PROFILE.capDelta,
+      trafficDelta: FINAL_PRESSURE_PROFILE.trafficDelta,
       effectiveSoftCapClamp: { min: 0.2, max: 0.95 } as ClampRange,
     },
     arrivals: {
@@ -149,7 +231,7 @@ export const GAME_BALANCE = {
       intercityVerifiedChance: 0.58,
       relaySpecialSubscriberChance: 0.6,
       stressLoadPenalty: 0.95,
-      defaultLoadPenalty: 0.7,
+      defaultLoadPenalty: PREMIUM_AND_LOAD_DIFFICULTY.defaultLoadPenalty,
       gapFactor: { base: 0.7, variance: 1.4 },
     },
   },
@@ -175,10 +257,12 @@ export const GAME_BALANCE = {
     } as const satisfies Record<RouteCode, number>,
     urgencyServiceBonus: 1,
     serviceDurationVariance: 4,
-    loadPenaltyMultiplier: 1.8,
+    loadPenaltyMultiplier: PREMIUM_AND_LOAD_DIFFICULTY.loadPenaltyMultiplier,
     premiumMisusePenalty: -0.08,
     governmentRelayBias: 0.03,
     businessTrunkBias: 0.03,
+    governmentExchangeBias: 0.06,
+    suburbanRoutineBias: 0.04,
     connectionBase: 0.1,
     connectionScoreFactor: 0.9,
     queuePressureFactor: 0.06,
@@ -186,6 +270,12 @@ export const GAME_BALANCE = {
     queueHoldDenominator: 16,
     faultRecovery: { base: 4, loadFactor: 5 },
     postPlanHorizonSeconds: 90,
+    premiumHeat: PREMIUM_AND_LOAD_DIFFICULTY.premiumHeat,
+    pressureBandThresholds: {
+      hot: 0.7,
+      building: 0.42,
+    },
+    suburbanLoadPenalty: PREMIUM_AND_LOAD_DIFFICULTY.suburbanLoadPenalty,
   },
   scoring: {
     deskConditionThresholds: {

@@ -6,11 +6,13 @@ import type {
   ProbeSummary,
   RouteCode,
   Urgency,
-} from "@/lib/contracts/game";
+} from "@/lib/domain/game";
 import { GAME_BALANCE } from "./config/balance";
 import { clamp } from "./shared";
-import { divideAndRound, LOAD_BAND_ORDER, loadBandForSimulationLoad } from "./simulation-shared";
-import type { FailureEvent, SimulationResult } from "./types";
+import { divideAndRound, loadBandForSimulationLoad } from "./shared";
+import type { FailureEvent, SimulationResult } from "./models";
+
+const LOAD_BAND_ORDER: LoadBand[] = ["low", "medium", "high", "peak"];
 
 type ProbeBucketAccumulator = {
   routeCode: RouteCode;

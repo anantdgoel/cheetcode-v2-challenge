@@ -1,5 +1,5 @@
 import { formatPercent, formatTitle } from "@/lib/engine/report";
-import type { AdminSnapshot } from "@/lib/contracts/views";
+import type { AdminSnapshot } from "@/lib/domain/views";
 
 const FIELDS = [
   { name: "github", placeholder: "GitHub login" },

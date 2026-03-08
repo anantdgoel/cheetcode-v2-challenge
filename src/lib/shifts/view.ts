@@ -1,6 +1,6 @@
-import type { EvaluationRecordView, ShiftView } from "@/lib/contracts/views";
-import type { StoredRunRecord, StoredShiftRecord } from "@/lib/data/types";
-import { getAcceptedRun, getCurrentPhase, getNextProbeKind, getViewStatus, PROBE_ORDER, toViewRunKind } from "./shift-lifecycle";
+import type { EvaluationRecordView, ShiftView } from "@/lib/domain/views";
+import type { StoredRunRecord, StoredShiftRecord } from "@/lib/repositories/records";
+import { getAcceptedRun, getCurrentPhase, getNextProbeKind, getViewStatus, PROBE_ORDER, toViewRunKind } from "./lifecycle";
 
 function shapeRun(run: StoredRunRecord): EvaluationRecordView {
   return {

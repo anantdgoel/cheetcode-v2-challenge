@@ -2,9 +2,13 @@ import type {
   ArtifactName,
   BillingMode,
   BoardProfile,
+  FinalShiftKind,
   LineFamily,
   LoadBand,
   MaintenanceBand,
+  OperatorGrade,
+  PressureBand,
+  PremiumReuseBand,
   ProbeKind,
   PublicLine,
   QueueBand,
@@ -14,8 +18,8 @@ import type {
   SubscriberClass,
   TrafficRegime,
   Urgency,
-} from "@/lib/contracts/game";
-import type { Title } from "@/lib/contracts/game";
+} from "@/lib/domain/game";
+import type { Title } from "@/lib/domain/game";
 
 export type TrafficEvent = {
   id: string;
@@ -29,6 +33,7 @@ export type TrafficEvent = {
 export type LineModel = PublicLine & {
   historicalAlias: string;
   family: LineFamily;
+  visibleFamily: LineFamily;
   qualityOffset: number;
   loadSoftCap: number;
   loadSlope: number;
@@ -46,6 +51,7 @@ export type ObservationRow = {
   logId: string;
   shiftBucket: string;
   trafficRegime: TrafficRegime;
+  operatorGrade: OperatorGrade;
   historicalLineAlias: string;
   historicalLineGroup: string;
   call: {
@@ -56,7 +62,9 @@ export type ObservationRow = {
   };
   context: {
     loadBand: LoadBand;
+    pressureBand: PressureBand;
     queueBand: QueueBand;
+    premiumReuseBand: PremiumReuseBand;
     recentIncidentsNearLine: number;
   };
   decision: {
@@ -70,20 +78,23 @@ export type ObservationRow = {
 };
 
 export type FinalPhaseChange = {
+  kind: FinalShiftKind;
   shiftPoint: number;
+  durationSeconds: number;
   loadDelta: number;
-  routeProfileAfterShift: BoardProfile;
-  shiftedFamily: LineFamily;
+  trafficDelta: Partial<Record<RouteCode, number>>;
+  targetFamily: LineFamily;
   capDelta: number;
 };
 
 export type BoardModel = {
   seed: string;
   boardProfile: BoardProfile;
+  activeFamilies: LineFamily[];
   lines: LineModel[];
-  visibleFamilyPermutation: Record<LineFamily, LineFamily>;
+  visibleFamilyMap: Partial<Record<LineFamily, LineFamily>>;
   visibleNoiseRate: number;
-  finalPhaseChange: FinalPhaseChange;
+  finalPhaseChanges: FinalPhaseChange[];
 };
 
 export type FailureReason =
@@ -118,6 +129,7 @@ export type SimulationTraceEvent = {
   urgency: Urgency;
   queuedForSeconds: number;
   boardLoad: number;
+  boardPressure: number;
   queueDepth: number;
   selectedLineId: string | null;
   selectedLineGroupId: string | null;
@@ -135,11 +147,6 @@ export type SimulationResult = {
   trace: SimulationTraceEvent[];
 };
 
-export type ProbeRunResult = {
-  result: SimulationResult;
-  summary: import("@/lib/contracts/game").ProbeSummary;
-};
-
 export type ShiftArtifacts = {
   board: BoardModel;
   manualMd: string;
@@ -152,13 +159,6 @@ export type ArtifactContent = {
   name: ArtifactName;
   content: string;
 };
-
-export type RuntimeDecision = {
-  lineId: string | null;
-  error?: string;
-};
-
-export type RuntimeLineState = RuntimeLineView;
 
 export type RangeTuning = {
   base: number;

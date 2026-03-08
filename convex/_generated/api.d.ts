@@ -10,10 +10,9 @@
 
 import type * as auth from "../auth.js";
 import type * as leaderboard from "../leaderboard.js";
-import type * as leads from "../leads.js";
+import type * as records from "../records.js";
+import type * as reports from "../reports.js";
 import type * as sessions from "../sessions.js";
-import type * as shift_records from "../shift_records.js";
-import type * as submissions from "../submissions.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -25,10 +24,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   leaderboard: typeof leaderboard;
-  leads: typeof leads;
+  records: typeof records;
+  reports: typeof reports;
   sessions: typeof sessions;
-  shift_records: typeof shift_records;
-  submissions: typeof submissions;
   validators: typeof validators;
 }>;
 

@@ -1,5 +1,5 @@
 import { LandingPageContent } from "@/components/landing/LandingPageContent";
-import { getLandingView } from "@/lib/app/shift-service";
+import { getLandingView } from "@/lib/shifts";
 import { getGithubUsername } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";

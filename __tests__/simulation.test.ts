@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 import { buildShiftArtifacts, buildStarterPolicy, simulateExchange, summarizeProbe, validatePolicy } from "../src/lib/engine/index";
 import {
   BENCHMARK_SEEDS,
-  buildHiringBarPolicySource,
-  buildOldHeuristicPolicySource,
-  buildSnapshotPolicySource,
   createHiringBarDecision,
+  createWarmStartDecision,
   oldHeuristicDecision,
   snapshotDecision,
 } from "../scripts/v3-agent-policies.mjs";
@@ -43,8 +41,7 @@ describe("simulation signal", () => {
     expect(average(efficiencies)).toBeLessThan(0.1);
   });
 
-  it("keeps the snapshot vanilla policy around thirty percent", async () => {
-    expect((await validatePolicy(buildSnapshotPolicySource())).ok).toBe(true);
+  it("keeps the snapshot vanilla policy as a weak baseline", async () => {
     const efficiencies: number[] = [];
     for (const seed of BENCHMARK_SEEDS) {
       const result = await simulateExchange({
@@ -55,37 +52,45 @@ describe("simulation signal", () => {
       efficiencies.push(result.metrics.efficiency);
     }
     const avg = average(efficiencies);
-    expect(avg).toBeGreaterThan(0.25);
-    expect(avg).toBeLessThan(0.35);
+    expect(avg).toBeGreaterThan(0.12);
+    expect(avg).toBeLessThan(0.3);
   });
 
-  it("drops the old heuristic and recovers with the artifact-driven hiring-bar policy", async () => {
-    const sampleArtifacts = buildShiftArtifacts("alpha-switch");
-    expect((await validatePolicy(buildOldHeuristicPolicySource())).ok).toBe(true);
-    expect((await validatePolicy(buildHiringBarPolicySource(sampleArtifacts))).ok).toBe(true);
-
+  it("separates static, artifact-only, and warm-start agents", async () => {
     const oldEfficiencies: number[] = [];
-    const efficiencies: number[] = [];
+    const artifactEfficiencies: number[] = [];
+    const warmStartEfficiencies: number[] = [];
+
     for (const seed of BENCHMARK_SEEDS) {
       const artifacts = buildShiftArtifacts(seed);
-      const decide = createHiringBarDecision(artifacts);
+      const priorArtifacts = BENCHMARK_SEEDS.filter((candidate) => candidate !== seed)
+        .slice(0, 4)
+        .map((candidate) => buildShiftArtifacts(candidate));
+      const artifactOnly = createHiringBarDecision(artifacts);
+      const warmStart = createWarmStartDecision(artifacts, priorArtifacts);
       const oldResult = await simulateExchange({
         seed,
         mode: "final",
         decide: (input) => Promise.resolve(oldHeuristicDecision(input)),
       });
-      const result = await simulateExchange({
+      const artifactResult = await simulateExchange({
         seed,
         mode: "final",
-        decide: (input) => Promise.resolve(decide(input)),
+        decide: (input) => Promise.resolve(artifactOnly(input)),
       });
+      const warmStartResult = await simulateExchange({
+        seed,
+        mode: "final",
+        decide: (input) => Promise.resolve(warmStart(input)),
+      });
+
       oldEfficiencies.push(oldResult.metrics.efficiency);
-      efficiencies.push(result.metrics.efficiency);
+      artifactEfficiencies.push(artifactResult.metrics.efficiency);
+      warmStartEfficiencies.push(warmStartResult.metrics.efficiency);
     }
-    const oldAvg = average(oldEfficiencies);
-    const avg = average(efficiencies);
-    expect(oldAvg).toBeLessThanOrEqual(0.4);
-    expect(avg).toBeGreaterThan(0.75);
-    expect(avg).toBeLessThan(0.85);
+
+    expect(average(oldEfficiencies)).toBeLessThanOrEqual(0.58);
+    expect(average(artifactEfficiencies)).toBeGreaterThan(average(oldEfficiencies));
+    expect(average(warmStartEfficiencies)).toBeGreaterThanOrEqual(average(artifactEfficiencies) - 0.02);
   });
 });

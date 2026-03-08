@@ -1,5 +1,5 @@
-import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/convex-server";
-import type { StoredLeaderboardRecord } from "./types";
+import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/repositories/convex";
+import type { StoredLeaderboardRecord } from "./records";
 
 export async function getPublicLeaderboard(): Promise<StoredLeaderboardRecord[]> {
   return getConvexServerClient().query(api.leaderboard.getPublic, {});

@@ -1,4 +1,4 @@
-import type { LandingView } from "@/lib/contracts/views";
+import type { LandingView } from "@/lib/domain/views";
 import { HeroSection, SwitchboardPattern } from "./HeroSection";
 import { LandingLeaderboard } from "./LandingLeaderboard";
 

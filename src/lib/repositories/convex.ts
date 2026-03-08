@@ -1,5 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 
 export function getConvexServerClient() {
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;

@@ -1,18 +1,33 @@
-import type { BoardTempo, PolicyInput, RuntimeLineView, SimulationMetrics, Title } from "@/lib/contracts/game";
+import type { PolicyInput, SimulationMetrics } from "@/lib/domain/game";
 import { DROP_THRESHOLDS } from "./config/constants";
 import { GAME_BALANCE } from "./config/balance";
-import { createBoard, createPressureCurve, createTraffic } from "./board";
-import { connectProbability } from "./routing-math";
+import { createBoard } from "./board-generation";
 import { computeHiddenScore, getTitleForScore } from "./scoring";
-import { createRng, premiumEligible, type Rng, type SimulationMode } from "./shared";
-import { loadBandForSimulationLoad } from "./simulation-shared";
-import type { BoardModel, FailureEvent, LineModel, SimulationResult, SimulationTraceEvent, TrafficEvent } from "./types";
-
-type MutableLineState = {
-  line: LineModel;
-  busyUntil: number;
-  faultUntil: number;
-};
+import {
+  createRng,
+  divideAndRound,
+  loadBandForSimulationLoad,
+  premiumEligible,
+  type SimulationMode,
+} from "./shared";
+import { createPressureCurve, createTraffic } from "./traffic-generation";
+import type { BoardModel, FailureEvent, SimulationResult, SimulationTraceEvent, TrafficEvent } from "./models";
+import { connectProbability } from "./routing-math";
+import {
+  applyPremiumHeat,
+  decayPremiumHeat,
+  getAdjustedLine,
+  getBoardTempo,
+  getCurrentLoad,
+  getEffectiveSoftCap,
+  getPremiumHeat,
+  getPublicPressure,
+  getServiceDuration,
+  idleNonPremiumExists,
+  toRuntimeLineViews,
+  type MutableLineState,
+  type RuntimeContext,
+} from "./runtime-helpers";
 
 type QueueEntry = TrafficEvent & {
   arrivalAt: number;
@@ -29,81 +44,13 @@ type RuntimeAccumulators = {
 
 type PolicyDecisionFn = (input: PolicyInput) => Promise<{ lineId: string | null; error?: string }>;
 
-function getCurrentLoad(board: BoardModel, mode: SimulationMode, second: number, queueDepth: number) {
-  const curve = createPressureCurve(board, mode);
-  const base = curve.points[Math.min(second, curve.points.length - 1)] ?? GAME_BALANCE.runtimePenalties.defaultCurveLoad;
-  return Math.max(
-    GAME_BALANCE.runtimePenalties.liveLoadClamp.min,
-    Math.min(
-      base + Math.min(queueDepth, GAME_BALANCE.runtimePenalties.queueLoadCap) * GAME_BALANCE.runtimePenalties.queueLoadFactorPerCall,
-      GAME_BALANCE.runtimePenalties.liveLoadClamp.max,
-    ),
-  );
-}
-
-function getBoardTempo(board: BoardModel, mode: SimulationMode, second: number): BoardTempo {
-  if (mode !== "final") return "steady";
-  const lower = board.finalPhaseChange.shiftPoint - GAME_BALANCE.trafficShape.finalPhaseChange.transitionWindowSeconds;
-  const upper = board.finalPhaseChange.shiftPoint + GAME_BALANCE.trafficShape.finalPhaseChange.transitionWindowSeconds;
-  if (second < lower || second > upper) return "steady";
-  return board.finalPhaseChange.loadDelta >= 0 ? "surging" : "cooling";
-}
-
-function getEffectiveSoftCap(board: BoardModel, mode: SimulationMode, second: number, line: LineModel) {
-  if (mode !== "final" || second < board.finalPhaseChange.shiftPoint || line.family !== board.finalPhaseChange.shiftedFamily) {
-    return line.loadSoftCap;
-  }
-  return Math.max(
-    GAME_BALANCE.trafficShape.finalPhaseChange.effectiveSoftCapClamp.min,
-    Math.min(
-      line.loadSoftCap + board.finalPhaseChange.capDelta,
-      GAME_BALANCE.trafficShape.finalPhaseChange.effectiveSoftCapClamp.max,
-    ),
-  );
-}
-
-function toRuntimeLineViews(lines: MutableLineState[], second: number): RuntimeLineView[] {
-  return lines.map((state) => {
-    const busySeconds = Math.max(0, Math.ceil(state.busyUntil - second));
-    const faultSeconds = Math.max(0, Math.ceil(state.faultUntil - second));
-    const status = faultSeconds > 0 ? "fault" : busySeconds > 0 ? "busy" : "idle";
-    return {
-      id: state.line.id,
-      label: state.line.label,
-      switchMark: state.line.switchMark,
-      classTags: state.line.classTags,
-      lineGroupId: state.line.lineGroupId,
-      isPremiumTrunk: state.line.isPremiumTrunk,
-      maintenanceBand: state.line.maintenanceBand,
-      status,
-      secondsUntilBusyClears: busySeconds,
-      secondsUntilFaultClears: faultSeconds,
-    };
-  });
-}
-
-function getServiceDuration(call: Pick<TrafficEvent, "routeCode" | "urgency">, rng: Rng) {
-  const base = GAME_BALANCE.runtimePenalties.serviceDurationBaseByRoute[call.routeCode];
-  return (
-    base +
-    (call.urgency === "priority" ? GAME_BALANCE.runtimePenalties.urgencyServiceBonus : 0) +
-    Math.floor(rng() * GAME_BALANCE.runtimePenalties.serviceDurationVariance)
-  );
-}
-
-function idleNonPremiumExists(lines: MutableLineState[], second: number) {
-  return lines.some((line) => !line.line.isPremiumTrunk && line.busyUntil <= second && line.faultUntil <= second);
-}
-
 async function routeCall(params: {
   call: TrafficEvent;
   second: number;
   attempt: number;
   queuedForSeconds: number;
   lines: MutableLineState[];
-  board: BoardModel;
-  mode: SimulationMode;
-  rng: Rng;
+  runtime: RuntimeContext;
   queueDepth: number;
   callsHandled: number;
   decide: PolicyDecisionFn;
@@ -111,16 +58,17 @@ async function routeCall(params: {
   trace: SimulationTraceEvent[];
   accumulators: RuntimeAccumulators;
 }) {
-  const load = getCurrentLoad(params.board, params.mode, params.second, params.queueDepth);
-  const tempo = getBoardTempo(params.board, params.mode, params.second);
-  const curve = createPressureCurve(params.board, params.mode);
+  const load = getCurrentLoad(params.runtime.curve, params.second, params.queueDepth);
+  const pressure = getPublicPressure(params.runtime, params.second, load);
+  const tempo = getBoardTempo(params.runtime.board, params.runtime.mode, params.second);
   const input: PolicyInput = {
     clock: {
       second: params.second,
-      remainingSeconds: curve.duration - params.second,
+      remainingSeconds: params.runtime.curve.duration - params.second,
     },
     board: {
       load,
+      pressure,
       queueDepth: params.queueDepth,
       callsHandled: params.callsHandled,
       tempo,
@@ -150,6 +98,7 @@ async function routeCall(params: {
       urgency: params.call.urgency,
       queuedForSeconds: params.queuedForSeconds,
       boardLoad: load,
+      boardPressure: pressure,
       queueDepth: params.queueDepth,
       selectedLineId: decision.lineId ?? null,
       selectedLineGroupId: selected?.line.lineGroupId ?? null,
@@ -246,10 +195,31 @@ async function routeCall(params: {
     }
   }
 
-  const effectiveSoftCap = getEffectiveSoftCap(params.board, params.mode, params.second, selected.line);
-  const probability = connectProbability(selected.line, params.call, load, params.queuedForSeconds, effectiveSoftCap);
-  if (params.rng() < probability) {
-    selected.busyUntil = params.second + getServiceDuration(params.call, params.rng);
+  const effectiveSoftCap = getEffectiveSoftCap(params.runtime.board, params.runtime.mode, params.second, selected.line);
+  const adjustedLine = getAdjustedLine(
+    params.runtime.board,
+    params.runtime.mode,
+    selected.line,
+    params.call,
+    params.queuedForSeconds,
+    load,
+  );
+  const premiumHeat = getPremiumHeat(params.runtime, selected.line);
+  const probability = connectProbability(
+    adjustedLine,
+    params.call,
+    load,
+    params.queuedForSeconds,
+    effectiveSoftCap,
+    premiumHeat,
+  );
+
+  if (selected.line.isPremiumTrunk) {
+    applyPremiumHeat(params.runtime, selected.line, params.call);
+  }
+
+  if (params.runtime.rng() < probability) {
+    selected.busyUntil = params.second + getServiceDuration(params.call, params.runtime.rng);
     selected.faultUntil = 0;
     params.accumulators.connectedCalls += 1;
     pushTrace("connected", selected.line.id, "connected", true);
@@ -284,9 +254,7 @@ async function drainQueue(params: {
   second: number;
   queue: QueueEntry[];
   lines: MutableLineState[];
-  board: BoardModel;
-  mode: SimulationMode;
-  rng: Rng;
+  runtime: RuntimeContext;
   decide: PolicyDecisionFn;
   failures: FailureEvent[];
   trace: SimulationTraceEvent[];
@@ -299,7 +267,8 @@ async function drainQueue(params: {
     if (queuedForSeconds >= DROP_THRESHOLDS[oldest.routeCode]) {
       params.queue.shift();
       params.accumulators.droppedCalls += 1;
-      const load = getCurrentLoad(params.board, params.mode, params.second, params.queue.length);
+      const load = getCurrentLoad(params.runtime.curve, params.second, params.queue.length);
+      const pressure = getPublicPressure(params.runtime, params.second, load);
       params.failures.push({
         atSecond: params.second,
         callId: oldest.id,
@@ -323,6 +292,7 @@ async function drainQueue(params: {
         urgency: oldest.urgency,
         queuedForSeconds,
         boardLoad: load,
+        boardPressure: pressure,
         queueDepth: params.queue.length,
         selectedLineId: null,
         selectedLineGroupId: null,
@@ -344,9 +314,7 @@ async function drainQueue(params: {
       attempt: oldest.attempt + 1,
       queuedForSeconds,
       lines: params.lines,
-      board: params.board,
-      mode: params.mode,
-      rng: params.rng,
+      runtime: params.runtime,
       queueDepth: params.queue.length,
       callsHandled: params.callsHandled,
       decide: params.decide,
@@ -365,7 +333,6 @@ async function drainQueue(params: {
   }
 }
 
-/** Run a full probe or final against a board and submitted policy. */
 export async function simulateExchange(params: {
   seed?: string;
   board?: BoardModel;
@@ -374,7 +341,7 @@ export async function simulateExchange(params: {
 }): Promise<SimulationResult> {
   const board = params.board ?? createBoard(params.seed ?? "default-seed");
   const plan = createTraffic(board, params.mode);
-  const lines = board.lines.map((line) => ({
+  const lines: MutableLineState[] = board.lines.map((line) => ({
     line,
     busyUntil: 0,
     faultUntil: 0,
@@ -389,7 +356,13 @@ export async function simulateExchange(params: {
     premiumUsageCount: 0,
     trunkMisuseCount: 0,
   };
-  const rng = createRng(`${board.seed}:${params.mode}:runtime`);
+  const runtime: RuntimeContext = {
+    board,
+    mode: params.mode,
+    curve: createPressureCurve(board, params.mode),
+    rng: createRng(`${board.seed}:${params.mode}:runtime`),
+    premiumHeatByGroup: new Map(),
+  };
 
   for (const event of plan) {
     const existing = arrivalsBySecond.get(event.atSecond) ?? [];
@@ -402,6 +375,7 @@ export async function simulateExchange(params: {
   const horizon = (plan.at(-1)?.atSecond ?? 0) + GAME_BALANCE.runtimePenalties.postPlanHorizonSeconds;
 
   for (let second = 0; second <= horizon; second += 1) {
+    decayPremiumHeat(runtime);
     for (const state of lines) {
       if (state.busyUntil <= second) state.busyUntil = 0;
       if (state.faultUntil <= second) state.faultUntil = 0;
@@ -414,9 +388,7 @@ export async function simulateExchange(params: {
         attempt: 1,
         queuedForSeconds: 0,
         lines,
-        board,
-        mode: params.mode,
-        rng,
+        runtime,
         queueDepth: queue.length,
         callsHandled,
         decide: params.decide,
@@ -435,9 +407,7 @@ export async function simulateExchange(params: {
       second,
       queue,
       lines,
-      board,
-      mode: params.mode,
-      rng,
+      runtime,
       decide: params.decide,
       failures,
       trace,
@@ -450,12 +420,12 @@ export async function simulateExchange(params: {
     connectedCalls: accumulators.connectedCalls,
     totalCalls: plan.length,
     droppedCalls: accumulators.droppedCalls,
-    avgHoldSeconds: Number((accumulators.totalHoldSeconds / Math.max(plan.length, 1)).toFixed(2)),
+    avgHoldSeconds: divideAndRound(accumulators.totalHoldSeconds, Math.max(plan.length, 1), 2),
     totalHoldSeconds: accumulators.totalHoldSeconds,
     premiumUsageCount: accumulators.premiumUsageCount,
-    premiumUsageRate: Number((accumulators.premiumUsageCount / Math.max(plan.length, 1)).toFixed(3)),
+    premiumUsageRate: divideAndRound(accumulators.premiumUsageCount, Math.max(plan.length, 1), 3),
     trunkMisuseCount: accumulators.trunkMisuseCount,
-    efficiency: Number((accumulators.connectedCalls / Math.max(plan.length, 1)).toFixed(4)),
+    efficiency: divideAndRound(accumulators.connectedCalls, Math.max(plan.length, 1), 4),
     hiddenScore: 0,
   };
   metrics.hiddenScore = Number(

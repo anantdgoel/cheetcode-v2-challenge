@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { StoredShiftRecord } from "../src/lib/data/types";
+import type { StoredShiftRecord } from "../src/lib/repositories/records";
 
 const mutationMock = vi.fn();
 const queryMock = vi.fn();
 const validatePolicyMock = vi.fn();
 
-vi.mock("../src/lib/convex-server", () => ({
+vi.mock("../src/lib/repositories/convex", () => ({
   api: {
     sessions: {
       getOwnedShift: "sessions:getOwnedShift",
@@ -24,10 +24,10 @@ vi.mock("../src/lib/convex-server", () => ({
       getForGithub: "leaderboard:getForGithub",
       upsertBest: "leaderboard:upsertBest",
     },
-    leads: {
-      getReportByPublicId: "leads:getReportByPublicId",
-      upsertReport: "leads:upsertReport",
-      adminLookup: "leads:adminLookup",
+    reports: {
+      getReportByPublicId: "reports:getReportByPublicId",
+      upsertReport: "reports:upsertReport",
+      adminLookup: "reports:adminLookup",
     },
   },
   getConvexMutationSecret: () => "secret",
@@ -74,7 +74,7 @@ describe("shift service", () => {
   it("reloads owned shifts and shapes the current DTO", async () => {
     queryMock.mockResolvedValue(baseShift);
 
-    const { getOwnedShiftForGithub } = await import("../src/lib/app/shift-service");
+    const { getOwnedShiftForGithub } = await import("../src/lib/shifts");
     const shift = await getOwnedShiftForGithub("operator", "shift_123");
 
     expect(queryMock).toHaveBeenCalledWith("sessions:getOwnedShift", {
@@ -104,7 +104,7 @@ describe("shift service", () => {
       });
     mutationMock.mockResolvedValue(undefined);
 
-    const { validateDraftForGithub } = await import("../src/lib/app/shift-service");
+    const { validateDraftForGithub } = await import("../src/lib/shifts");
     const result = await validateDraftForGithub({
       github: "operator",
       shiftId: "shift_123",
@@ -139,7 +139,7 @@ describe("shift service", () => {
     queryMock.mockResolvedValue(baseShift);
     mutationMock.mockResolvedValue(undefined);
 
-    const { validateDraftForGithub } = await import("../src/lib/app/shift-service");
+    const { validateDraftForGithub } = await import("../src/lib/shifts");
     const result = await validateDraftForGithub({
       github: "operator",
       shiftId: "shift_123",

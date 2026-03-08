@@ -13,7 +13,7 @@ vi.mock("../src/app/api/shifts/_utils", () => ({
   jsonError: jsonErrorMock,
 }));
 
-vi.mock("@/lib/app/shift-service", () => ({
+vi.mock("@/lib/shifts", () => ({
   validateDraftForGithub: validateDraftForGithubMock,
   runProbeForGithub: runProbeForGithubMock,
   goLiveForGithub: goLiveForGithubMock,

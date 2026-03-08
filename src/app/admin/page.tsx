@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminPageContent } from "@/components/admin/AdminPageContent";
-import { getAdminSnapshot } from "@/lib/app/shift-service";
+import { getAdminSnapshot } from "@/lib/shifts";
 import { getGithubUsername, isAdminGithub } from "@/lib/server-auth";
 import { normalizeSearchParam } from "@/lib/validation";
 

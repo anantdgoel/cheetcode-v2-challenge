@@ -11,13 +11,24 @@ export const SUBSCRIBER_CLASSES = ["residence", "business", "hotel", "government
 export const BILLING_MODES = ["standard", "verified", "collect"] as const;
 export const URGENCIES = ["routine", "priority"] as const;
 export const MAINTENANCE_BANDS = ["steady", "temperamental", "recently_serviced"] as const;
-export const BOARD_PROFILES = ["switchboard", "front-office", "night-rush"] as const;
-export const LINE_FAMILIES = ["district", "relay", "trunk"] as const;
+export const BOARD_PROFILES = [
+  "switchboard",
+  "front-office",
+  "night-rush",
+  "civic-desk",
+  "commuter-belt",
+  "storm-watch",
+] as const;
+export const LINE_FAMILIES = ["district", "relay", "trunk", "exchange", "suburban"] as const;
 export const BOARD_CONDITIONS = ["steady", "strained", "overrun"] as const;
 export const BOARD_TEMPOS = ["steady", "surging", "cooling"] as const;
 export const LOAD_BANDS = ["low", "medium", "high", "peak"] as const;
 export const QUEUE_BANDS = ["short", "rising", "long"] as const;
 export const TRAFFIC_REGIMES = ["lunchtime", "closing_bell", "storm_hour", "late_quiet"] as const;
+export const OPERATOR_GRADES = ["senior", "operator", "trainee"] as const;
+export const PRESSURE_BANDS = ["calm", "building", "hot"] as const;
+export const PREMIUM_REUSE_BANDS = ["fresh", "warm", "hot"] as const;
+export const FINAL_SHIFT_KINDS = ["traffic_mix", "cap_swing"] as const;
 export const ARTIFACT_NAMES = ["manual.md", "starter.js", "lines.json", "observations.jsonl"] as const;
 
 export type ProbeKind = (typeof PROBE_KINDS)[number];
@@ -34,6 +45,10 @@ export type BoardTempo = (typeof BOARD_TEMPOS)[number];
 export type LoadBand = (typeof LOAD_BANDS)[number];
 export type QueueBand = (typeof QUEUE_BANDS)[number];
 export type TrafficRegime = (typeof TRAFFIC_REGIMES)[number];
+export type OperatorGrade = (typeof OPERATOR_GRADES)[number];
+export type PressureBand = (typeof PRESSURE_BANDS)[number];
+export type PremiumReuseBand = (typeof PREMIUM_REUSE_BANDS)[number];
+export type FinalShiftKind = (typeof FINAL_SHIFT_KINDS)[number];
 export type ArtifactName = (typeof ARTIFACT_NAMES)[number];
 
 export type PublicLine = {
@@ -69,6 +84,7 @@ export type PolicyClock = {
 
 export type PolicyBoard = {
   load: number;
+  pressure: number;
   queueDepth: number;
   callsHandled: number;
   tempo: BoardTempo;

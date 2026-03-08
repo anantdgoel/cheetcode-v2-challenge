@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getErrorMessage, jsonError, requireShiftGithub } from "@/app/api/shifts/_utils";
-import { goLiveForGithub } from "@/lib/app/shift-service";
+import { goLiveForGithub } from "@/lib/shifts";
 
 export const runtime = "nodejs";
 

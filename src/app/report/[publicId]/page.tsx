@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ReportCard } from "@/components/report/ReportCard";
-import { getReportView } from "@/lib/app/shift-service";
+import { getReportView } from "@/lib/shifts";
 
 export const dynamic = "force-dynamic";
 

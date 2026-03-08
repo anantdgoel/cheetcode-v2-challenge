@@ -1,4 +1,4 @@
-import type { ReportView } from "@/lib/contracts/views";
+import type { ReportView } from "@/lib/domain/views";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
 import { getTitlePresentation } from "@/lib/frontend/title-display";
 

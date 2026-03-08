@@ -1,6 +1,6 @@
-import type { ProbeKind } from "@/lib/contracts/game";
-import type { EvaluationKind, ShiftStatus } from "@/lib/contracts/views";
-import type { StoredRunRecord, StoredShiftRecord } from "@/lib/data/types";
+import type { ProbeKind } from "@/lib/domain/game";
+import type { EvaluationKind, ShiftStatus } from "@/lib/domain/views";
+import type { StoredRunRecord, StoredShiftRecord } from "@/lib/repositories/records";
 
 type ProbeProgressRun = Pick<StoredRunRecord, "kind" | "state">;
 

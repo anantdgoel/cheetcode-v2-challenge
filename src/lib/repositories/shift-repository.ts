@@ -1,6 +1,6 @@
-import type { ArtifactName, PolicyValidationResult, ProbeSummary } from "@/lib/contracts/game";
-import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/convex-server";
-import type { StoredRunKind, StoredRunRecord, StoredRunTrigger, StoredShiftRecord } from "./types";
+import type { ArtifactName, PolicyValidationResult, ProbeSummary } from "@/lib/domain/game";
+import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/repositories/convex";
+import type { StoredRunKind, StoredRunRecord, StoredRunTrigger, StoredShiftRecord } from "./records";
 
 export async function getLatestShiftRecord(github: string): Promise<StoredShiftRecord | null> {
   return getConvexServerClient().query(api.sessions.getCurrentOwned, {

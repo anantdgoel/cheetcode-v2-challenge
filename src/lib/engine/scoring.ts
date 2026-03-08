@@ -1,4 +1,4 @@
-import type { Title } from "@/lib/contracts/game";
+import type { Title } from "@/lib/domain/game";
 import { SCORE_WEIGHTS, TITLE_THRESHOLDS } from "./config/constants";
 import { GAME_BALANCE } from "./config/balance";
 import { clamp } from "./shared";

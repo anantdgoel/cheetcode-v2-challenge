@@ -6,14 +6,14 @@ import type {
   PolicyValidationResult,
   ProbeKind,
   ProbeSummary,
-} from "@/lib/contracts/game";
+} from "@/lib/domain/game";
 import { validateDraftSource } from "@/lib/validation";
+import { createBoard } from "./board-generation";
 import { buildReport } from "./report";
-import { createBoard } from "./board";
 import { summarizeProbe } from "./probe-summary";
 import { simulateExchange } from "./runtime";
 import { stableHash } from "./shared";
-import type { BoardModel, SimulationResult } from "./types";
+import type { BoardModel, SimulationResult } from "./models";
 
 let quickJsModule: Promise<QuickJSWASMModule> | null = null;
 
@@ -73,7 +73,7 @@ async function evaluatePolicyShape(source: string) {
 
     const sampleInput: PolicyInput = {
       clock: { second: 3, remainingSeconds: 177 },
-      board: { load: 0.42, queueDepth: 2, callsHandled: 9, tempo: "steady" },
+      board: { load: 0.42, pressure: 0.39, queueDepth: 2, callsHandled: 9, tempo: "steady" },
       call: {
         id: "shape-call",
         routeCode: "local",
