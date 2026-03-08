@@ -426,15 +426,12 @@ export function HeroSection ({
 
       <section className="hero-lede">
         <p className="hero-lede__text">
-          San Francisco, 1957. The trunk lines are humming. The board manual says one thing. The
-          dispatch log says another. Your shift starts in five minutes.
+          San Francisco, 1957. Some operators look at the board and see twenty-four lines. Others
+          look closer. The exchange keeps records for a reason. Not everyone reads them the same way.
         </p>
 
         <div className="hero-lede__cta-row">
           <SessionControls github={github} activeShiftId={activeShiftId} />
-          <span className="hero-lede__facts">
-            5 min investigation · 1 trial shift · 2 min final board call
-          </span>
         </div>
       </section>
     </>

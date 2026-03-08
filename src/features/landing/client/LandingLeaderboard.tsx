@@ -6,10 +6,15 @@ import { type CSSProperties, type ReactNode } from 'react'
 import { formatPercent, formatTitle } from '@/core/engine/report'
 import type { LeaderboardEntry, PaginatedLeaderboard } from '@/core/domain/views'
 
+/* ─── Section copy ─── */
+
+const SECTION_EYEBROW = 'from the archives'
+const SECTION_HEADING = 'Prior Operators'
+
 /* ─── Animation helpers ─── */
 
-const FADE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 30 }
-const FADE_VARIANTS = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }
+const FADE_SPRING = { type: 'spring' as const, stiffness: 500, damping: 38 }
+const FADE_VARIANTS = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }
 const VIEWPORT = { once: true, margin: '-60px' as const }
 
 function FadeIn ({ children, delay = 0, className, style }: { children: ReactNode; delay?: number; className?: string; style?: CSSProperties }) {
@@ -137,6 +142,20 @@ function Chevron ({ direction }: { direction: 'left' | 'right' }) {
   )
 }
 
+/* ─── Suspense skeleton (same copy, no data dependency) ─── */
+
+export function LandingLeaderboardSkeleton () {
+  return (
+    <section className="leaderboard-card" aria-busy="true">
+      <div className="leaderboard-card__header">
+        <p className="eyebrow">{SECTION_EYEBROW}</p>
+        <h2 className="shift-reports-heading">{SECTION_HEADING}</h2>
+      </div>
+      <p className="console-supervisor__empty">Loading leaderboard...</p>
+    </section>
+  )
+}
+
 /* ─── Main component ─── */
 
 export function LandingLeaderboard ({
@@ -155,8 +174,8 @@ export function LandingLeaderboard ({
     <div className="leaderboard-card">
 
       <FadeIn className="leaderboard-card__header">
-        <p className="eyebrow">Public Shift Records</p>
-        <h2 className="shift-reports-heading">Shift Reports</h2>
+        <p className="eyebrow">{SECTION_EYEBROW}</p>
+        <h2 className="shift-reports-heading">{SECTION_HEADING}</h2>
       </FadeIn>
 
       <div className="line-tiles">

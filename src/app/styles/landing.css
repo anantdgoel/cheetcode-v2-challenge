@@ -178,13 +178,15 @@
   background: var(--row-bg);
   text-decoration: none;
   color: inherit;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  transition: transform 200ms ease-out, border-color 200ms ease-out, background 200ms ease-out, box-shadow 200ms ease-out;
 }
 
 .line-tile:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: var(--heat-20);
   background: var(--row-bg-hover);
+  box-shadow: 0 4px 12px rgba(20,10,0,0.08);
+  transition: transform 100ms ease-out, border-color 100ms ease-out, background 100ms ease-out, box-shadow 100ms ease-out;
 }
 
 .line-tile--top {
