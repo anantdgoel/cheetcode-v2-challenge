@@ -25,6 +25,7 @@ export function shapeShiftView(shift: StoredShiftRecord, now: number): ShiftView
   const finalEvaluation = shift.runs.filter((run) => run.kind === "final").map(shapeRun).at(-1);
   const probesUsed = probeEvaluations.filter((run) => run.state === "completed").length;
   const acceptedRun = getAcceptedRun(shift.runs);
+  const probeWindowOpen = shift.state === "active" && now < shift.phase1EndsAt;
 
   return {
     id: shift.id,
@@ -48,7 +49,7 @@ export function shapeShiftView(shift: StoredShiftRecord, now: number): ShiftView
     probesUsed,
     maxProbes: PROBE_ORDER.length,
     remainingProbes: Math.max(0, PROBE_ORDER.length - probesUsed),
-    nextProbeKind: getNextProbeKind(shift.runs),
+    nextProbeKind: probeWindowOpen ? getNextProbeKind(shift.runs) : undefined,
     canGoLive:
       shift.state === "active" &&
       now < shift.expiresAt &&

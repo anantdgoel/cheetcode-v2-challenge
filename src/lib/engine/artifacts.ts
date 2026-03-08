@@ -1,5 +1,5 @@
 import type { ArtifactName, PublicLine } from "@/lib/domain/game";
-import type { ArtifactContent, BoardModel, LineModel, ObservationRow, ShiftArtifacts } from "./models";
+import type { BoardModel, LineModel, ObservationRow, ShiftArtifacts } from "./models";
 import { createBoard } from "./board-generation";
 import { createObservations } from "./observation-generation";
 
@@ -91,6 +91,7 @@ The room tells on itself if you listen:
 - Some groups carry cleanly until the lamps stack up, then fail fast.
 - Premium habit is not premium judgment.
 - The expensive room helps most when the call is real trouble, not merely loud trouble.
+- The books may flatter a desk that stops telling the truth once the room turns.
 
 ## 5. Evidence
 
@@ -110,6 +111,7 @@ Two live probes are available:
 - \`stress\`: denser traffic to expose collapse thresholds
 
 Probe output is structured on purpose. Use it to tune your model, not to search for one magic replacement line.
+The probe room will tell you what changed, but not how to patch it.
 The final can change pace more than once. A good operator notices before the whole desk notices.
 
 ## 7. Scoring
@@ -163,7 +165,7 @@ export function buildShiftArtifacts(seedOrBoard: string | BoardModel): ShiftArti
 export function buildArtifactContent(
   name: ArtifactName,
   seedOrBoard: string | BoardModel,
-): ArtifactContent {
+): string {
   const board = typeof seedOrBoard === "string" ? createBoard(seedOrBoard) : seedOrBoard;
-  return { name, content: ARTIFACT_BUILDERS[name](board) };
+  return ARTIFACT_BUILDERS[name](board);
 }

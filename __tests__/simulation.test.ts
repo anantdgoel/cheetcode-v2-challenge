@@ -24,6 +24,10 @@ describe("simulation signal", () => {
     expect(summary.deskCondition).toMatch(/steady|strained|overrun/);
     expect("hiddenScore" in summary.metrics).toBe(false);
     expect(summary.callBucketTable.length).toBeGreaterThan(0);
+    expect(summary.failureModes).toHaveLength(3);
+    expect(summary.recommendedQuestions).toHaveLength(2);
+    expect(summary.chiefOperatorNotes).toHaveLength(5);
+    expect(summary.counterfactualNotes).toHaveLength(2);
     expect(summary.incidents.length).toBeLessThanOrEqual(8);
   });
 

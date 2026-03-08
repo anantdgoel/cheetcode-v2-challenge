@@ -195,10 +195,17 @@ async function routeCall(params: {
     }
   }
 
-  const effectiveSoftCap = getEffectiveSoftCap(params.runtime.board, params.runtime.mode, params.second, selected.line);
+  const effectiveSoftCap = getEffectiveSoftCap(
+    params.runtime.board,
+    params.runtime.mode,
+    params.second,
+    selected.line,
+    load,
+  );
   const adjustedLine = getAdjustedLine(
     params.runtime.board,
     params.runtime.mode,
+    params.second,
     selected.line,
     params.call,
     params.queuedForSeconds,

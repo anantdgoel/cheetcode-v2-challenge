@@ -1,6 +1,7 @@
 import type { LandingView } from "@/lib/domain/views";
+import { ConvexPublicProvider } from "@/components/providers/ConvexPublicProvider";
 import { HeroSection, SwitchboardPattern } from "./HeroSection";
-import { LandingLeaderboard } from "./LandingLeaderboard";
+import { LiveLandingLeaderboard } from "./LiveLandingLeaderboard";
 
 function Footer() {
   return (
@@ -16,7 +17,9 @@ export function LandingPageContent({ landing }: { landing: LandingView }) {
     <main className="landing-shell">
       <SwitchboardPattern />
       <HeroSection github={landing.github} activeShiftId={landing.activeShiftId} />
-      <LandingLeaderboard leaderboard={landing.leaderboard} />
+      <ConvexPublicProvider>
+        <LiveLandingLeaderboard initialLeaderboard={landing.leaderboard} />
+      </ConvexPublicProvider>
       <Footer />
     </main>
   );

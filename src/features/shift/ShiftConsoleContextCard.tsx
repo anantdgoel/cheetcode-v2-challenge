@@ -3,10 +3,24 @@ import type { ProbeSummary } from "@/lib/domain/game";
 import type { ShiftView } from "@/lib/domain/views";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
 import { getTitlePresentation } from "@/lib/frontend/title-display";
+import type { ClockTone } from "./shift-console-state";
 import { conditionDotClass, formatIncidents } from "./shift-console-state";
+
+function formatTransferWarning(value: ProbeSummary["transferWarning"]) {
+  switch (value) {
+    case "stable":
+      return "Stable";
+    case "stress_only":
+      return "Stress-only";
+    case "likely_final_shift_sensitive":
+      return "Likely final-shift sensitive";
+  }
+}
 
 export function ShiftConsoleContextCard(props: {
   activeProbeSummary?: ProbeSummary;
+  clockTone: ClockTone;
+  statusNotice: string;
   shift: ShiftView;
 }) {
   if (props.shift.finalEvaluation?.metrics) {
@@ -61,14 +75,27 @@ export function ShiftConsoleContextCard(props: {
     );
   }
 
+  const showTimingNotice = props.clockTone === "critical";
+
   if (props.activeProbeSummary) {
     return (
       <div className="console-context-card">
         <p className="console-card-eyebrow">Trial Shift Results</p>
+        {showTimingNotice && (
+          <p className="console-context-card__notice console-context-card__notice--warning">
+            {props.statusNotice}
+          </p>
+        )}
         <div className="console-trial__condition">
           <span className={conditionDotClass(props.activeProbeSummary.deskCondition)} />
           <span className="console-trial__condition-label">
             {props.activeProbeSummary.deskCondition.charAt(0).toUpperCase() + props.activeProbeSummary.deskCondition.slice(1)}
+          </span>
+        </div>
+        <div className="console-trial__warning">
+          <span className="console-metric-label">Transfer Read</span>
+          <span className="console-trial__warning-value">
+            {formatTransferWarning(props.activeProbeSummary.transferWarning)}
           </span>
         </div>
         {[
@@ -103,6 +130,31 @@ export function ShiftConsoleContextCard(props: {
           </div>
         ))}
         <hr className="console-divider" />
+        <div className="console-trial__notes">
+          <span className="console-metric-label">Chief Operator Notes</span>
+          <ul className="console-trial__list">
+            {props.activeProbeSummary.chiefOperatorNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="console-trial__notes">
+          <span className="console-metric-label">Counterfactuals</span>
+          <ul className="console-trial__list console-trial__list--muted">
+            {props.activeProbeSummary.counterfactualNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="console-trial__notes">
+          <span className="console-metric-label">Questions To Carry</span>
+          <ul className="console-trial__list console-trial__list--questions">
+            {props.activeProbeSummary.recommendedQuestions.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </div>
+        <hr className="console-divider" />
         <div className="console-trial__log">
           <span className="console-metric-label">Failure Log</span>
           <p className="console-trial__log-text">
@@ -118,8 +170,17 @@ export function ShiftConsoleContextCard(props: {
   return (
     <div className="console-context-card">
       <p className="console-card-eyebrow">Supervisor Console</p>
+      {props.clockTone === "critical" && props.statusNotice && (
+        <p className={`console-context-card__notice${props.clockTone === "critical" ? " console-context-card__notice--warning" : ""}`}>
+          {props.statusNotice}
+        </p>
+      )}
       <p className="console-supervisor__empty">
-        No trial dispatched yet.{"\n"}Study the dossier. Write your policy. Validate when ready.
+        {props.clockTone === "critical"
+          ? "The last bell is ringing. Only a valid draft reaches the live room."
+          : props.clockTone === "tight"
+            ? "The trial floor is shut. Work the evidence you have and call the room."
+            : "No trial dispatched yet.\nStudy the dossier. Write your policy. Validate when ready."}
       </p>
     </div>
   );

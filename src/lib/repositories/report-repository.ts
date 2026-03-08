@@ -1,13 +1,15 @@
-import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/repositories/convex";
+import { api, asShiftId, fetchInternalMutation, fetchInternalQuery, fetchPublicQuery, internal } from "@/lib/repositories/convex-server";
 import type { StoredReportRecord } from "./records";
 
 export async function getReportByPublicId(publicId: string): Promise<StoredReportRecord | null> {
-  return getConvexServerClient().query(api.reports.getReportByPublicId, { publicId });
+  return fetchPublicQuery(api.reports.getReportByPublicId, { publicId });
 }
 
 export async function upsertReport(report: StoredReportRecord) {
-  return getConvexServerClient().mutation(api.reports.upsertReport, {
-    report,
-    secret: getConvexMutationSecret(),
+  return fetchInternalMutation(internal.reports.upsertReport, {
+    report: {
+      ...report,
+      shiftId: asShiftId(report.shiftId),
+    },
   });
 }

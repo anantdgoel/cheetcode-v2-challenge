@@ -4,6 +4,7 @@ import type {
   RunProbeResult,
   ValidateDraftResult,
 } from "@/lib/domain/commands";
+import type { ShiftView } from "@/lib/domain/views";
 import { readJsonOrThrow } from "@/lib/frontend/http";
 
 export async function fetchArtifactContent(shiftId: string, artifactName: ArtifactName) {
@@ -16,6 +17,11 @@ export async function fetchArtifactContent(shiftId: string, artifactName: Artifa
     throw new Error(data.error ?? "Artifact unavailable");
   }
   return response.text();
+}
+
+export async function fetchShift(shiftId: string) {
+  const response = await fetch(`/api/shifts/${shiftId}`, { cache: "no-store" });
+  return readJsonOrThrow<{ error?: string; shift: ShiftView }>(response, "Shift refresh failed");
 }
 
 export async function saveDraft(shiftId: string, source: string) {

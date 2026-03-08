@@ -3,7 +3,10 @@ import { buildShiftArtifacts, createBoard, runFinal, simulateExchange } from "..
 import {
   BENCHMARK_SEEDS,
   buildHiringBarPolicySource,
+  buildPriorBoardSummary,
+  buildWarmStartPolicySource,
   createHiringBarDecision,
+  createWarmStartDecision,
   inferHiringBarModelFromArtifacts,
 } from "../scripts/v3-agent-policies.mjs";
 
@@ -11,11 +14,18 @@ function average(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-async function expectHiringBarParity(seed: string, options?: { useTempo?: boolean }) {
+async function expectPolicyParity(seed: string, kind: "artifact" | "warm-start") {
   const board = createBoard(seed);
   const artifacts = buildShiftArtifacts(board);
-  const source = buildHiringBarPolicySource(artifacts, options);
-  const decide = createHiringBarDecision(artifacts, options);
+  const priorArtifacts = BENCHMARK_SEEDS.filter((candidate) => candidate !== seed).map((candidate) => buildShiftArtifacts(candidate));
+  const source =
+    kind === "artifact"
+      ? buildHiringBarPolicySource(artifacts)
+      : buildWarmStartPolicySource(artifacts, priorArtifacts);
+  const decide =
+    kind === "artifact"
+      ? createHiringBarDecision(artifacts)
+      : createWarmStartDecision(artifacts, priorArtifacts);
 
   const generated = await runFinal({
     source,
@@ -32,79 +42,65 @@ async function expectHiringBarParity(seed: string, options?: { useTempo?: boolea
 }
 
 describe("artifact-driven hiring-bar agent", () => {
-  it("builds a board-specific policy source", () => {
-    const artifacts = buildShiftArtifacts("alpha-switch");
-    const source = buildHiringBarPolicySource(artifacts);
-
-    expect(source).toContain("function connect(input)");
-    expect(source).toContain("__MODEL__");
-    expect(source.length).toBeLessThan(40_000);
-  });
-
-  it("keeps generated hiring-bar policies under the 16 KB validation limit", () => {
+  it("builds board-specific policy sources under the 16 KB limit", () => {
     for (const seed of BENCHMARK_SEEDS) {
       const source = buildHiringBarPolicySource(buildShiftArtifacts(seed));
+      expect(source).toContain("function connect(input)");
+      expect(source).toContain("__MODEL__");
       expect(new TextEncoder().encode(source).length).toBeLessThan(16_000);
     }
   });
 
-  it("recovers the visible-to-hidden rotation on most benchmark boards", () => {
-    let recovered = 0;
+  it("treats visible family classification as a weak prior instead of a solved rotation", () => {
+    const artifacts = buildShiftArtifacts("alpha-switch");
+    const inferred = inferHiringBarModelFromArtifacts(artifacts);
 
-    for (const seed of BENCHMARK_SEEDS) {
-      const board = createBoard(seed);
-      const artifacts = buildShiftArtifacts(board);
-      const inferred = inferHiringBarModelFromArtifacts(artifacts);
-      const expected = Object.fromEntries(
-        Object.entries(board.visibleFamilyPermutation).map(([hiddenFamily, visibleFamily]) => [
-          visibleFamily,
-          hiddenFamily,
-        ]),
-      );
-
-      const matchedAll = Object.entries(expected).every(
-        ([visibleFamily, hiddenFamily]) =>
-          inferred.inferredHiddenFamilyByVisibleFamily[visibleFamily] === hiddenFamily,
-      );
-
-      if (matchedAll) recovered += 1;
-    }
-
-    expect(recovered / BENCHMARK_SEEDS.length).toBeGreaterThanOrEqual(0.7);
+    expect(Object.keys(inferred.visibleFamilyByGroup).length).toBeGreaterThan(5);
+    expect(Object.keys(inferred.familyCountPosterior)).toEqual(["3", "4", "5"]);
+    expect(Math.max(...Object.values(inferred.familyCountPosterior))).toBeLessThan(0.7);
   });
 
-  it("uses tempo-aware adaptation to beat the non-adaptive version on finals", async () => {
-    const adaptiveEfficiencies: number[] = [];
-    const staticEfficiencies: number[] = [];
+  it("builds a reusable prior-board summary for warm starts", () => {
+    const priorSummary = buildPriorBoardSummary(BENCHMARK_SEEDS.slice(0, 4).map((seed) => buildShiftArtifacts(seed)));
 
-    for (const seed of BENCHMARK_SEEDS) {
+    expect(priorSummary.benchmarkSeedCount).toBe(4);
+    expect(priorSummary.profilePosterior["switchboard"]).toBeGreaterThan(0);
+    expect(priorSummary.familyCountPosterior["5"]).toBeGreaterThan(0);
+  });
+
+  it("matches generated-source behavior for the artifact-only policy", async () => {
+    await expectPolicyParity("alpha-switch", "artifact");
+  });
+
+  it("matches generated-source behavior for the warm-start policy", async () => {
+    await expectPolicyParity("broadway-night", "warm-start");
+  });
+
+  it("uses priors without materially regressing on holdout boards", async () => {
+    const artifactEfficiencies: number[] = [];
+    const warmStartEfficiencies: number[] = [];
+
+    for (const seed of BENCHMARK_SEEDS.slice(4)) {
       const artifacts = buildShiftArtifacts(seed);
-      const adaptive = createHiringBarDecision(artifacts, { useTempo: true });
-      const nonAdaptive = createHiringBarDecision(artifacts, { useTempo: false });
+      const priorArtifacts = BENCHMARK_SEEDS.filter((candidate) => candidate !== seed).map((candidate) => buildShiftArtifacts(candidate));
+      const artifactOnly = createHiringBarDecision(artifacts);
+      const warmStart = createWarmStartDecision(artifacts, priorArtifacts);
 
-      const adaptiveResult = await simulateExchange({
+      const artifactResult = await simulateExchange({
         seed,
         mode: "final",
-        decide: (input) => Promise.resolve(adaptive(input)),
+        decide: (input) => Promise.resolve(artifactOnly(input)),
       });
-      const staticResult = await simulateExchange({
+      const warmStartResult = await simulateExchange({
         seed,
         mode: "final",
-        decide: (input) => Promise.resolve(nonAdaptive(input)),
+        decide: (input) => Promise.resolve(warmStart(input)),
       });
 
-      adaptiveEfficiencies.push(adaptiveResult.metrics.efficiency);
-      staticEfficiencies.push(staticResult.metrics.efficiency);
+      artifactEfficiencies.push(artifactResult.metrics.efficiency);
+      warmStartEfficiencies.push(warmStartResult.metrics.efficiency);
     }
 
-    expect(average(adaptiveEfficiencies) - average(staticEfficiencies)).toBeGreaterThanOrEqual(0.08);
-  });
-
-  it("matches generated-source behavior for the tempo-aware policy", async () => {
-    await expectHiringBarParity("alpha-switch");
-  });
-
-  it("matches generated-source behavior when tempo adaptation is disabled", async () => {
-    await expectHiringBarParity("broadway-night", { useTempo: false });
+    expect(average(warmStartEfficiencies)).toBeGreaterThanOrEqual(average(artifactEfficiencies) - 0.03);
   });
 });

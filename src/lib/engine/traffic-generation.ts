@@ -14,14 +14,20 @@ import { getShiftFactor } from "./final-phase";
 export function createPressureCurve(board: BoardModel, kind: SimulationMode): PressureCurve {
   const rng = createRng(`${board.seed}:${kind}:curve`);
   const duration = GAME_BALANCE.trafficShape.pressure.durationByMode[kind];
-  const baseline = GAME_BALANCE.trafficShape.pressure.baselineByMode[kind];
+  const baseline =
+    GAME_BALANCE.trafficShape.pressure.baselineByMode[kind] +
+    (kind === "fit" || kind === "stress" ? board.hiddenTraits.pressureCollapse * 0.03 : board.hiddenTraits.finalShiftSensitivity * 0.04);
   const points = Array.from({ length: duration + 1 }, (_, second) => {
     const wave =
       Math.sin(second / GAME_BALANCE.trafficShape.pressure.wave.primaryDivisor) * GAME_BALANCE.trafficShape.pressure.wave.primaryAmplitude +
       Math.cos(second / GAME_BALANCE.trafficShape.pressure.wave.secondaryDivisor) * GAME_BALANCE.trafficShape.pressure.wave.secondaryAmplitude;
     const shiftLoad =
       kind === "final"
-        ? board.finalPhaseChanges.reduce((sum, change) => sum + change.loadDelta * getShiftFactor(second, change), 0)
+        ? board.finalPhaseChanges.reduce(
+            (sum, change) =>
+              sum + change.loadDelta * getShiftFactor(second, change) * (1 + board.hiddenTraits.finalShiftSensitivity * 0.6),
+            0,
+          )
         : 0;
     return clamp(
       baseline + wave + shiftLoad,
@@ -35,7 +41,9 @@ export function createPressureCurve(board: BoardModel, kind: SimulationMode): Pr
     const center = Math.floor(rng() * duration);
     const width = GAME_BALANCE.trafficShape.pressure.burstWidth.base + Math.floor(rng() * GAME_BALANCE.trafficShape.pressure.burstWidth.variance);
     const height =
-      GAME_BALANCE.trafficShape.pressure.burstHeight[kind].base + rng() * GAME_BALANCE.trafficShape.pressure.burstHeight[kind].variance;
+      (GAME_BALANCE.trafficShape.pressure.burstHeight[kind].base +
+        rng() * GAME_BALANCE.trafficShape.pressure.burstHeight[kind].variance) *
+      (1 + board.hiddenTraits.pressureCollapse * 0.4 + (kind === "final" ? board.hiddenTraits.tempoLag * 0.2 : 0));
     for (let second = Math.max(0, center - width); second <= Math.min(duration, center + width); second += 1) {
       const distance = Math.abs(second - center) / width;
       points[second] = clamp(
@@ -67,6 +75,8 @@ function getTrafficWeights(board: BoardModel, kind: SimulationMode, second: numb
         routeWeights[routeCode] += (change.trafficDelta[routeCode] ?? 0) * factor;
       }
     }
+    routeWeights.priority *= 1 + board.hiddenTraits.tempoLag * 0.1;
+    routeWeights.intercity *= 1 + board.hiddenTraits.finalShiftSensitivity * 0.06;
   }
 
   for (const routeCode of ROUTE_CODES) {

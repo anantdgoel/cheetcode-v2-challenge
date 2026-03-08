@@ -1,23 +1,8 @@
 import type { ArtifactName, PolicyValidationResult, ProbeSummary } from "@/lib/domain/game";
-import { api, getConvexMutationSecret, getConvexServerClient } from "@/lib/repositories/convex";
+import { asShiftId, fetchInternalMutation, fetchInternalQuery, internal } from "@/lib/repositories/convex-server";
 import type { StoredRunKind, StoredRunRecord, StoredRunTrigger, StoredShiftRecord } from "./records";
 
-export async function getLatestShiftRecord(github: string): Promise<StoredShiftRecord | null> {
-  return getConvexServerClient().query(api.sessions.getCurrentOwned, {
-    github,
-    secret: getConvexMutationSecret(),
-  });
-}
-
-export async function getOwnedShiftRecord(github: string, shiftId: string): Promise<StoredShiftRecord | null> {
-  return getConvexServerClient().query(api.sessions.getOwnedShift, {
-    github,
-    secret: getConvexMutationSecret(),
-    shiftId,
-  });
-}
-
-export async function createShiftRecord(params: {
+type StartShiftArgs = {
   github: string;
   seed: string;
   artifactVersion: number;
@@ -26,11 +11,23 @@ export async function createShiftRecord(params: {
   now: number;
   phase1EndsAt: number;
   expiresAt: number;
-}) {
-  return getConvexServerClient().mutation(api.sessions.start, {
-    ...params,
-    secret: getConvexMutationSecret(),
+};
+
+export async function getLatestShiftRecord(github: string): Promise<StoredShiftRecord | null> {
+  return fetchInternalQuery(internal.sessions.getCurrentOwned, {
+    github,
   });
+}
+
+export async function getOwnedShiftRecord(github: string, shiftId: string): Promise<StoredShiftRecord | null> {
+  return fetchInternalQuery(internal.sessions.getOwnedShift, {
+    github,
+    shiftId: asShiftId(shiftId),
+  });
+}
+
+export async function createShiftRecord(params: StartShiftArgs) {
+  return fetchInternalMutation(internal.sessions.start, params);
 }
 
 export async function saveDraftRecord(params: {
@@ -39,9 +36,9 @@ export async function saveDraftRecord(params: {
   source: string;
   savedAt: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.saveDraft, {
+  return fetchInternalMutation(internal.sessions.saveDraft, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
@@ -52,9 +49,9 @@ export async function storeValidationRecord(params: {
   validation: PolicyValidationResult;
   checkedAt: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.storeValidation, {
+  return fetchInternalMutation(internal.sessions.storeValidation, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
@@ -64,9 +61,9 @@ export async function recordArtifactFetch(params: {
   name: ArtifactName;
   at: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.recordArtifactFetch, {
+  return fetchInternalMutation(internal.sessions.recordArtifactFetch, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
@@ -82,27 +79,25 @@ export async function acceptRunRecord(params: {
     sourceSnapshot: string;
   };
 }) {
-  return getConvexServerClient().mutation(api.sessions.acceptRun, {
+  return fetchInternalMutation(internal.sessions.acceptRun, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
 export async function completeProbeRunRecord(params: {
-  github: string;
   shiftId: string;
   runId: string;
   summary: ProbeSummary;
   resolvedAt: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.completeProbeRun, {
+  return fetchInternalMutation(internal.sessions.completeProbeRun, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
 export async function completeFinalRunRecord(params: {
-  github: string;
   shiftId: string;
   runId: string;
   reportPublicId: string;
@@ -111,19 +106,18 @@ export async function completeFinalRunRecord(params: {
   chiefOperatorNote: string;
   resolvedAt: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.completeFinalRun, {
+  return fetchInternalMutation(internal.sessions.completeFinalRun, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }
 
 export async function markExpiredNoResult(params: {
-  github: string;
   shiftId: string;
   completedAt: number;
 }) {
-  return getConvexServerClient().mutation(api.sessions.markExpiredNoResult, {
+  return fetchInternalMutation(internal.sessions.markExpiredNoResult, {
     ...params,
-    secret: getConvexMutationSecret(),
+    shiftId: asShiftId(params.shiftId),
   });
 }

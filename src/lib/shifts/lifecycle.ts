@@ -5,8 +5,9 @@ import type { StoredRunRecord, StoredShiftRecord } from "@/lib/repositories/reco
 type ProbeProgressRun = Pick<StoredRunRecord, "kind" | "state">;
 
 /** Shift timing constants used for every active board. */
-export const PHASE_1_MS = 4 * 60 * 1000;
-export const SHIFT_MS = 10 * 60 * 1000;
+export const PHASE_1_MS = 30_000;
+export const SHIFT_MS = 60_000;
+export const FINAL_WARNING_MS = 10_000;
 
 export const PROBE_ORDER: ProbeKind[] = ["fit", "stress"];
 

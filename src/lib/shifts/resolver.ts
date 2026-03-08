@@ -1,11 +1,5 @@
 import type { ProbeKind } from "@/lib/domain/game";
-import {
-  buildFinalReport,
-  createBoard,
-  runFinal,
-  runProbe,
-  stableHash,
-} from "@/lib/engine";
+import { buildFinalReport, createBoard, runFinal, runProbe, stableHash } from "@/lib/engine";
 import { upsertReport } from "@/lib/repositories/report-repository";
 import {
   acceptRunRecord,
@@ -35,7 +29,6 @@ async function finishProbeRun(shift: StoredShiftRecord, run: StoredRunRecord & {
   });
 
   await completeProbeRunRecord({
-    github: shift.github,
     shiftId: shift.id,
     runId: run.id,
     summary,
@@ -62,7 +55,6 @@ async function finishFinalRun(shift: StoredShiftRecord, run: StoredRunRecord) {
 
   await upsertReport(report);
   await completeFinalRunRecord({
-    github: shift.github,
     shiftId: shift.id,
     runId: run.id,
     reportPublicId: report.publicId,
@@ -109,7 +101,6 @@ export async function ensureResolvedShift(github: string, shiftId: string) {
 
     if (shouldExpireWithoutResult(shift, now)) {
       await markExpiredNoResult({
-        github,
         shiftId,
         completedAt: shift.expiresAt,
       });

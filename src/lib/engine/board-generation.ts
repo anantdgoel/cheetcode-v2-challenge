@@ -12,7 +12,7 @@ import {
 import { GAME_BALANCE } from "./config/balance";
 import { FAMILY_COMPATIBILITY_BASE, FAMILY_SWITCH_MARK_WEIGHTS, FAMILY_TAG_WEIGHTS } from "./config/profiles";
 import { clamp, createRng, jitter, pick, shuffle, stableHash, weightedPick, type Rng } from "./shared";
-import type { BoardModel, FinalPhaseChange, LineModel } from "./models";
+import type { BoardHiddenTraits, BoardModel, FinalPhaseChange, LineModel } from "./models";
 
 type CompatibilityKey = `${RouteCode}|${BillingMode}|${Urgency}`;
 
@@ -151,6 +151,30 @@ function chooseFinalShiftCount(rng: Rng, familyCount: number, boardProfile: Boar
   return weightedPick(rng, GAME_BALANCE.trafficShape.finalPhaseChange.shiftCountWeights);
 }
 
+function buildHiddenTraits(seed: string, boardProfile: BoardProfile): BoardHiddenTraits {
+  const bias = GAME_BALANCE.boardGeneration.hiddenTraits.profileBias[boardProfile];
+  const buildTrait = (name: keyof BoardHiddenTraits) =>
+    clamp(
+      jitter(
+        createRng(`${seed}:trait:${name}`),
+        GAME_BALANCE.boardGeneration.hiddenTraits[name].base,
+        GAME_BALANCE.boardGeneration.hiddenTraits[name].spread,
+        GAME_BALANCE.boardGeneration.hiddenTraits[name].min,
+        GAME_BALANCE.boardGeneration.hiddenTraits[name].max,
+      ) + bias[name],
+      GAME_BALANCE.boardGeneration.hiddenTraits[name].min,
+      GAME_BALANCE.boardGeneration.hiddenTraits[name].max,
+    );
+
+  return {
+    pressureCollapse: buildTrait("pressureCollapse"),
+    premiumFragility: buildTrait("premiumFragility"),
+    historyReliability: buildTrait("historyReliability"),
+    finalShiftSensitivity: buildTrait("finalShiftSensitivity"),
+    tempoLag: buildTrait("tempoLag"),
+  };
+}
+
 function pickShiftKind(rng: Rng): FinalShiftKind {
   return pick(rng, ["traffic_mix", "cap_swing"] as FinalShiftKind[]);
 }
@@ -174,9 +198,15 @@ function buildTrafficDelta(rng: Rng) {
   } as Partial<Record<RouteCode, number>>;
 }
 
-function buildFinalPhaseChanges(seed: string, boardProfile: BoardProfile, activeFamilies: LineFamily[]): FinalPhaseChange[] {
+function buildFinalPhaseChanges(
+  seed: string,
+  boardProfile: BoardProfile,
+  activeFamilies: LineFamily[],
+  hiddenTraits: BoardHiddenTraits,
+): FinalPhaseChange[] {
   const rng = createRng(`${seed}:final-phase`);
-  const count = Number(chooseFinalShiftCount(rng, activeFamilies.length, boardProfile));
+  let count = Number(chooseFinalShiftCount(rng, activeFamilies.length, boardProfile));
+  if (hiddenTraits.finalShiftSensitivity > 0.72 && count < 3) count += 1;
   if (!count) return [];
 
   const points = Array.from({ length: count }, () =>
@@ -200,7 +230,7 @@ function buildFinalPhaseChanges(seed: string, boardProfile: BoardProfile, active
         GAME_BALANCE.trafficShape.finalPhaseChange.loadDelta.spread,
         GAME_BALANCE.trafficShape.finalPhaseChange.loadDelta.min,
         GAME_BALANCE.trafficShape.finalPhaseChange.loadDelta.max,
-      ),
+      ) * (1 + hiddenTraits.finalShiftSensitivity * 0.55),
       trafficDelta: kind === "traffic_mix" ? buildTrafficDelta(rng) : {},
       targetFamily: pick(rng, activeFamilies),
       capDelta:
@@ -213,7 +243,7 @@ function buildFinalPhaseChanges(seed: string, boardProfile: BoardProfile, active
               GAME_BALANCE.trafficShape.finalPhaseChange.capDelta.spread,
               GAME_BALANCE.trafficShape.finalPhaseChange.capDelta.min,
               GAME_BALANCE.trafficShape.finalPhaseChange.capDelta.max,
-            )
+            ) * (1 + hiddenTraits.finalShiftSensitivity * 0.5 + hiddenTraits.tempoLag * 0.15)
           : 0,
     };
   });
@@ -311,6 +341,7 @@ function buildLines(
 
 export function createBoard(seed: string): BoardModel {
   const boardProfile = getBoardProfile(seed);
+  const hiddenTraits = buildHiddenTraits(seed, boardProfile);
   const familyCount = pickBoardFamilyCount(createRng(`${seed}:family-count`));
   const activeFamilies = pickActiveFamilies(createRng(`${seed}:families`), boardProfile, familyCount);
   const visibleFamilyMap = buildVisibleFamilyMap(createRng(`${seed}:visible-map`), activeFamilies);
@@ -329,6 +360,7 @@ export function createBoard(seed: string): BoardModel {
     lines: buildLines(seed, boardProfile, activeFamilies, visibleFamilyMap, visibleNoiseRate),
     visibleFamilyMap,
     visibleNoiseRate,
-    finalPhaseChanges: buildFinalPhaseChanges(seed, boardProfile, activeFamilies),
+    finalPhaseChanges: buildFinalPhaseChanges(seed, boardProfile, activeFamilies, hiddenTraits),
+    hiddenTraits,
   };
 }

@@ -102,7 +102,7 @@ function renderManual(raw: string) {
   return elements;
 }
 
-function EditorNotice({ type, message }: { message: string; type: "success" | "error" }) {
+function EditorNotice({ type, message }: { message: string; type: "success" | "error" | "warning" }) {
   return (
     <div className="console-editor__notice">
       <span className={`console-editor__notice-dot console-editor__notice-dot--${type}`} />
@@ -124,12 +124,13 @@ export function ShiftConsoleArtifactPanel(props: {
   onTabChange: (tab: ActiveTab) => void;
   savingState: SavingState;
   statusNotice: string;
+  statusNoticeTone: "success" | "warning";
 }) {
   const activeArtifact = props.activeTab === "editor" ? null : props.activeTab;
   const notice = props.latestValidationError ? (
     <EditorNotice type="error" message={props.latestValidationError} />
   ) : props.statusNotice ? (
-    <EditorNotice type="success" message={props.statusNotice} />
+    <EditorNotice type={props.statusNoticeTone} message={props.statusNotice} />
   ) : null;
 
   return (

@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as auth from "../auth.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as records from "../records.js";
 import type * as reports from "../reports.js";
@@ -22,7 +21,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
   leaderboard: typeof leaderboard;
   records: typeof records;
   reports: typeof reports;

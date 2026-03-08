@@ -1,10 +1,9 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { assertSecret } from "./auth";
-import { loadShift, type ShiftRunDoc } from "./records";
-import { titleValidator } from "./validators";
+import { internalMutation, internalQuery, query } from "./_generated/server";
+import { loadShiftById, type ShiftRunDoc } from "./records";
+import { finalReportValidator } from "./validators";
 
-export const getRecentReports = query({
+export const getRecentReports = internalQuery({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     return ctx.db
@@ -21,36 +20,19 @@ export const getReportByPublicId = query({
     return ctx.db
       .query("reports")
       .withIndex("by_publicId", (query) => query.eq("publicId", args.publicId))
-      .first();
+      .unique();
   },
 });
 
-export const upsertReport = mutation({
+export const upsertReport = internalMutation({
   args: {
-    secret: v.string(),
-    report: v.object({
-      publicId: v.string(),
-      shiftId: v.string(),
-      github: v.string(),
-      title: titleValidator,
-      boardEfficiency: v.number(),
-      connectedCalls: v.number(),
-      totalCalls: v.number(),
-      droppedCalls: v.number(),
-      avgHoldSeconds: v.number(),
-      premiumTrunkUsage: v.number(),
-      chiefOperatorNote: v.string(),
-      achievedAt: v.number(),
-      hiddenScore: v.number(),
-      kind: v.union(v.literal("final"), v.literal("auto_final")),
-    }),
+    report: finalReportValidator,
   },
   handler: async (ctx, args) => {
-    assertSecret(args.secret);
     const existing = await ctx.db
       .query("reports")
       .withIndex("by_publicId", (query) => query.eq("publicId", args.report.publicId))
-      .first();
+      .unique();
 
     if (existing) {
       await ctx.db.patch(existing._id, args.report);
@@ -62,31 +44,29 @@ export const upsertReport = mutation({
   },
 });
 
-export const adminLookup = query({
+export const adminLookup = internalQuery({
   args: {
-    secret: v.string(),
     github: v.optional(v.string()),
-    shiftId: v.optional(v.string()),
+    shiftId: v.optional(v.id("shifts")),
     publicId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    assertSecret(args.secret);
     const leaderboardRow = args.github
       ? await ctx.db
           .query("leaderboardBest")
           .withIndex("by_github", (query) => query.eq("github", args.github!))
-          .first()
+          .unique()
       : null;
 
     const report = args.publicId
       ? await ctx.db
           .query("reports")
           .withIndex("by_publicId", (query) => query.eq("publicId", args.publicId!))
-          .first()
+          .unique()
       : null;
 
     const resolvedShiftId = args.shiftId ?? report?.shiftId ?? leaderboardRow?.shiftId ?? null;
-    const shift = resolvedShiftId ? await loadShift(ctx.db, resolvedShiftId) : null;
+    const shift = resolvedShiftId ? await loadShiftById(ctx.db, resolvedShiftId) : null;
 
     return {
       leaderboardRow: leaderboardRow

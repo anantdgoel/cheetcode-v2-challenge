@@ -12,18 +12,25 @@ export default function ShiftConsole({ initialShift }: { initialShift: ShiftView
 
   return (
     <div className="console-shell">
-      <header className="console-header">
+      <header className={`console-header console-header--${consoleState.clockTone}`}>
         <div className="console-header__left">
           <span className="console-header__brand">Firecrawl</span>
           <span className="console-header__sep" />
           <span className="console-header__shift">Shift #{consoleState.shiftIdShort}</span>
         </div>
         <div className="console-header__right">
-          <span className="console-header__phase">
-            <span className={consoleState.dotClass} />
-            {consoleState.phaseLabel}
-          </span>
-          <span className="console-header__clock">
+          <div className="console-header__meta">
+            <span className="console-header__phase">
+              <span className={consoleState.dotClass} />
+              {consoleState.phaseLabel}
+            </span>
+            {consoleState.timeCueLabel && (
+              <span className={`console-header__cue console-header__cue--${consoleState.clockTone}`}>
+                {consoleState.timeCueLabel}
+              </span>
+            )}
+          </div>
+          <span className={`console-header__clock console-header__clock--${consoleState.clockTone}`}>
             {formatCountdown(consoleState.shift.expiresAt, consoleState.now)}
           </span>
         </div>
@@ -45,6 +52,7 @@ export default function ShiftConsole({ initialShift }: { initialShift: ShiftView
             onTabChange={consoleState.setActiveTab}
             savingState={consoleState.savingState}
             statusNotice={consoleState.statusNotice}
+            statusNoticeTone={consoleState.statusNoticeTone}
           />
           <ShiftConsoleActionBar steps={consoleState.steps} />
         </div>
@@ -52,8 +60,10 @@ export default function ShiftConsole({ initialShift }: { initialShift: ShiftView
         <div className="console-right">
           <ShiftConsoleBoardReadout readoutFields={consoleState.readoutFields} />
           <ShiftConsoleContextCard
+            clockTone={consoleState.clockTone}
             shift={consoleState.shift}
             activeProbeSummary={consoleState.activeProbeSummary}
+            statusNotice={consoleState.statusNotice}
           />
         </div>
       </div>

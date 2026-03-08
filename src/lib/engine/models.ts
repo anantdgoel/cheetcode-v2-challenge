@@ -87,6 +87,14 @@ export type FinalPhaseChange = {
   capDelta: number;
 };
 
+export type BoardHiddenTraits = {
+  pressureCollapse: number;
+  premiumFragility: number;
+  historyReliability: number;
+  finalShiftSensitivity: number;
+  tempoLag: number;
+};
+
 export type BoardModel = {
   seed: string;
   boardProfile: BoardProfile;
@@ -95,6 +103,7 @@ export type BoardModel = {
   visibleFamilyMap: Partial<Record<LineFamily, LineFamily>>;
   visibleNoiseRate: number;
   finalPhaseChanges: FinalPhaseChange[];
+  hiddenTraits: BoardHiddenTraits;
 };
 
 export type FailureReason =
@@ -153,11 +162,6 @@ export type ShiftArtifacts = {
   starterJs: string;
   linesJson: string;
   observationsJsonl: string;
-};
-
-export type ArtifactContent = {
-  name: ArtifactName;
-  content: string;
 };
 
 export type RangeTuning = {

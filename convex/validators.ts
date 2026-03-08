@@ -3,10 +3,12 @@ import {
   ARTIFACT_NAMES,
   BILLING_MODES,
   BOARD_CONDITIONS,
+  FAILURE_MODES,
   LOAD_BANDS,
   PROBE_KINDS,
   ROUTE_CODES,
   TITLES,
+  TRANSFER_WARNINGS,
   URGENCIES,
 } from "../src/lib/domain/game";
 
@@ -26,6 +28,8 @@ export const routeCodeValidator = literalUnion(ROUTE_CODES);
 export const billingModeValidator = literalUnion(BILLING_MODES);
 export const urgencyValidator = literalUnion(URGENCIES);
 export const loadBandValidator = literalUnion(LOAD_BANDS);
+export const failureModeValidator = literalUnion(FAILURE_MODES);
+export const transferWarningValidator = literalUnion(TRANSFER_WARNINGS);
 
 export const probeSummaryMetricsValidator = v.object({
   connectedCalls: v.number(),
@@ -86,6 +90,19 @@ export const probeSummaryValidator = v.object({
       confidence: v.number(),
     }),
   ),
+  failureModes: v.array(failureModeValidator),
+  modeConfidence: v.object({
+    collapse_under_pressure: v.optional(v.number()),
+    premium_thrash: v.optional(v.number()),
+    overholding: v.optional(v.number()),
+    false_generalist: v.optional(v.number()),
+    tempo_lag: v.optional(v.number()),
+    misleading_history: v.optional(v.number()),
+  }),
+  transferWarning: transferWarningValidator,
+  recommendedQuestions: v.array(v.string()),
+  chiefOperatorNotes: v.array(v.string()),
+  counterfactualNotes: v.array(v.string()),
   incidents: v.array(
     v.object({
       second: v.number(),
@@ -118,6 +135,39 @@ export const policyValidationResultValidator = v.union(
     error: v.string(),
   }),
 );
+
+export const reportKindValidator = literalUnion(["final", "auto_final"]);
+
+export const finalReportValidator = v.object({
+  publicId: v.string(),
+  shiftId: v.id("shifts"),
+  github: v.string(),
+  title: titleValidator,
+  boardEfficiency: v.number(),
+  connectedCalls: v.number(),
+  totalCalls: v.number(),
+  droppedCalls: v.number(),
+  avgHoldSeconds: v.number(),
+  premiumTrunkUsage: v.number(),
+  chiefOperatorNote: v.string(),
+  achievedAt: v.number(),
+  hiddenScore: v.number(),
+  kind: reportKindValidator,
+});
+
+export const leaderboardEntryValidator = v.object({
+  github: v.string(),
+  title: titleValidator,
+  hiddenScore: v.number(),
+  boardEfficiency: v.number(),
+  achievedAt: v.number(),
+  shiftId: v.id("shifts"),
+  publicId: v.string(),
+  connectedCalls: v.optional(v.number()),
+  totalCalls: v.optional(v.number()),
+  droppedCalls: v.optional(v.number()),
+  avgHoldSeconds: v.optional(v.number()),
+});
 
 export const storedRunValidator = v.object({
   id: v.string(),

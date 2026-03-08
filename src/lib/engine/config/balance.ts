@@ -22,7 +22,7 @@ const PREMIUM_COUNT_BY_PROFILE = {
 const OBSERVATION_NOISE = {
   visibleNoise: { base: 0.225, spread: 0.025, min: 0.2, max: 0.26 } as JitterRange,
   compatibilityJitter: { base: 0, spread: 0.1, min: 0.1, max: 0.99 } as JitterRange,
-  deterministicNoiseEvery: 4,
+  seededNoiseRate: 0.25,
   traineeOutcomeFlipRate: 0.28,
 } as const;
 
@@ -69,6 +69,57 @@ export const GAME_BALANCE = {
     minLines: 24,
     lineVariance: 5,
     premiumCountByProfile: PREMIUM_COUNT_BY_PROFILE,
+    hiddenTraits: {
+      pressureCollapse: { base: 0.52, spread: 0.26, min: 0.1, max: 0.98 } as JitterRange,
+      premiumFragility: { base: 0.48, spread: 0.28, min: 0.08, max: 0.98 } as JitterRange,
+      historyReliability: { base: 0.62, spread: 0.24, min: 0.08, max: 0.98 } as JitterRange,
+      finalShiftSensitivity: { base: 0.46, spread: 0.28, min: 0.04, max: 0.98 } as JitterRange,
+      tempoLag: { base: 0.44, spread: 0.24, min: 0.04, max: 0.98 } as JitterRange,
+      profileBias: {
+        switchboard: {
+          pressureCollapse: -0.08,
+          premiumFragility: -0.04,
+          historyReliability: 0.08,
+          finalShiftSensitivity: -0.08,
+          tempoLag: -0.08,
+        },
+        "front-office": {
+          pressureCollapse: 0.02,
+          premiumFragility: 0.12,
+          historyReliability: -0.02,
+          finalShiftSensitivity: 0.06,
+          tempoLag: 0.02,
+        },
+        "night-rush": {
+          pressureCollapse: 0.08,
+          premiumFragility: 0.02,
+          historyReliability: -0.04,
+          finalShiftSensitivity: 0.04,
+          tempoLag: 0.08,
+        },
+        "civic-desk": {
+          pressureCollapse: 0.02,
+          premiumFragility: -0.02,
+          historyReliability: 0.04,
+          finalShiftSensitivity: 0.1,
+          tempoLag: 0.02,
+        },
+        "commuter-belt": {
+          pressureCollapse: 0.04,
+          premiumFragility: -0.06,
+          historyReliability: -0.08,
+          finalShiftSensitivity: 0.02,
+          tempoLag: 0.04,
+        },
+        "storm-watch": {
+          pressureCollapse: 0.16,
+          premiumFragility: 0.1,
+          historyReliability: -0.1,
+          finalShiftSensitivity: 0.16,
+          tempoLag: 0.12,
+        },
+      } as const satisfies Record<BoardProfile, Record<"pressureCollapse" | "premiumFragility" | "historyReliability" | "finalShiftSensitivity" | "tempoLag", number>>,
+    },
     qualityOffset: { base: 0, spread: 0.09, min: -0.14, max: 0.14 } as JitterRange,
     loadSoftCap: {
       district: { base: 0.58, spread: 0.08, min: 0.34, max: 0.9 },
@@ -134,7 +185,7 @@ export const GAME_BALANCE = {
   trafficShape: {
     observations: {
       rowCount: 4800,
-      deterministicNoiseEvery: OBSERVATION_NOISE.deterministicNoiseEvery,
+      seededNoiseRate: OBSERVATION_NOISE.seededNoiseRate,
       shiftBucketSize: 24,
       operatorGradeWeights: {
         senior: 0.22,
@@ -172,12 +223,18 @@ export const GAME_BALANCE = {
         dropFactor: number;
       },
       recentIncidentsMaxExclusive: 4,
+      historyDistortion: {
+        loadReliefMax: 0.16,
+        premiumHeatReliefMax: 0.9,
+        visibleFamilyBiasRateMax: 0.28,
+        extraNoiseRateMax: 0.22,
+      },
     },
     pressure: {
       durationByMode: {
-        fit: 180,
-        stress: 180,
-        final: 420,
+        fit: 90,
+        stress: 90,
+        final: 160,
       } as const satisfies Record<ProbeKind | "final", number>,
       baselineByMode: {
         fit: 0.22,
@@ -218,9 +275,9 @@ export const GAME_BALANCE = {
     },
     arrivals: {
       countByMode: {
-        fit: 110,
-        stress: 110,
-        final: 340,
+        fit: 55,
+        stress: 55,
+        final: 130,
       } as const satisfies Record<ProbeKind | "final", number>,
       routeWeightMultipliers: {
         fit: { local: 1, intercity: 1, relay: 1, priority: 1 },
@@ -276,6 +333,15 @@ export const GAME_BALANCE = {
       building: 0.42,
     },
     suburbanLoadPenalty: PREMIUM_AND_LOAD_DIFFICULTY.suburbanLoadPenalty,
+    hiddenTraitEffects: {
+      collapseLoadThreshold: 0.58,
+      collapsePenaltyScale: 0.18,
+      collapseSoftCapScale: 0.12,
+      tempoLagPenaltyScale: 0.16,
+      finalShiftPenaltyScale: 0.12,
+      premiumHeatFragilityScale: 0.85,
+      premiumHeatDecayReliefScale: 0.45,
+    },
   },
   scoring: {
     deskConditionThresholds: {

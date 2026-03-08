@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatPercent, formatTitle } from "@/lib/engine/report";
 import type { LeaderboardEntry } from "@/lib/domain/views";
 
@@ -149,6 +149,11 @@ export function LandingLeaderboard({ leaderboard }: { leaderboard: LeaderboardEn
   const pageEntries = rest.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const showStart = page * PAGE_SIZE + 4;
   const showEnd = Math.min((page + 1) * PAGE_SIZE + 3, rest.length + 3);
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages - 1));
+  }, [totalPages]);
+
   return (
     <div className="leaderboard-card">
 

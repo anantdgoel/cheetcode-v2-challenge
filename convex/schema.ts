@@ -33,12 +33,12 @@ export default defineSchema({
     runs: v.array(storedRunValidator),
     reportPublicId: v.optional(v.string()),
   })
-    .index("by_github_startedAt", ["github", "startedAt"])
-    .index("by_state_expiresAt", ["state", "expiresAt"]),
+    .index("by_github_and_startedAt", ["github", "startedAt"])
+    .index("by_state_and_expiresAt", ["state", "expiresAt"]),
 
   reports: defineTable({
     publicId: v.string(),
-    shiftId: v.string(),
+    shiftId: v.id("shifts"),
     github: v.string(),
     title: titleValidator,
     boardEfficiency: v.number(),
@@ -61,7 +61,7 @@ export default defineSchema({
     hiddenScore: v.number(),
     boardEfficiency: v.number(),
     achievedAt: v.number(),
-    shiftId: v.string(),
+    shiftId: v.id("shifts"),
     publicId: v.string(),
     connectedCalls: v.optional(v.number()),
     totalCalls: v.optional(v.number()),
@@ -69,5 +69,9 @@ export default defineSchema({
     avgHoldSeconds: v.optional(v.number()),
   })
     .index("by_github", ["github"])
-    .index("by_hiddenScore", ["hiddenScore", "boardEfficiency", "achievedAt"]),
+    .index("by_hiddenScore_and_boardEfficiency_and_achievedAt", [
+      "hiddenScore",
+      "boardEfficiency",
+      "achievedAt",
+    ]),
 });

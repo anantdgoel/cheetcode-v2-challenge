@@ -15,6 +15,9 @@ import { simulateExchange } from "./runtime";
 import { stableHash } from "./shared";
 import type { BoardModel, SimulationResult } from "./models";
 
+const PROBE_DURATION_SECONDS = 90;
+const FINAL_DURATION_SECONDS = 160;
+
 let quickJsModule: Promise<QuickJSWASMModule> | null = null;
 
 function getQuickJsModule() {
@@ -72,7 +75,10 @@ async function evaluatePolicyShape(source: string) {
     compiled.value.dispose();
 
     const sampleInput: PolicyInput = {
-      clock: { second: 3, remainingSeconds: 177 },
+      clock: {
+        second: 3,
+        remainingSeconds: Math.max(PROBE_DURATION_SECONDS - 3, 0),
+      },
       board: { load: 0.42, pressure: 0.39, queueDepth: 2, callsHandled: 9, tempo: "steady" },
       call: {
         id: "shape-call",
@@ -112,7 +118,7 @@ async function evaluatePolicyShape(source: string) {
     };
 
     const sampleInitContext: PolicyInitContext = {
-      shift: { durationSeconds: 180, probeKind: "fit" },
+      shift: { durationSeconds: PROBE_DURATION_SECONDS, probeKind: "fit" },
       board: {
         lineCount: 2,
         premiumCount: 1,
@@ -259,7 +265,7 @@ function buildInitContext(board: BoardModel, mode: ProbeKind | "final"): PolicyI
     }, new Map<string, { groupId: string; label: string; lineIds: string[] }>()),
   ).map(([, value]) => value);
 
-  const durationSeconds = mode === "final" ? 420 : 180;
+  const durationSeconds = mode === "final" ? FINAL_DURATION_SECONDS : PROBE_DURATION_SECONDS;
 
   return {
     shift: { durationSeconds, probeKind: mode },
@@ -304,7 +310,7 @@ export async function runProbe(params: {
     mode: params.probeKind,
     board,
   });
-  return { result, summary: summarizeProbe(result, params.probeKind) };
+  return { result, summary: summarizeProbe(result, params.probeKind, board) };
 }
 
 export async function runFinal(params: {

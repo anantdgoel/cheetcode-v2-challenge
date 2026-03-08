@@ -45,15 +45,18 @@ function getObservationFamilyWeights(
 
 function pickLineForObservation(
   rng: Rng,
+  board: BoardModel,
   lines: LineModel[],
   activeFamilies: LineFamily[],
   call: Pick<TrafficEvent, "routeCode" | "billingMode" | "urgency">,
 ) {
   const familyWeights = getObservationFamilyWeights(call, activeFamilies);
+  const distortion = 1 - board.hiddenTraits.historyReliability;
   const weightedLines = lines.map((line) => ({
     line,
     weight:
-      familyWeights[line.family] *
+      (familyWeights[line.family] * (1 - distortion * GAME_BALANCE.trafficShape.observations.historyDistortion.visibleFamilyBiasRateMax) +
+        familyWeights[line.visibleFamily] * distortion * GAME_BALANCE.trafficShape.observations.historyDistortion.visibleFamilyBiasRateMax) *
       (line.isPremiumTrunk && premiumEligible(call) ? GAME_BALANCE.trafficShape.observations.premiumEligibleWeight : 1),
   }));
   const totalWeight = weightedLines.reduce((sum, entry) => sum + entry.weight, 0);
@@ -107,10 +110,19 @@ function flipOutcome(rng: Rng, result: ObservationRow["outcome"]["result"]) {
   return pick(rng, ["held", "connected"] as ObservationRow["outcome"]["result"][]);
 }
 
+function isSeededNoiseRow(board: BoardModel, index: number) {
+  const distortion = 1 - board.hiddenTraits.historyReliability;
+  const noiseRate =
+    GAME_BALANCE.trafficShape.observations.seededNoiseRate +
+    distortion * GAME_BALANCE.trafficShape.observations.historyDistortion.extraNoiseRateMax;
+  return createRng(`${board.seed}:observations:noise:${index}`)() < noiseRate;
+}
+
 export function createObservations(board: BoardModel): ObservationRow[] {
   const rng = createRng(`${board.seed}:observations`);
   const rows: ObservationRow[] = [];
   const pressureCurve = createPressureCurve(board, "final");
+  const distortion = 1 - board.hiddenTraits.historyReliability;
 
   for (let index = 0; index < GAME_BALANCE.trafficShape.observations.rowCount; index += 1) {
     const routeCode = weightedPick(rng, PROFILE_ROUTE_WEIGHTS[board.boardProfile]);
@@ -121,13 +133,26 @@ export function createObservations(board: BoardModel): ObservationRow[] {
     const loadBand = pick(rng, ["low", "medium", "high", "peak"] as LoadBand[]);
     const queueBand = pick(rng, ["short", "rising", "long"] as QueueBand[]);
     const operatorGrade = chooseOperatorGrade(rng);
-    const selected = pickLineForObservation(rng, board.lines, board.activeFamilies, { routeCode, billingMode, urgency });
-    const load = getRepresentativeLoad(loadBand);
+    const selected = pickLineForObservation(rng, board, board.lines, board.activeFamilies, { routeCode, billingMode, urgency });
+    const baseLoad = getRepresentativeLoad(loadBand);
+    const loadRelief =
+      (loadBand === "high" || loadBand === "peak"
+        ? distortion * board.hiddenTraits.pressureCollapse * GAME_BALANCE.trafficShape.observations.historyDistortion.loadReliefMax
+        : 0) +
+      distortion * board.hiddenTraits.tempoLag * 0.04;
+    const load = clamp(baseLoad - loadRelief, 0.08, 0.95);
     const pressure = pressureCurve.points[index % pressureCurve.points.length] ?? load;
-    const pressureBand = getPressureBand(pressure);
+    const historicalPressure = clamp(pressure - loadRelief * 0.8, 0.08, 0.98);
+    const pressureBand = getPressureBand(historicalPressure);
     const premiumReuseBand = choosePremiumReuseBand(rng, loadBand, selected);
     const queuedForSeconds = getRepresentativeQueueSeconds(queueBand);
-    const premiumHeat = premiumReuseHeatForBand(premiumReuseBand);
+    const premiumHeat = Math.max(
+      0,
+      premiumReuseHeatForBand(premiumReuseBand) -
+        distortion *
+          board.hiddenTraits.premiumFragility *
+          GAME_BALANCE.trafficShape.observations.historyDistortion.premiumHeatReliefMax,
+    );
 
     const resultRoll = connectProbability(
       selected,
@@ -140,7 +165,7 @@ export function createObservations(board: BoardModel): ObservationRow[] {
     const usedPremium = selected.isPremiumTrunk && premiumEligible({ routeCode, billingMode, urgency });
     let result: ObservationRow["outcome"]["result"];
 
-    if (index % GAME_BALANCE.trafficShape.observations.deterministicNoiseEvery === 0) {
+    if (isSeededNoiseRow(board, index)) {
       result = pick(rng, ["connected", "held", "fault", "dropped"] as ObservationRow["outcome"]["result"][]);
     } else if (rng() < resultRoll) {
       result = "connected";

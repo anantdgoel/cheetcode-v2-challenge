@@ -16,5 +16,6 @@ describe("benchmark script separation", () => {
     expect(source.includes('"/api/shifts/start"')).toBe(true);
     expect(source.includes('"/api/shifts/')).toBe(true);
     expect(source.includes("buildHiringBarPolicySource")).toBe(true);
+    expect(source.includes("gpt-5.1-codex-mini")).toBe(true);
   });
 });

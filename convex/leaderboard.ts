@@ -1,14 +1,31 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { assertSecret } from "./auth";
-import { titleValidator } from "./validators";
+import { internalMutation, internalQuery, query } from "./_generated/server";
+import { finalReportValidator, leaderboardEntryValidator } from "./validators";
+
+function isBetterLeaderboardCandidate(
+  current: {
+    hiddenScore: number;
+    boardEfficiency: number;
+    achievedAt: number;
+  } | null,
+  candidate: {
+    hiddenScore: number;
+    boardEfficiency: number;
+    achievedAt: number;
+  },
+) {
+  if (!current) return true;
+  if (candidate.hiddenScore !== current.hiddenScore) return candidate.hiddenScore > current.hiddenScore;
+  if (candidate.boardEfficiency !== current.boardEfficiency) return candidate.boardEfficiency > current.boardEfficiency;
+  return candidate.achievedAt < current.achievedAt;
+}
 
 export const getPublic = query({
   args: {},
   handler: async (ctx) => {
     const entries = await ctx.db
       .query("leaderboardBest")
-      .withIndex("by_hiddenScore")
+      .withIndex("by_hiddenScore_and_boardEfficiency_and_achievedAt")
       .order("desc")
       .take(100);
 
@@ -20,40 +37,25 @@ export const getPublic = query({
   },
 });
 
-export const getForGithub = query({
-  args: { secret: v.string(), github: v.string() },
+export const getForGithub = internalQuery({
+  args: { github: v.string() },
   handler: async (ctx, args) => {
-    assertSecret(args.secret);
     return ctx.db
       .query("leaderboardBest")
       .withIndex("by_github", (query) => query.eq("github", args.github))
-      .first();
+      .unique();
   },
 });
 
-export const upsertBest = mutation({
+export const upsertBest = internalMutation({
   args: {
-    secret: v.string(),
-    entry: v.object({
-      github: v.string(),
-      title: titleValidator,
-      hiddenScore: v.number(),
-      boardEfficiency: v.number(),
-      achievedAt: v.number(),
-      shiftId: v.string(),
-      publicId: v.string(),
-      connectedCalls: v.optional(v.number()),
-      totalCalls: v.optional(v.number()),
-      droppedCalls: v.optional(v.number()),
-      avgHoldSeconds: v.optional(v.number()),
-    }),
+    entry: leaderboardEntryValidator,
   },
   handler: async (ctx, args) => {
-    assertSecret(args.secret);
     const existing = await ctx.db
       .query("leaderboardBest")
       .withIndex("by_github", (query) => query.eq("github", args.entry.github))
-      .first();
+      .unique();
 
     if (existing) {
       await ctx.db.patch(existing._id, args.entry);
@@ -61,6 +63,50 @@ export const upsertBest = mutation({
     }
 
     const id = await ctx.db.insert("leaderboardBest", args.entry);
+    return await ctx.db.get(id);
+  },
+});
+
+export const maybeUpsertFromReport = internalMutation({
+  args: {
+    report: finalReportValidator,
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("leaderboardBest")
+      .withIndex("by_github", (query) => query.eq("github", args.report.github))
+      .unique();
+
+    if (
+      !isBetterLeaderboardCandidate(existing, {
+        hiddenScore: args.report.hiddenScore,
+        boardEfficiency: args.report.boardEfficiency,
+        achievedAt: args.report.achievedAt,
+      })
+    ) {
+      return existing;
+    }
+
+    const entry = {
+      github: args.report.github,
+      title: args.report.title,
+      boardEfficiency: args.report.boardEfficiency,
+      hiddenScore: args.report.hiddenScore,
+      achievedAt: args.report.achievedAt,
+      shiftId: args.report.shiftId,
+      publicId: args.report.publicId,
+      connectedCalls: args.report.connectedCalls,
+      totalCalls: args.report.totalCalls,
+      droppedCalls: args.report.droppedCalls,
+      avgHoldSeconds: args.report.avgHoldSeconds,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, entry);
+      return await ctx.db.get(existing._id);
+    }
+
+    const id = await ctx.db.insert("leaderboardBest", entry);
     return await ctx.db.get(id);
   },
 });

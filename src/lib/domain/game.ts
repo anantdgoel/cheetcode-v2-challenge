@@ -30,6 +30,18 @@ export const PRESSURE_BANDS = ["calm", "building", "hot"] as const;
 export const PREMIUM_REUSE_BANDS = ["fresh", "warm", "hot"] as const;
 export const FINAL_SHIFT_KINDS = ["traffic_mix", "cap_swing"] as const;
 export const ARTIFACT_NAMES = ["manual.md", "starter.js", "lines.json", "observations.jsonl"] as const;
+export const PROBE_RECOMMENDED_QUESTION_COUNT = 2 as const;
+export const PROBE_CHIEF_OPERATOR_NOTE_COUNT = 5 as const;
+export const PROBE_COUNTERFACTUAL_NOTE_COUNT = 2 as const;
+export const FAILURE_MODES = [
+  "collapse_under_pressure",
+  "premium_thrash",
+  "overholding",
+  "false_generalist",
+  "tempo_lag",
+  "misleading_history",
+] as const;
+export const TRANSFER_WARNINGS = ["stable", "stress_only", "likely_final_shift_sensitive"] as const;
 
 export type ProbeKind = (typeof PROBE_KINDS)[number];
 export type Title = (typeof TITLES)[number];
@@ -50,6 +62,8 @@ export type PressureBand = (typeof PRESSURE_BANDS)[number];
 export type PremiumReuseBand = (typeof PREMIUM_REUSE_BANDS)[number];
 export type FinalShiftKind = (typeof FINAL_SHIFT_KINDS)[number];
 export type ArtifactName = (typeof ARTIFACT_NAMES)[number];
+export type FailureMode = (typeof FAILURE_MODES)[number];
+export type TransferWarning = (typeof TRANSFER_WARNINGS)[number];
 
 export type PublicLine = {
   id: string;
@@ -171,6 +185,12 @@ export type ProbeSummary = {
     dominantReason: "hold_too_long" | "fault_under_load" | "premium_misuse" | "low_margin_routing";
     confidence: number;
   }>;
+  failureModes: FailureMode[];
+  modeConfidence: Partial<Record<FailureMode, number>>;
+  transferWarning: TransferWarning;
+  recommendedQuestions: [string, string];
+  chiefOperatorNotes: [string, string, string, string, string];
+  counterfactualNotes: [string, string];
   incidents: Array<{
     second: number;
     note: string;

@@ -1,4 +1,4 @@
-import type { ArtifactName, ProbeSummary } from "@/lib/domain/game";
+import type { ArtifactName } from "@/lib/domain/game";
 import type {
   GoLiveCommand,
   GoLiveResult,
@@ -17,6 +17,7 @@ import {
   acceptRunRecord,
   createShiftRecord,
   getLatestShiftRecord,
+  getOwnedShiftRecord,
   recordArtifactFetch,
   saveDraftRecord,
   storeValidationRecord,
@@ -129,11 +130,15 @@ export async function validateDraftForGithub(
 
 export async function runProbeForGithub(params: RunProbeCommand): Promise<RunProbeResult> {
   const shift = await ensureResolvedShift(params.github, params.shiftId);
+  const now = Date.now();
   if (!shift) {
     throw new Error("shift not found");
   }
-  if (shift.state !== "active" || Date.now() >= shift.expiresAt) {
+  if (shift.state !== "active" || now >= shift.expiresAt) {
     throw new Error("shift expired");
+  }
+  if (now >= shift.phase1EndsAt) {
+    throw new Error("trial window closed");
   }
   if (shift.runs.some((run) => run.state === "accepted")) {
     throw new Error("evaluation already in progress");
@@ -155,7 +160,7 @@ export async function runProbeForGithub(params: RunProbeCommand): Promise<RunPro
       id: runId,
       kind: nextProbeKind,
       trigger: "manual",
-      acceptedAt: Date.now(),
+      acceptedAt: now,
       sourceHash,
       sourceSnapshot: source,
     },
@@ -173,8 +178,8 @@ export async function runProbeForGithub(params: RunProbeCommand): Promise<RunPro
 
   return {
     probeKind: nextProbeKind,
-    summary: completedProbe.probeSummary as ProbeSummary,
-    shift: shapeShiftView(resolved, Date.now()),
+    summary: completedProbe.probeSummary,
+    shift: shapeShiftView(resolved, now),
   };
 }
 
@@ -254,9 +259,10 @@ export async function getArtifactForShift(github: string, shiftId: string, name:
     at: Date.now(),
   });
 
-  const content = buildArtifactContent(artifactName, shift.seed);
-
-  return { content: content.content, type: SHIFT_ARTIFACT_TYPES[artifactName] };
+  return {
+    content: buildArtifactContent(artifactName, shift.seed),
+    type: SHIFT_ARTIFACT_TYPES[artifactName],
+  };
 }
 
 export async function getAdminSnapshot(params: {

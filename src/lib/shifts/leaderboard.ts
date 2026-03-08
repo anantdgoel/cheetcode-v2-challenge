@@ -4,30 +4,17 @@ import {
 } from "@/lib/repositories/leaderboard-repository";
 import type { StoredReportRecord } from "@/lib/repositories/records";
 
-function isBetterLeaderboardCandidate(
-  current: Awaited<ReturnType<typeof getLeaderboardEntryForGithub>>,
-  candidate: {
-    hiddenScore: number;
-    boardEfficiency: number;
-    achievedAt: number;
-  },
-) {
-  if (!current) return true;
-  if (candidate.hiddenScore !== current.hiddenScore) return candidate.hiddenScore > current.hiddenScore;
-  if (candidate.boardEfficiency !== current.boardEfficiency) return candidate.boardEfficiency > current.boardEfficiency;
-  return candidate.achievedAt < current.achievedAt;
-}
-
 export async function maybeStoreLeaderboard(report: StoredReportRecord | null) {
   if (!report) return;
 
   const current = await getLeaderboardEntryForGithub(report.github);
   if (
-    !isBetterLeaderboardCandidate(current, {
-      hiddenScore: report.hiddenScore,
-      boardEfficiency: report.boardEfficiency,
-      achievedAt: report.achievedAt,
-    })
+    current &&
+    (report.hiddenScore < current.hiddenScore ||
+      (report.hiddenScore === current.hiddenScore &&
+        (report.boardEfficiency < current.boardEfficiency ||
+          (report.boardEfficiency === current.boardEfficiency &&
+            report.achievedAt >= current.achievedAt))))
   ) {
     return;
   }

@@ -90,10 +90,10 @@ describe("exchange artifacts", () => {
   it("keeps hidden board metadata out of artifact route content", () => {
     const snapshot = createBoard("route-seed");
     const publicBlob = [
-      buildArtifactContent("manual.md", snapshot).content,
-      buildArtifactContent("starter.js", snapshot).content,
-      buildArtifactContent("lines.json", snapshot).content,
-      buildArtifactContent("observations.jsonl", snapshot).content,
+      buildArtifactContent("manual.md", snapshot),
+      buildArtifactContent("starter.js", snapshot),
+      buildArtifactContent("lines.json", snapshot),
+      buildArtifactContent("observations.jsonl", snapshot),
     ].join("\n");
 
     expect(publicBlob).not.toContain("activeFamilies");

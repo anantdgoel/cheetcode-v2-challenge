@@ -6,6 +6,7 @@ import type { ArtifactName, BoardCondition, ProbeSummary } from "@/lib/domain/ga
 import type { ShiftView } from "@/lib/domain/views";
 import {
   fetchArtifactContent,
+  fetchShift,
   goLive,
   runProbe,
   saveDraft,
@@ -15,9 +16,14 @@ import {
 export type ActiveTab = ArtifactName | "editor";
 export type SavingState = "idle" | "saving" | "saved";
 type StepState = "completed" | "active" | "upcoming" | "disabled";
+type StatusNoticeTone = "success" | "warning";
+export type ClockTone = "steady" | "tight" | "critical" | "resolved";
+
+const FINAL_WARNING_MS = 10_000;
 
 export type ActionStep = {
   action: () => void;
+  emphasized?: boolean;
   label: string;
   loading: boolean;
   loadingLabel: string;
@@ -61,6 +67,12 @@ export function formatIncidents(incidents: Array<{ note: string; second: number 
   return incidents.map((incident) => `t=${incident.second}s - ${incident.note}`).join("  ");
 }
 
+function getProbeCompletionMessage(probeKind: ShiftView["nextProbeKind"] | "fit" | "stress") {
+  return probeKind === "fit"
+    ? "Day room read complete."
+    : "Rush room read complete.";
+}
+
 function getPhaseLabel(status: ShiftView["status"]) {
   switch (status) {
     case "active_phase_1":
@@ -76,15 +88,75 @@ function getPhaseLabel(status: ShiftView["status"]) {
   }
 }
 
+function getClockTone(shift: ShiftView, now: number): ClockTone {
+  if (shift.status === "completed" || shift.status === "expired_no_result" || shift.status === "evaluating") {
+    return "resolved";
+  }
+  if (shift.expiresAt - now <= FINAL_WARNING_MS) {
+    return "critical";
+  }
+  if (now >= shift.phase1EndsAt) {
+    return "tight";
+  }
+  return "steady";
+}
+
+function getTimeCueLabel(shift: ShiftView, clockTone: ClockTone) {
+  if (clockTone === "critical") {
+    return shift.latestValidSource ? "Last bell armed" : "No draft on the board";
+  }
+  if (clockTone === "tight") return "Trial floor closed";
+  if (clockTone === "steady") return "Board open";
+  return "";
+}
+
+function getAmbientNotice(params: {
+  actionStatus: string;
+  clockTone: ClockTone;
+  shift: ShiftView;
+}) {
+  const { actionStatus, clockTone, shift } = params;
+  if (shift.finalEvaluation) {
+    return { message: "Shift complete - policy submitted", tone: "success" as const };
+  }
+  if (actionStatus) {
+    return {
+      message: actionStatus,
+      tone: clockTone === "critical" ? ("warning" as const) : ("success" as const),
+    };
+  }
+  if (clockTone === "critical") {
+    return shift.latestValidSource
+      ? {
+          message: "Last bell. The last valid draft goes live at the whistle.",
+          tone: "warning" as const,
+        }
+      : {
+          message: "Last bell. No valid draft is on the board. The room goes dark at expiry.",
+          tone: "warning" as const,
+        };
+  }
+  if (shift.latestValidAt && !shift.latestValidationError) {
+    return {
+      message:
+        shift.remainingProbes === 0
+          ? "Board read complete. Go live when ready."
+          : "Module validated - ready to go live",
+      tone: "success" as const,
+    };
+  }
+  return { message: "", tone: "success" as const };
+}
+
 function getStepStates(shift: ShiftView): [StepState, StepState, StepState] {
   const hasValidated = !!shift.latestValidAt;
-  const hasProbed = shift.probesUsed > 0;
+  const hasUsedAllProbes = shift.remainingProbes === 0;
   const hasFinal = !!shift.finalEvaluation;
   const isTerminal = shift.status === "completed" || shift.status === "expired_no_result";
 
   return [
     hasValidated ? "completed" : isTerminal ? "disabled" : "active",
-    hasProbed
+    hasUsedAllProbes
       ? "completed"
       : !hasValidated || isTerminal || !shift.nextProbeKind
         ? "disabled"
@@ -96,6 +168,7 @@ function getStepStates(shift: ShiftView): [StepState, StepState, StepState] {
 function deriveShiftConsoleState(params: {
   actionStatus: string;
   goingLive: boolean;
+  now: number;
   onGoLive: () => void;
   onRunProbe: () => void;
   onValidate: () => void;
@@ -103,16 +176,19 @@ function deriveShiftConsoleState(params: {
   shift: ShiftView;
   validating: boolean;
 }) {
-  const { actionStatus, goingLive, runningProbe, shift, validating } = params;
+  const { actionStatus, goingLive, now, runningProbe, shift, validating } = params;
   const [validateState, probeState, goLiveState] = getStepStates(shift);
   const phaseLabel = getPhaseLabel(shift.status);
-  const trialStatus =
-    shift.probesUsed === 0 ? "Available" : shift.remainingProbes > 0 ? "Completed" : "Used";
+  const clockTone = getClockTone(shift, now);
+  const timeCueLabel = getTimeCueLabel(shift, clockTone);
+  const trialStatus = String(shift.remainingProbes);
   const validatedDisplay = !shift.latestValidAt
     ? "No"
     : new Date(shift.latestValidAt).toLocaleTimeString("en-US", { hour12: false });
+  const ambientNotice = getAmbientNotice({ actionStatus, clockTone, shift });
 
   return {
+    clockTone,
     dotClass:
       shift.status === "completed"
         ? "console-header__dot console-header__dot--completed"
@@ -122,6 +198,8 @@ function deriveShiftConsoleState(params: {
     isCompleted: shift.status === "completed" || shift.status === "expired_no_result",
     isEvaluating: shift.status === "evaluating",
     phaseLabel,
+    statusNotice: ambientNotice.message,
+    statusNoticeTone: ambientNotice.tone as StatusNoticeTone,
     readoutFields: [
       [
         {
@@ -154,11 +232,6 @@ function deriveShiftConsoleState(params: {
         },
       ],
     ] as ReadoutField[][],
-    statusNotice: shift.finalEvaluation
-      ? "Shift complete - policy submitted"
-      : actionStatus || (shift.latestValidAt && !shift.latestValidationError
-        ? "Module validated - ready to go live"
-        : ""),
     steps: [
       {
         action: params.onValidate,
@@ -170,7 +243,7 @@ function deriveShiftConsoleState(params: {
       },
       {
         action: params.onRunProbe,
-        label: "Trial Shift",
+        label: `Trial Shift (${shift.remainingProbes})`,
         loading: runningProbe,
         loadingLabel: "Running...",
         number: "2",
@@ -178,6 +251,7 @@ function deriveShiftConsoleState(params: {
       },
       {
         action: params.onGoLive,
+        emphasized: shift.remainingProbes === 0 && shift.canGoLive,
         label: "Go Live",
         loading: goingLive,
         loadingLabel: "Submitting...",
@@ -185,6 +259,7 @@ function deriveShiftConsoleState(params: {
         state: goLiveState,
       },
     ] as ActionStep[],
+    timeCueLabel,
   };
 }
 
@@ -205,6 +280,8 @@ export function useShiftConsole(initialShift: ShiftView) {
   const [goingLive, setGoingLive] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expiryPollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolvingExpiryRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -213,6 +290,7 @@ export function useShiftConsole(initialShift: ShiftView) {
       mountedRef.current = false;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (saveResetTimer.current) clearTimeout(saveResetTimer.current);
+      if (expiryPollTimer.current) clearTimeout(expiryPollTimer.current);
     };
   }, []);
 
@@ -226,6 +304,44 @@ export function useShiftConsole(initialShift: ShiftView) {
       router.push(`/report/${shift.reportPublicId}`);
     }
   }, [router, shift.reportPublicId, shift.status]);
+
+  useEffect(() => {
+    if (
+      now < shift.expiresAt ||
+      shift.status === "completed" ||
+      shift.status === "expired_no_result" ||
+      resolvingExpiryRef.current
+    ) {
+      return;
+    }
+
+    resolvingExpiryRef.current = true;
+
+    const refreshUntilResolved = async () => {
+      try {
+        const result = await fetchShift(shift.id);
+        if (!mountedRef.current) return;
+
+        setShift(result.shift);
+        if (result.shift.status === "completed" || result.shift.status === "expired_no_result") {
+          resolvingExpiryRef.current = false;
+          return;
+        }
+      } catch {}
+
+      if (!mountedRef.current) return;
+      expiryPollTimer.current = setTimeout(() => {
+        void refreshUntilResolved();
+      }, 500);
+    };
+
+    void refreshUntilResolved();
+
+    return () => {
+      if (expiryPollTimer.current) clearTimeout(expiryPollTimer.current);
+      resolvingExpiryRef.current = false;
+    };
+  }, [now, shift.expiresAt, shift.id, shift.status]);
 
   useEffect(() => {
     const artifactName = activeTab === "editor" ? null : activeTab;
@@ -295,6 +411,7 @@ export function useShiftConsole(initialShift: ShiftView) {
   const consoleState = deriveShiftConsoleState({
     actionStatus,
     goingLive,
+    now,
     onGoLive: () => {
       void handleAction(setGoingLive, async () => {
         try {
@@ -311,7 +428,7 @@ export function useShiftConsole(initialShift: ShiftView) {
         try {
           const result = await runProbe(shift.id);
           setShift(result.shift);
-          setActionStatus(`${result.probeKind} probe complete.`);
+          setActionStatus(getProbeCompletionMessage(result.probeKind));
         } catch (error) {
           setActionError(error instanceof Error ? error.message : "Probe failed");
         }

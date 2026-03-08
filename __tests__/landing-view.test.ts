@@ -2,24 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
   return {
-    query: vi.fn(),
-    mutation: vi.fn(),
+    fetchPublicQuery: vi.fn(),
+    fetchQuery: vi.fn(),
   };
 });
 
-vi.mock("../src/lib/repositories/convex", () => ({
+vi.mock("../src/lib/repositories/convex-server", () => ({
   api: {
     leaderboard: { getPublic: "leaderboard:getPublic" },
+  },
+  internal: {
     sessions: { getCurrentOwned: "sessions:getCurrentOwned" },
   },
-  getConvexMutationSecret: () => "secret",
-  getConvexServerClient: () => mocks,
+  fetchPublicQuery: mocks.fetchPublicQuery,
+  fetchInternalQuery: mocks.fetchQuery,
 }));
 
 describe("getLandingView", () => {
   beforeEach(() => {
-    mocks.query.mockReset();
-    mocks.mutation.mockReset();
+    mocks.fetchQuery.mockReset();
+    mocks.fetchPublicQuery.mockReset();
   });
 
   it("returns leaderboard rows even if current shift lookup fails", async () => {
@@ -39,8 +41,12 @@ describe("getLandingView", () => {
       },
     ];
 
-    mocks.query.mockImplementation(async (ref: string) => {
+    mocks.fetchPublicQuery.mockImplementation(async (ref: string) => {
       if (ref === "leaderboard:getPublic") return leaderboard;
+      throw new Error("leaderboard unavailable");
+    });
+
+    mocks.fetchQuery.mockImplementation(async () => {
       throw new Error("current shift unavailable");
     });
 

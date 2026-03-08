@@ -59,14 +59,56 @@ export function getPublicPressure(runtime: RuntimeContext, second: number, load:
   );
 }
 
-export function getEffectiveSoftCap(board: BoardModel, mode: SimulationMode, second: number, line: LineModel) {
-  if (mode !== "final") return line.loadSoftCap;
-  const delta = board.finalPhaseChanges.reduce((sum, change) => {
+function collapsePenaltyForLoad(board: BoardModel, load: number, scale: number) {
+  if (load <= GAME_BALANCE.runtimePenalties.hiddenTraitEffects.collapseLoadThreshold) return 0;
+  return (
+    (load - GAME_BALANCE.runtimePenalties.hiddenTraitEffects.collapseLoadThreshold) *
+    board.hiddenTraits.pressureCollapse *
+    scale
+  );
+}
+
+function finalShiftCapDelta(board: BoardModel, second: number, line: LineModel) {
+  if (board.finalPhaseChanges.length === 0) return 0;
+  return board.finalPhaseChanges.reduce((sum, change) => {
     if (change.kind !== "cap_swing" || change.targetFamily !== line.family) return sum;
-    return sum + change.capDelta * getShiftFactor(second, change);
+    return sum + change.capDelta * getShiftFactor(second, change) * (1 + board.hiddenTraits.finalShiftSensitivity * 0.65);
   }, 0);
+}
+
+function finalShiftCompatibilityPenalty(board: BoardModel, second: number, line: LineModel) {
+  if (board.finalPhaseChanges.length === 0) return 0;
+  const shiftPenalty = board.finalPhaseChanges.reduce((sum, change) => {
+    const factor = getShiftFactor(second, change);
+    if (factor <= 0) return sum;
+    return sum + factor * (change.targetFamily === line.family ? 1.25 : 0.7);
+  }, 0);
+  return (
+    shiftPenalty *
+    board.hiddenTraits.finalShiftSensitivity *
+    GAME_BALANCE.runtimePenalties.hiddenTraitEffects.finalShiftPenaltyScale
+  );
+}
+
+function premiumHeatMultiplier(board: BoardModel) {
+  return 1 + board.hiddenTraits.premiumFragility * GAME_BALANCE.runtimePenalties.hiddenTraitEffects.premiumHeatFragilityScale;
+}
+
+export function getEffectiveSoftCap(
+  board: BoardModel,
+  mode: SimulationMode,
+  second: number,
+  line: LineModel,
+  load: number,
+) {
+  const collapsePenalty = collapsePenaltyForLoad(
+    board,
+    load,
+    GAME_BALANCE.runtimePenalties.hiddenTraitEffects.collapseSoftCapScale,
+  );
+  const delta = mode === "final" ? finalShiftCapDelta(board, second, line) : 0;
   return clamp(
-    line.loadSoftCap + delta,
+    line.loadSoftCap + delta - collapsePenalty,
     GAME_BALANCE.trafficShape.finalPhaseChange.effectiveSoftCapClamp.min,
     GAME_BALANCE.trafficShape.finalPhaseChange.effectiveSoftCapClamp.max,
   );
@@ -75,21 +117,33 @@ export function getEffectiveSoftCap(board: BoardModel, mode: SimulationMode, sec
 export function getAdjustedLine(
   board: BoardModel,
   mode: SimulationMode,
+  second: number,
   line: LineModel,
   call: Pick<TrafficEvent, "routeCode" | "billingMode" | "urgency">,
   queuedForSeconds: number,
   load: number,
 ) {
-  if (mode !== "final" || board.finalPhaseChanges.length === 0) return line;
-
   const key = getCallKey(call);
   let compatibility = line.compatibility[key] ?? 0.4;
+  compatibility -= collapsePenaltyForLoad(
+    board,
+    load,
+    GAME_BALANCE.runtimePenalties.hiddenTraitEffects.collapsePenaltyScale,
+  );
   if (
     line.family === "suburban" &&
     load > GAME_BALANCE.runtimePenalties.suburbanLoadPenalty.loadThreshold &&
     queuedForSeconds > GAME_BALANCE.runtimePenalties.suburbanLoadPenalty.queueThreshold
   ) {
     compatibility -= GAME_BALANCE.runtimePenalties.suburbanLoadPenalty.penalty;
+  }
+  if (mode === "final" && board.finalPhaseChanges.length > 0) {
+    compatibility -= finalShiftCompatibilityPenalty(board, second, line);
+    if (getBoardTempo(board, mode, second) === "surging") {
+      compatibility -=
+        board.hiddenTraits.tempoLag *
+        GAME_BALANCE.runtimePenalties.hiddenTraitEffects.tempoLagPenaltyScale;
+    }
   }
   return {
     ...line,
@@ -100,12 +154,15 @@ export function getAdjustedLine(
   };
 }
 
-function getPremiumDecay() {
-  return GAME_BALANCE.runtimePenalties.premiumHeat.decayPerSecond;
+function getPremiumDecay(runtime: RuntimeContext) {
+  return (
+    GAME_BALANCE.runtimePenalties.premiumHeat.decayPerSecond *
+    (1 - runtime.board.hiddenTraits.premiumFragility * GAME_BALANCE.runtimePenalties.hiddenTraitEffects.premiumHeatDecayReliefScale)
+  );
 }
 
 export function decayPremiumHeat(runtime: RuntimeContext) {
-  const decay = getPremiumDecay();
+  const decay = getPremiumDecay(runtime);
   for (const [groupId, heat] of runtime.premiumHeatByGroup.entries()) {
     runtime.premiumHeatByGroup.set(groupId, Math.max(0, heat - decay));
   }
@@ -125,8 +182,9 @@ export function applyPremiumHeat(
   const current = runtime.premiumHeatByGroup.get(line.lineGroupId) ?? 0;
   const next =
     current +
-    GAME_BALANCE.runtimePenalties.premiumHeat.useHeat +
-    (premiumEligible(call) ? 0 : GAME_BALANCE.runtimePenalties.premiumHeat.misuseHeat);
+    (GAME_BALANCE.runtimePenalties.premiumHeat.useHeat +
+      (premiumEligible(call) ? 0 : GAME_BALANCE.runtimePenalties.premiumHeat.misuseHeat)) *
+      premiumHeatMultiplier(runtime.board);
   runtime.premiumHeatByGroup.set(line.lineGroupId, next);
 }
 

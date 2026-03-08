@@ -8,7 +8,7 @@ export function ShiftConsoleActionBar({ steps }: { steps: ActionStep[] }) {
           {index > 0 && <span className="action-bar__chevron">&rarr;</span>}
           <button
             type="button"
-            className={`action-step action-step--${step.state}`}
+            className={`action-step action-step--${step.state}${step.emphasized ? " action-step--emphasized" : ""}`}
             disabled={
               step.state === "disabled" ||
               step.state === "completed" ||
@@ -17,7 +17,6 @@ export function ShiftConsoleActionBar({ steps }: { steps: ActionStep[] }) {
             }
             onClick={step.action}
           >
-            <span className="action-step__number">{step.number}</span>
             {step.loading ? step.loadingLabel : step.state === "completed" ? `${step.label} \u2713` : step.label}
           </button>
         </span>
