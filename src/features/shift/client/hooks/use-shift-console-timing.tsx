@@ -16,7 +16,7 @@ import {
 type ShiftConsoleTimingParams = {
   actionStatus: string;
   shift: ShiftView;
-};
+}
 
 export type ShiftConsoleTimingState = {
   clockTone: ReturnType<typeof getClockTone>;
@@ -26,7 +26,7 @@ export type ShiftConsoleTimingState = {
   statusNotice: string;
   statusNoticeTone: 'success' | 'warning';
   timeCueLabel: string;
-};
+}
 
 let currentNow = Date.now()
 let nowTimer: ReturnType<typeof setInterval> | null = null

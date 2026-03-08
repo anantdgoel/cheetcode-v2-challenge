@@ -214,25 +214,25 @@ export function SwitchboardPattern () {
   /* Reduced motion — render static SVG */
   if (prefersReduced) {
     return (
-      <div className="switchboard-pattern" aria-hidden>
-        <svg width="520" height="560" viewBox="0 0 520 560" fill="none">
+      <div className='switchboard-pattern' aria-hidden>
+        <svg width='520' height='560' viewBox='0 0 520 560' fill='none'>
           {LAMPS.items.map((l, i) => (
             <g key={`lamp-static-${i}`}>
-              <circle cx={l.cx} cy={l.cy} r={LAMPS.ringR} stroke={l.color} strokeWidth="2" fill="none" opacity={l.ringOpacity[1]} />
+              <circle cx={l.cx} cy={l.cy} r={LAMPS.ringR} stroke={l.color} strokeWidth='2' fill='none' opacity={l.ringOpacity[1]} />
               <circle cx={l.cx} cy={l.cy} r={LAMPS.dotR} fill={l.color} opacity={l.dotOpacity[1]} />
             </g>
           ))}
           {IDLE_JUNCTIONS.items.map((j, i) => (
             <g key={`idle-static-${i}`}>
-              <circle cx={j.cx} cy={j.cy} r={IDLE_JUNCTIONS.ringR} stroke={IDLE_RING_STROKE} strokeWidth="1.5" fill="none" />
+              <circle cx={j.cx} cy={j.cy} r={IDLE_JUNCTIONS.ringR} stroke={IDLE_RING_STROKE} strokeWidth='1.5' fill='none' />
               <circle cx={j.cx} cy={j.cy} r={IDLE_JUNCTIONS.dotR} fill={IDLE_DOT_FILL} />
             </g>
           ))}
           {WIRES.items.map((w, i) => (
-            <path key={`wire-static-${i}`} d={w.d} stroke={w.color} strokeWidth={w.strokeWidth} fill="none" opacity={w.opacity} />
+            <path key={`wire-static-${i}`} d={w.d} stroke={w.color} strokeWidth={w.strokeWidth} fill='none' opacity={w.opacity} />
           ))}
           {SWITCHING_WIRES.items.map((sw, i) => (
-            <path key={`sw-static-${i}`} d={sw.d} stroke={sw.color} strokeWidth={SWITCHING_WIRES.strokeWidth} fill="none" opacity={sw.peakOpacity * 0.6} />
+            <path key={`sw-static-${i}`} d={sw.d} stroke={sw.color} strokeWidth={SWITCHING_WIRES.strokeWidth} fill='none' opacity={sw.peakOpacity * 0.6} />
           ))}
         </svg>
       </div>
@@ -240,14 +240,14 @@ export function SwitchboardPattern () {
   }
 
   return (
-    <div className="switchboard-pattern" aria-hidden>
-      <svg width="520" height="560" viewBox="0 0 520 560" fill="none">
+    <div className='switchboard-pattern' aria-hidden>
+      <svg width='520' height='560' viewBox='0 0 520 560' fill='none'>
         <defs>
-          <filter id="wire-glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+          <filter id='wire-glow'>
+            <feGaussianBlur stdDeviation='3' result='blur' />
             <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
+              <feMergeNode in='blur' />
+              <feMergeNode in='SourceGraphic' />
             </feMerge>
           </filter>
         </defs>
@@ -258,7 +258,7 @@ export function SwitchboardPattern () {
             <circle
               ref={(el) => { idleRingRefs.current[i] = el }}
               cx={j.cx} cy={j.cy} r={IDLE_JUNCTIONS.ringR}
-              stroke={IDLE_RING_STROKE} strokeWidth="1.5" fill="none" opacity={0.12}
+              stroke={IDLE_RING_STROKE} strokeWidth='1.5' fill='none' opacity={0.12}
             />
             <circle
               ref={(el) => { idleDotRefs.current[i] = el }}
@@ -279,7 +279,7 @@ export function SwitchboardPattern () {
             <g key={`lamp-${i}`}>
               <motion.circle
                 cx={l.cx} cy={l.cy} r={LAMPS.ringR}
-                stroke={l.color} strokeWidth="2" fill="none"
+                stroke={l.color} strokeWidth='2' fill='none'
                 initial={{ opacity: l.ringOpacity[0] }}
                 animate={stage >= 1
                   ? {
@@ -331,10 +331,10 @@ export function SwitchboardPattern () {
               d={w.d}
               stroke={w.color}
               strokeWidth={w.strokeWidth}
-              fill="none"
+              fill='none'
               opacity={w.opacity}
               strokeDasharray={dash}
-              filter="url(#wire-glow)"
+              filter='url(#wire-glow)'
               initial={{ strokeDashoffset: 0 }}
               animate={stage >= 2
                 ? {
@@ -370,9 +370,9 @@ export function SwitchboardPattern () {
               d={sw.d}
               stroke={sw.color}
               strokeWidth={SWITCHING_WIRES.strokeWidth}
-              fill="none"
+              fill='none'
               strokeDasharray={SWITCHING_WIRES.dasharray}
-              filter="url(#wire-glow)"
+              filter='url(#wire-glow)'
               initial={{ opacity: 0, strokeDashoffset: 0 }}
               animate={stage >= 3
                 ? {
@@ -414,23 +414,23 @@ export function HeroSection ({
 }) {
   return (
     <>
-      <section className="hero">
-        <p className="hero__eyebrow">incoming transmission</p>
+      <section className='hero'>
+        <p className='hero__eyebrow'>incoming transmission</p>
 
-        <div className="hero__headline">
-          <span className="hero__firecrawl">Firecrawl</span>
-          <span className="hero__exchange">Exchange</span>
+        <div className='hero__headline'>
+          <span className='hero__firecrawl'>Firecrawl</span>
+          <span className='hero__exchange'>Exchange</span>
         </div>
 
       </section>
 
-      <section className="hero-lede">
-        <p className="hero-lede__text">
+      <section className='hero-lede'>
+        <p className='hero-lede__text'>
           San Francisco, 1957. Some operators look at the board and see twenty-four lines. Others
           look closer. The exchange keeps records for a reason. Not everyone reads them the same way.
         </p>
 
-        <div className="hero-lede__cta-row">
+        <div className='hero-lede__cta-row'>
           <SessionControls github={github} activeShiftId={activeShiftId} />
         </div>
       </section>

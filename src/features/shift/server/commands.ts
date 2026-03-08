@@ -9,13 +9,13 @@ import { getOwnedShiftForGithub } from './queries'
 
 type StartShiftRecordResult =
   | {
-      activeShiftId: string;
-      kind: 'active_shift_exists';
-    }
+    activeShiftId: string;
+    kind: 'active_shift_exists';
+  }
   | {
-      kind: 'started';
-      shift: { id: string };
-    }
+    kind: 'started';
+    shift: { id: string };
+  }
 
 async function validatePolicySource (source: string) {
   const { validatePolicy } = await import('@/core/engine')

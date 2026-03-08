@@ -29,7 +29,7 @@ function renderManual (raw: string) {
 
     if (line.startsWith('# ')) {
       elements.push(
-        <h2 key={key++} className="console-manual__title">
+        <h2 key={key++} className='console-manual__title'>
           {line.slice(2)}
         </h2>
       )
@@ -39,7 +39,7 @@ function renderManual (raw: string) {
 
     if (line.startsWith('## ')) {
       elements.push(
-        <p key={key++} className="console-manual__heading">
+        <p key={key++} className='console-manual__heading'>
           {line.slice(3).replace(/^\d+\.\s*/, '')}
         </p>
       )
@@ -58,7 +58,7 @@ function renderManual (raw: string) {
       }
       while (codeLines.at(-1)?.trim() === '') codeLines.pop()
       elements.push(
-        <pre key={key++} className="console-manual__code">
+        <pre key={key++} className='console-manual__code'>
           {codeLines.join('\n')}
         </pre>
       )
@@ -72,7 +72,7 @@ function renderManual (raw: string) {
         index += 1
       }
       elements.push(
-        <ul key={key++} className="console-manual__list">
+        <ul key={key++} className='console-manual__list'>
           {items.map((item, itemIndex) => (
             <li key={itemIndex}>{inlineCode(item)}</li>
           ))}
@@ -98,7 +98,7 @@ function renderManual (raw: string) {
       index += 1
     }
     elements.push(
-      <p key={key++} className="console-manual__para">
+      <p key={key++} className='console-manual__para'>
         {inlineCode(paragraphLines.join('\n'))}
       </p>
     )
@@ -109,7 +109,7 @@ function renderManual (raw: string) {
 
 function EditorNotice ({ type, message }: { message: string; type: 'success' | 'error' | 'warning' }) {
   return (
-    <div className="console-editor__notice">
+    <div className='console-editor__notice'>
       <span className={`console-editor__notice-dot console-editor__notice-dot--${type}`} />
       <span className={`console-editor__notice-text console-editor__notice-text--${type}`}>
         {message}
@@ -130,7 +130,7 @@ function ShiftConsoleArtifactNotice ({
   const timing = useShiftConsoleTiming({ actionStatus, shift })
 
   if (latestValidationError) {
-    return <EditorNotice type="error" message={latestValidationError} />
+    return <EditorNotice type='error' message={latestValidationError} />
   }
   if (!timing.statusNotice) {
     return null
@@ -169,11 +169,11 @@ export function ShiftConsoleArtifactPanel (props: {
 
   return (
     <>
-      <div className="console-tabs">
+      <div className='console-tabs'>
         {SHIFT_ARTIFACTS.map((artifact) => (
           <button
             key={artifact}
-            type="button"
+            type='button'
             className={`console-tab${props.activeTab === artifact ? ' console-tab--active' : ''}`}
             onClick={() => props.onTabChange(artifact)}
           >
@@ -181,7 +181,7 @@ export function ShiftConsoleArtifactPanel (props: {
           </button>
         ))}
         <button
-          type="button"
+          type='button'
           className={`console-tab console-tab--editor${props.activeTab === 'editor' ? ' console-tab--editor-active' : ' console-tab--editor-inactive'}`}
           onClick={() => props.onTabChange('editor')}
         >
@@ -191,40 +191,40 @@ export function ShiftConsoleArtifactPanel (props: {
 
       {activeArtifact
         ? (
-        <div className="console-content">
-          {activeArtifactContent
-            ? activeArtifact === 'manual.md'
-              ? renderedManual
-              : <pre>{activeArtifactContent}</pre>
-            : <p className="console-supervisor__empty">Loading artifact...</p>}
-        </div>
+          <div className='console-content'>
+            {activeArtifactContent
+              ? activeArtifact === 'manual.md'
+                ? renderedManual
+                : <pre>{activeArtifactContent}</pre>
+              : <p className='console-supervisor__empty'>Loading artifact...</p>}
+          </div>
           )
         : (
-        <div className="console-editor">
-          <div className="console-editor__header">
-            <span className="eyebrow">Operator Policy</span>
-            {props.savingState !== 'idle' && (
-              <span className="console-editor__save">
-                <span className={`console-editor__save-dot console-editor__save-dot--${props.savingState}`} />
-                {props.savingState === 'saved' ? 'Saved' : 'Saving...'}
-              </span>
-            )}
-          </div>
-          <div className="console-editor__textarea-wrap">
-            <textarea
-              className={`console-editor__textarea${props.isCompleted ? ' console-editor__textarea--readonly' : ''}`}
-              value={props.draft}
-              readOnly={props.isCompleted || props.isEvaluating}
-              spellCheck={false}
-              onChange={(event) => props.onDraftChange(event.target.value)}
+          <div className='console-editor'>
+            <div className='console-editor__header'>
+              <span className='eyebrow'>Operator Policy</span>
+              {props.savingState !== 'idle' && (
+                <span className='console-editor__save'>
+                  <span className={`console-editor__save-dot console-editor__save-dot--${props.savingState}`} />
+                  {props.savingState === 'saved' ? 'Saved' : 'Saving...'}
+                </span>
+              )}
+            </div>
+            <div className='console-editor__textarea-wrap'>
+              <textarea
+                className={`console-editor__textarea${props.isCompleted ? ' console-editor__textarea--readonly' : ''}`}
+                value={props.draft}
+                readOnly={props.isCompleted || props.isEvaluating}
+                spellCheck={false}
+                onChange={(event) => props.onDraftChange(event.target.value)}
+              />
+            </div>
+            <ShiftConsoleArtifactNotice
+              actionStatus={props.actionStatus}
+              latestValidationError={props.latestValidationError}
+              shift={props.shift}
             />
           </div>
-          <ShiftConsoleArtifactNotice
-            actionStatus={props.actionStatus}
-            latestValidationError={props.latestValidationError}
-            shift={props.shift}
-          />
-        </div>
           )}
     </>
   )

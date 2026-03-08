@@ -3,7 +3,7 @@ import { DROP_THRESHOLDS } from './config/constants'
 import { GAME_BALANCE } from './config/balance'
 import { clamp, premiumEligible } from './shared'
 
-type RoutedCall = Pick<TrafficEvent, 'routeCode' | 'billingMode' | 'urgency' | 'subscriberClass'>;
+type RoutedCall = Pick<TrafficEvent, 'routeCode' | 'billingMode' | 'urgency' | 'subscriberClass'>
 
 export function getCallKey (call: Pick<TrafficEvent, 'routeCode' | 'billingMode' | 'urgency'>) {
   return `${call.routeCode}|${call.billingMode}|${call.urgency}`

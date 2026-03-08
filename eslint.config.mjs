@@ -1,16 +1,10 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import { createRequire } from 'node:module'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import neostandard from 'neostandard'
 import nextVitals from 'eslint-config-next/core-web-vitals'
 import tseslint from 'typescript-eslint'
 
-const require = createRequire(import.meta.url)
-const standard = require('eslint-config-standard')
 const configDirectory = dirname(fileURLToPath(import.meta.url))
-const compat = new FlatCompat({
-  baseDirectory: configDirectory
-})
 
 export default tseslint.config(
   {
@@ -22,7 +16,7 @@ export default tseslint.config(
       'eslint.config.mjs'
     ]
   },
-  ...compat.config(standard),
+  ...neostandard(),
   ...nextVitals,
   ...tseslint.configs.recommendedTypeChecked,
   {

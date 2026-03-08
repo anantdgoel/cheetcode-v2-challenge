@@ -68,6 +68,14 @@ export const adminLookup = internalQuery({
     const resolvedShiftId = args.shiftId ?? report?.shiftId ?? leaderboardRow?.shiftId ?? null
     const shift = resolvedShiftId ? await loadShiftById(ctx.db, resolvedShiftId) : null
 
+    const resolvedGithub = args.github ?? report?.github ?? leaderboardRow?.github ?? shift?.github ?? null
+    const contactRow = resolvedGithub
+      ? await ctx.db
+        .query('contactSubmissions')
+        .withIndex('by_github', (q) => q.eq('github', resolvedGithub))
+        .first()
+      : null
+
     return {
       leaderboardRow: leaderboardRow
         ? {
@@ -101,7 +109,10 @@ export const adminLookup = internalQuery({
           acceptedAt: run.acceptedAt,
           resolvedAt: run.resolvedAt
         }))
-        : []
+        : [],
+      contact: contactRow
+        ? { name: contactRow.name, email: contactRow.email, submittedAt: contactRow.submittedAt }
+        : null
     }
   }
 })

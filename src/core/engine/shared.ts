@@ -2,8 +2,8 @@ import type { LoadBand, ProbeKind } from '@/core/domain/game'
 import { GAME_BALANCE } from './config/balance'
 import type { TrafficEvent } from './models'
 
-export type SimulationMode = ProbeKind | 'final';
-export type Rng = () => number;
+export type SimulationMode = ProbeKind | 'final'
+export type Rng = () => number
 
 export function clamp (value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))

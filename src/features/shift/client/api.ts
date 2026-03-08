@@ -8,7 +8,7 @@ import type { ShiftView } from '@/core/domain/views'
 
 type ErrorPayload = {
   error?: string;
-};
+}
 
 async function readJson<T> (response: Response): Promise<T> {
   return response.json() as Promise<T>

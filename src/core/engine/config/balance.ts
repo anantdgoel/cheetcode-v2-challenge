@@ -8,7 +8,7 @@ import type {
 } from '@/core/domain/game'
 import type { ClampRange, RangeTuning } from '@/core/engine/models'
 
-export type JitterRange = RangeTuning;
+export type JitterRange = RangeTuning
 
 const PREMIUM_COUNT_BY_PROFILE = {
   switchboard: 4,

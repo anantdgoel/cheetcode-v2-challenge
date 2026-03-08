@@ -24,7 +24,7 @@ type TrialMetric = {
   label: string;
   large?: boolean;
   value: string;
-};
+}
 
 export function ShiftConsoleContextCard (props: {
   actionStatus: string;
@@ -40,24 +40,24 @@ export function ShiftConsoleContextCard (props: {
     const { line } = getTitlePresentation(title)
 
     return (
-      <div className="console-context-card console-context-card--final">
-        <p className="console-final__eyebrow">Final Evaluation</p>
-        <div className="console-final__classification">
-          <span className="console-metric-label">Classification</span>
-          <h2 className="console-final__title">{formatTitle(title)}</h2>
-          <div className="console-final__badges">
-            {line !== '—' && <span className="console-final__line-badge">Line {line}</span>}
-            <span className="console-final__board-certified">Board Certified</span>
+      <div className='console-context-card console-context-card--final'>
+        <p className='console-final__eyebrow'>Final Evaluation</p>
+        <div className='console-final__classification'>
+          <span className='console-metric-label'>Classification</span>
+          <h2 className='console-final__title'>{formatTitle(title)}</h2>
+          <div className='console-final__badges'>
+            {line !== '—' && <span className='console-final__line-badge'>Line {line}</span>}
+            <span className='console-final__board-certified'>Board Certified</span>
           </div>
         </div>
-        <hr className="console-divider" />
+        <hr className='console-divider' />
         <div>
-          <span className="console-metric-label">Board Efficiency</span>
-          <p className="console-metric-value console-metric-value--huge">
+          <span className='console-metric-label'>Board Efficiency</span>
+          <p className='console-metric-value console-metric-value--huge'>
             {formatPercent(props.shift.finalEvaluation.metrics.efficiency)}
           </p>
         </div>
-        <div className="console-final__calls">
+        <div className='console-final__calls'>
           {[
             {
               label: 'Connected',
@@ -69,17 +69,17 @@ export function ShiftConsoleContextCard (props: {
               value: String(props.shift.finalEvaluation.metrics.droppedCalls)
             }
           ].map((metric) => (
-            <div key={metric.label} className="console-final__call-metric">
-              <span className="console-metric-label">{metric.label}</span>
+            <div key={metric.label} className='console-final__call-metric'>
+              <span className='console-metric-label'>{metric.label}</span>
               <span className={`console-metric-value${metric.danger ? ' console-metric-value--danger' : ''}`}>
                 {metric.value}
               </span>
             </div>
           ))}
         </div>
-        <hr className="console-divider" />
+        <hr className='console-divider' />
         {props.shift.reportPublicId && (
-          <Link href={`/report/${props.shift.reportPublicId}`} className="console-final__report-link">
+          <Link href={`/report/${props.shift.reportPublicId}`} className='console-final__report-link'>
             View Shift Report <span>&rarr;</span>
           </Link>
         )}
@@ -118,29 +118,29 @@ export function ShiftConsoleContextCard (props: {
 
     return (
       <div className={`console-context-card${toneClass}`}>
-        <p className="console-card-eyebrow">Trial Shift Results</p>
+        <p className='console-card-eyebrow'>Trial Shift Results</p>
         {showTimingNotice && (
-          <p className="console-context-card__notice console-context-card__notice--warning">
+          <p className='console-context-card__notice console-context-card__notice--warning'>
             {timing.statusNotice}
           </p>
         )}
-        <div className="console-trial__condition">
+        <div className='console-trial__condition'>
           <span className={conditionDotClass(props.activeProbeSummary.deskCondition)} />
-          <span className="console-trial__condition-label">
+          <span className='console-trial__condition-label'>
             {props.activeProbeSummary.deskCondition.charAt(0).toUpperCase() + props.activeProbeSummary.deskCondition.slice(1)}
           </span>
         </div>
-        <div className="console-trial__warning">
-          <span className="console-metric-label">Transfer Read</span>
-          <span className="console-trial__warning-value">
+        <div className='console-trial__warning'>
+          <span className='console-metric-label'>Transfer Read</span>
+          <span className='console-trial__warning-value'>
             {formatTransferWarning(props.activeProbeSummary.transferWarning)}
           </span>
         </div>
         {metricRows.map((row, rowIndex) => (
-          <div key={rowIndex} className="console-trial__metrics">
+          <div key={rowIndex} className='console-trial__metrics'>
             {row.map((metric) => (
-              <div key={metric.label} className="console-trial__metric">
-                <span className="console-metric-label">{metric.label}</span>
+              <div key={metric.label} className='console-trial__metric'>
+                <span className='console-metric-label'>{metric.label}</span>
                 <span className={`console-metric-value${metric.large ? ' console-metric-value--large' : ''}${metric.danger ? ' console-metric-value--danger' : ''}`}>
                   {metric.value}
                 </span>
@@ -148,35 +148,35 @@ export function ShiftConsoleContextCard (props: {
             ))}
           </div>
         ))}
-        <hr className="console-divider" />
-        <div className="console-trial__notes">
-          <span className="console-metric-label">Chief Operator Notes</span>
-          <ul className="console-trial__list">
+        <hr className='console-divider' />
+        <div className='console-trial__notes'>
+          <span className='console-metric-label'>Chief Operator Notes</span>
+          <ul className='console-trial__list'>
             {props.activeProbeSummary.chiefOperatorNotes.map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
         </div>
-        <div className="console-trial__notes">
-          <span className="console-metric-label">Counterfactuals</span>
-          <ul className="console-trial__list console-trial__list--muted">
+        <div className='console-trial__notes'>
+          <span className='console-metric-label'>Counterfactuals</span>
+          <ul className='console-trial__list console-trial__list--muted'>
             {props.activeProbeSummary.counterfactualNotes.map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
         </div>
-        <div className="console-trial__notes">
-          <span className="console-metric-label">Questions To Carry</span>
-          <ul className="console-trial__list console-trial__list--questions">
+        <div className='console-trial__notes'>
+          <span className='console-metric-label'>Questions To Carry</span>
+          <ul className='console-trial__list console-trial__list--questions'>
             {props.activeProbeSummary.recommendedQuestions.map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
         </div>
-        <hr className="console-divider" />
-        <div className="console-trial__log">
-          <span className="console-metric-label">Failure Log</span>
-          <p className="console-trial__log-text">
+        <hr className='console-divider' />
+        <div className='console-trial__log'>
+          <span className='console-metric-label'>Failure Log</span>
+          <p className='console-trial__log-text'>
             {props.activeProbeSummary.incidents.length > 0
               ? formatIncidents(props.activeProbeSummary.incidents.slice(0, 8))
               : 'No incidents recorded.'}
@@ -188,13 +188,13 @@ export function ShiftConsoleContextCard (props: {
 
   return (
     <div className={`console-context-card${toneClass}`}>
-      <p className="console-card-eyebrow">Supervisor Console</p>
+      <p className='console-card-eyebrow'>Supervisor Console</p>
       {timing.clockTone === 'critical' && timing.statusNotice && (
-        <p className="console-context-card__notice console-context-card__notice--warning">
+        <p className='console-context-card__notice console-context-card__notice--warning'>
           {timing.statusNotice}
         </p>
       )}
-      <p className="console-supervisor__empty">
+      <p className='console-supervisor__empty'>
         {timing.clockTone === 'critical'
           ? 'The last bell is ringing. Only a valid draft reaches the live room.'
           : timing.clockTone === 'tight'

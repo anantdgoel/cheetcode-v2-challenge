@@ -14,7 +14,7 @@ import { FAMILY_COMPATIBILITY_BASE, FAMILY_SWITCH_MARK_WEIGHTS, FAMILY_TAG_WEIGH
 import { clamp, createRng, jitter, pick, shuffle, stableHash, weightedPick, type Rng } from './shared'
 import type { BoardHiddenTraits, BoardModel, FinalPhaseChange, LineModel } from './models'
 
-type CompatibilityKey = `${RouteCode}|${BillingMode}|${Urgency}`;
+type CompatibilityKey = `${RouteCode}|${BillingMode}|${Urgency}`
 
 function getBoardProfile (seed: string) {
   return BOARD_PROFILES[Math.floor(createRng(`${seed}:profile`)() * BOARD_PROFILES.length)]

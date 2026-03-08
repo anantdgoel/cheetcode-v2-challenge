@@ -7,9 +7,9 @@ import { LandingLeaderboardSkeleton } from './LandingLeaderboard'
 
 function Footer () {
   return (
-    <footer className="landing-footer">
-      <span className="landing-footer__text">A game of connections</span>
-      <span className="landing-footer__text">24 Lines / 1 Operator / Your Shift</span>
+    <footer className='landing-footer'>
+      <span className='landing-footer__text'>A game of connections</span>
+      <span className='landing-footer__text'>24 Lines / 1 Operator / Your Shift</span>
     </footer>
   )
 }
@@ -32,7 +32,7 @@ export function LandingPageContent ({
   github: string | null;
 }) {
   return (
-    <main className="landing-shell">
+    <main className='landing-shell'>
       <SwitchboardPattern />
       <HeroSection github={github} activeShiftId={activeShiftId} />
       <Suspense fallback={<LandingLeaderboardSkeleton />}>

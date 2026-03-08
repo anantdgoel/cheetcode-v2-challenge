@@ -487,6 +487,6 @@ describe('ShiftConsole', () => {
     )
 
     expect(await screen.findByText('Trial floor closed')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Trial Shift/ }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: /Trial Floor Closed/ }).hasAttribute('disabled')).toBe(true)
   })
 })

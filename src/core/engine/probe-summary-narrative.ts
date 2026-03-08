@@ -19,7 +19,7 @@ type FailureModeDefinition = {
   diagnosticQuestion: string;
   chiefNote: (bucket: string, transferWarning: TransferWarning) => string;
   counterfactual: (bucket: string) => string;
-};
+}
 
 function roundSupport (value: number) {
   return Number(clamp(value, 0, 0.99).toFixed(2))

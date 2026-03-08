@@ -12,11 +12,7 @@ export default defineConfig({
     include: ['__tests__/**/*.test.ts', '__tests__/**/*.test.tsx'],
     exclude: ['__tests__/e2e.test.ts'],
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true
-      }
-    },
+    maxWorkers: 1,
     coverage: {
       provider: 'v8'
     }

@@ -71,7 +71,7 @@ export async function fetchInternalQuery<Query extends FunctionReference<'query'
 }
 
 export async function fetchInternalMutation<
-  Mutation extends FunctionReference<'mutation', 'public' | 'internal'>,
+  Mutation extends FunctionReference<'mutation', 'public' | 'internal'>
 > (
   mutation: Mutation,
   args: FunctionArgs<Mutation>
@@ -80,7 +80,7 @@ export async function fetchInternalMutation<
 }
 
 export async function fetchInternalAction<
-  Action extends FunctionReference<'action', 'public' | 'internal'>,
+  Action extends FunctionReference<'action', 'public' | 'internal'>
 > (
   action: Action,
   args: FunctionArgs<Action>

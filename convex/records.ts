@@ -18,9 +18,9 @@ import type { StoredRunRecord, StoredShiftRecord } from '../src/features/shift/d
 import type { Doc, Id } from './_generated/dataModel'
 import type { DatabaseReader } from './_generated/server'
 
-export type ShiftDoc = Doc<'shifts'>;
-export type ShiftRunDoc = ShiftDoc['runs'][number];
-export type ShiftId = Id<'shifts'>;
+export type ShiftDoc = Doc<'shifts'>
+export type ShiftRunDoc = ShiftDoc['runs'][number]
+export type ShiftId = Id<'shifts'>
 const FAILURE_REASONS = ['hold_too_long', 'fault_under_load', 'premium_misuse', 'low_margin_routing'] as const
 
 function expectExactLength<T> (value: T[], expected: number, field: string): T[] {

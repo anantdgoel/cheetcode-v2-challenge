@@ -32,7 +32,7 @@ import {
 type QueueEntry = TrafficEvent & {
   arrivalAt: number;
   attempt: number;
-};
+}
 
 type RuntimeAccumulators = {
   connectedCalls: number;
@@ -40,9 +40,9 @@ type RuntimeAccumulators = {
   totalHoldSeconds: number;
   premiumUsageCount: number;
   trunkMisuseCount: number;
-};
+}
 
-type PolicyDecisionFn = (input: PolicyInput) => Promise<{ lineId: string | null; error?: string }>;
+type PolicyDecisionFn = (input: PolicyInput) => Promise<{ lineId: string | null; error?: string }>
 
 async function routeCall (params: {
   call: TrafficEvent;

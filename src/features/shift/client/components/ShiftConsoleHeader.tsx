@@ -15,14 +15,14 @@ export function ShiftConsoleHeader ({
 
   return (
     <header className={`console-header console-header--${timing.clockTone}`}>
-      <div className="console-header__left">
-        <span className="console-header__brand">Firecrawl</span>
-        <span className="console-header__sep" />
-        <span className="console-header__shift">Shift #{shiftIdShort}</span>
+      <div className='console-header__left'>
+        <span className='console-header__brand'>Firecrawl</span>
+        <span className='console-header__sep' />
+        <span className='console-header__shift'>Shift #{shiftIdShort}</span>
       </div>
-      <div className="console-header__right">
-        <div className="console-header__meta">
-          <span className="console-header__phase">
+      <div className='console-header__right'>
+        <div className='console-header__meta'>
+          <span className='console-header__phase'>
             <span className={timing.dotClass} />
             {timing.phaseLabel}
           </span>

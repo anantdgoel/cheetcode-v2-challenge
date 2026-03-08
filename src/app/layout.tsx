@@ -27,24 +27,24 @@ export default function RootLayout ({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={syne.variable}>
+    <html lang='en' className={syne.variable}>
       <body>
-        <header className="firecrawl-header">
-          <div className="status-bar__left">
-            <span className="status-bar__dots">
-              <span className="status-bar__dot status-bar__dot--green" />
-              <span className="status-bar__dot status-bar__dot--amber" />
-              <span className="status-bar__dot status-bar__dot--red" />
+        <header className='firecrawl-header'>
+          <div className='status-bar__left'>
+            <span className='status-bar__dots'>
+              <span className='status-bar__dot status-bar__dot--green' />
+              <span className='status-bar__dot status-bar__dot--amber' />
+              <span className='status-bar__dot status-bar__dot--red' />
             </span>
-            <Link href="/" className="status-bar__label">Firecrawl Exchange — Central Office</Link>
+            <Link href='/' className='status-bar__label'>Firecrawl Exchange — Central Office</Link>
           </div>
-          <div className="status-bar__right">
-            <span className="status-bar__dot status-bar__dot--green" />
-            <span className="status-bar__label">System Active</span>
+          <div className='status-bar__right'>
+            <span className='status-bar__dot status-bar__dot--green' />
+            <span className='status-bar__label'>System Active</span>
           </div>
         </header>
         {children}
-        {process.env.NODE_ENV === 'development' && <DialRoot position="top-right" />}
+        {process.env.NODE_ENV === 'development' && <DialRoot position='top-right' />}
       </body>
     </html>
   )

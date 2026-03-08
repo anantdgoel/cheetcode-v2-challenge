@@ -8,7 +8,7 @@ const DESKTOP_ONLY_ERROR =
 
 type RequireShiftGithubOptions = {
   desktopOnly?: boolean;
-};
+}
 
 export function jsonError (
   error: string,

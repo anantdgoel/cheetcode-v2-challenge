@@ -11,15 +11,22 @@ import { ShiftConsoleHeader } from './components/ShiftConsoleHeader'
 export default function ShiftConsole ({ initialShift }: { initialShift: ShiftView }) {
   const consoleState = useShiftConsole(initialShift)
 
+  const handleDraftChange = (value: string) => {
+    consoleState.setDraft(value)
+    consoleState.scheduleSave(value)
+  }
+
+  const handleTabChange = consoleState.setActiveTab
+
   return (
-    <div className="console-shell">
+    <div className='console-shell'>
       <ShiftConsoleHeader
         shift={consoleState.shift}
         shiftIdShort={consoleState.shiftIdShort}
       />
 
-      <div className="console-body">
-        <div className="console-left">
+      <div className='console-body'>
+        <div className='console-left'>
           <ShiftConsoleArtifactPanel
             actionStatus={consoleState.actionStatus}
             activeTab={consoleState.activeTab}
@@ -28,18 +35,15 @@ export default function ShiftConsole ({ initialShift }: { initialShift: ShiftVie
             isCompleted={consoleState.isCompleted}
             isEvaluating={consoleState.isEvaluating}
             latestValidationError={consoleState.actionError || consoleState.consoleError || consoleState.shift.latestValidationError}
-            onDraftChange={(value) => {
-              consoleState.setDraft(value)
-              consoleState.scheduleSave(value)
-            }}
-            onTabChange={consoleState.setActiveTab}
+            onDraftChange={handleDraftChange}
+            onTabChange={handleTabChange}
             savingState={consoleState.savingState}
             shift={consoleState.shift}
           />
           <ShiftConsoleActionBar steps={consoleState.steps} />
         </div>
 
-        <div className="console-right">
+        <div className='console-right'>
           <ShiftConsoleBoardReadout readoutFields={consoleState.readoutFields} />
           <ShiftConsoleContextCard
             actionStatus={consoleState.actionStatus}
@@ -49,7 +53,7 @@ export default function ShiftConsole ({ initialShift }: { initialShift: ShiftVie
         </div>
       </div>
 
-      <div className="desktop-only-gate">
+      <div className='desktop-only-gate'>
         <h2>Desktop Required</h2>
         <p>The shift console requires a desktop browser.</p>
       </div>

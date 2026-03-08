@@ -1,8 +1,8 @@
 import type { FinalReport, ProbeKind, ProbeSummary, SimulationMetrics, Title } from './game'
 
-export type ShiftStatus = 'active_phase_1' | 'active_phase_2' | 'evaluating' | 'completed' | 'expired_no_result';
-export type EvaluationKind = ProbeKind | 'final' | 'auto_final';
-export type EvaluationState = 'accepted' | 'completed';
+export type ShiftStatus = 'active_phase_1' | 'active_phase_2' | 'evaluating' | 'completed' | 'expired_no_result'
+export type EvaluationKind = ProbeKind | 'final' | 'auto_final'
+export type EvaluationState = 'accepted' | 'completed'
 
 export type EvaluationRecordView = {
   id: string;
@@ -17,7 +17,7 @@ export type EvaluationRecordView = {
   title?: Title;
   chiefOperatorNote?: string;
   reportPublicId?: string;
-};
+}
 
 export type ShiftView = {
   id: string;
@@ -45,9 +45,9 @@ export type ShiftView = {
   canGoLive: boolean;
   probeEvaluations: EvaluationRecordView[];
   finalEvaluation?: EvaluationRecordView;
-};
+}
 
-export type ReportView = FinalReport;
+export type ReportView = FinalReport
 
 export type LeaderboardEntry = {
   github: string;
@@ -61,7 +61,7 @@ export type LeaderboardEntry = {
   totalCalls?: number;
   droppedCalls?: number;
   avgHoldSeconds?: number;
-};
+}
 
 export type PaginatedLeaderboard = {
   topEntries: LeaderboardEntry[];
@@ -69,13 +69,13 @@ export type PaginatedLeaderboard = {
   totalEntries: number;
   dispatchPage: number;
   totalDispatchPages: number;
-};
+}
 
 export type LandingView = {
   leaderboard: LeaderboardEntry[];
   activeShiftId?: string | null;
   github?: string | null;
-};
+}
 
 export type AdminRunView = {
   id: string;
@@ -83,7 +83,7 @@ export type AdminRunView = {
   state: EvaluationState;
   acceptedAt: number;
   resolvedAt?: number;
-};
+}
 
 export type AdminSnapshot = {
   leaderboardRow: LeaderboardEntry | null;
@@ -95,4 +95,5 @@ export type AdminSnapshot = {
     expiresAt: number;
   } | null;
   runs: AdminRunView[];
-};
+  contact?: { name: string; email: string; submittedAt: number } | null;
+}

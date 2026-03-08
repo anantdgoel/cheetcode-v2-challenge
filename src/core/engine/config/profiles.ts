@@ -91,7 +91,7 @@ export const FAMILY_TAG_WEIGHTS: Record<LineFamily, Record<(typeof SHARED_TAGS)[
   }
 }
 
-type CompatibilityKey = `${RouteCode}|${BillingMode}|${Urgency}`;
+type CompatibilityKey = `${RouteCode}|${BillingMode}|${Urgency}`
 
 export const FAMILY_COMPATIBILITY_BASE: Record<LineFamily, Partial<Record<CompatibilityKey, number>>> = {
   district: {

@@ -1,71 +1,83 @@
-# Firecrawl Exchange: Approach
+# APPROACH.md
 
-## The Problem with v1
+## 1. Problem Framing
 
-CheetCode v1 tested speed on known coding problems. I played it. A single prompt to Claude with a long enough iteration loop one-shot the entire challenge without any steering. The problems could be banked — collect enough runs and you've compiled an answer key. Convex mutations were exposed, so the leaderboard could be altered without proving anything. The game rewarded exploits and memorization. Those are real skills, but they're not the skills you're hiring for.
+I played v1 before building v2. It was a clean product with a clear loop — timed coding problems, agent-assisted solving, leaderboard. It did a good job measuring speed and resourcefulness. The question I kept coming back to was whether speed on known problems is the right signal for this role.
 
-The deeper problem: v1 measured how fast you can solve a problem that already has a solution. Production agent work is the opposite — you're operating on incomplete, noisy data, under time pressure, with no answer key. The game shape was wrong.
+A single Claude prompt with a long enough iteration loop could clear the challenge without meaningful steering. The problem set was bankable across runs. These aren't bugs — they're consequences of the game shape. v1 asked: *how fast can you solve a problem that already has a solution?* That's a legitimate filter. But it selects for a narrower skill than what production agent work actually demands.
 
-## What Actually Predicts Agent Ability
+Production agent work is messier. You're operating on incomplete data. The signal is noisy. There's no answer key. Your first model of the problem is probably wrong, and figuring out *how* it's wrong — before you run out of time — is the actual job.
 
-The single best predictor of whether someone can build production-grade agent systems is whether they can build **learning loops**. Not prompting skill. Not API speed. Loops — observe, infer, act, learn, repeat.
+## 2. Design Goals
 
-This is what separates a script from a system. A script runs a prompt and returns the output. A system ingests messy evidence, fits a model, tests it against reality, discovers where the model breaks, revises, and ships something better. That iterative refinement process — from noisy labels to working policy — is the core competency Firecrawl should hire for.
+The challenge should test exactly one thing: **can you build a learning loop?**
 
-The game's benchmark tiers map directly to this:
+Not prompting speed. Not raw coding ability. The skill that separates a script from a production system is the full cycle: observe, infer, act, learn, repeat. From messy evidence, fit a model. Test it against reality. Find where the model breaks. Revise. Ship something better. The challenge should make that loop the only path to a high score, and it should be calibrated tightly enough that you can read the score and know which part of the loop a candidate reached.
 
-- **Under 10%** (Starter): You showed up but didn't bring tools. Manual play against a routing problem with hidden state is a losing proposition by design.
-- **~25–50%** (Baseline): You can use agents to write code, or you're personally strong at statistical reasoning. Either path gets you a reasonable first-pass policy.
-- **~75–85%** (Hiring bar): Your agent pipeline does meta-learning. It parses 4,800 noisy observation rows, weighs operator grades, fits per-group compatibility scores, runs probes to discover where the history lied, and rewrites control logic — not just rankings — before the final run. Across boards, it builds cross-session memory that transfers.
+The game's benchmark tiers map directly to that model:
 
-## Why a Game
+- **Under 10% (Starter)** — You showed up but didn't bring tools. Manual play against a routing problem with hidden state is a losing proposition by design.
+- **~25–50% (Baseline)** — You used agents to write code, or you're personally strong at statistical reasoning. A reasonable first-pass policy gets you here.
+- **~75–85% (Hiring bar)** — Your pipeline actually learns. It parses 4,800 noisy observation rows, weighs operator grades, fits per-group compatibility scores, runs probes to discover where the history lied, and rewrites control logic — not just rankings — before the final run. Across boards, it builds cross-session memory that transfers.
 
-A game is the right evaluation shape because games have hidden state, feedback loops, and repeated play — the same three properties that make real agent work hard.
+These tiers weren't aspirational targets — they were the acceptance criteria. I wrote the benchmark agents (starter, baseline, hiring-bar) and set score expectations before the engine existed, then built the engine iteratively, running benchmarks after every meaningful change to keep the curve calibrated. When the hiring-bar agent scored too high, I tightened noise. When it scored too low, I loosened visible signal fidelity. The game was tuned the same way it's meant to be played.
 
-The telephone exchange theme isn't cosmetic. The routing problem naturally requires inference under uncertainty: hidden line families, noisy historical observations, pressure dynamics that shift mid-run. Every artifact serves a structural purpose. `observations.jsonl` is 4,800 rows of historical routing data with 25% seeded noise and adversarial trainee rows — it's the primary mechanism that makes manual play impractical and rewards robust statistical modeling. Probes are the feedback loop: they reveal operational truth without leaking hidden state, just like production logs tell you what failed without telling you why. The QuickJS sandbox is the constraint: no network, no filesystem, no timers, 16KB size limit. Your policy must be pure computation — the agent work happens before submission.
+## 3. Architecture and Data Flow
 
-The aesthetic matters too. The 1963 telephone exchange — inspired, honestly, by too much Mad Men — gives people a reason to care about their score. "Line 01 — Chief Operator" on a Shift Report feels worth sharing. Engagement drives repeated play, and repeated play is where the real signal lives.
+The codebase has three roots with clean dependency rules — no circular imports, no framework code in the domain layer.
 
-## Anti-Gaming: Structural, Not Bolted On
+**`src/core/engine/`** is the game. Board generation, traffic simulation, observation synthesis, scoring, probe summaries — all pure TypeScript, no React, no Next.js, no Convex. The domain is isolated so the benchmark suite can run the full engine without standing up infrastructure, and so my coding agents could work on it independently. **`src/features/*/`** contains the product as four feature slices — `shift`, `landing`, `report`, `admin` — each owning their own client and server code. **`src/server/`** handles infrastructure adapters: auth, Convex client, HTTP utilities. These layers produce four surfaces: a public landing page with leaderboard, a timed shift console for gameplay, a shareable report for each completed shift, and an admin panel for internal inspection.
 
-v1's anti-gaming was an afterthought. v2's is the architecture itself.
+**The game itself** is a signal-extraction problem disguised as a routing problem. Each board generates 8–16 telephone lines with hidden *families* — the true compatibility profiles that determine which line handles which traffic type well. The player receives `lines.json` (metadata including a `visibleFamily` field) and `observations.jsonl` (4,800 historical call records). The catch: 20–26% of visible family assignments are deliberately wrong, and the observation log is corrupted by grade-weighted noise. Senior operator observations are reliable; trainee observations can have outcomes flipped in borderline probability windows. Naively averaging the historical data gets worse results than being selective about which records to trust — which mirrors what real data pipelines actually look like.
 
-Each board draws 3–5 hidden families from a pool of 5. Visible metadata correlates with hidden truth but doesn't solve it — about 20–26% of visible signals are noise. Board-specific seeds mean no universal answer key exists. The observation history is useful but dirty: operator grade weights (`senior: 1.0`, `operator: 0.72`, `trainee: 0.18`) create a data quality problem that mirrors real-world scraping — your agent must exercise judgment about which data to trust. Probes reveal what the history got wrong under live conditions, similar to how production telemetry contradicts pre-launch assumptions.
+Each line's true compatibility is a 24-entry matrix (4 route codes x 3 billing modes x 2 urgency levels), derived from family baselines but jittered per-board with seed-stable RNG. So even knowing a line's true family isn't sufficient — you still need to learn its board-specific calibration from the observations. Every board is fully deterministic from a single seed string, which means any policy run is exactly reproducible.
+
+**Policy execution** runs in a QuickJS WASM sandbox — no network, no filesystem, no timers, 16KB source limit. Data crosses the VM boundary as JSON strings, preventing any reference sharing. The agent work must happen before submission; only the compiled routing policy goes in.
+
+**Reliability.** One-active-shift enforcement at the database level. Probe and final submissions use an atomic claim-then-process pattern: a `claimRunForProcessing` mutation transitions state from `accepted` to `processing`, so concurrent requests can't double-submit. Auto-finalization on expiry runs the latest validated policy if the timer runs out. Every probe and final run is stored as a full trace — source snapshot, timestamps, probe summaries with call buckets and failure analysis, final metrics with hidden score. The admin panel provides read-only lookup by GitHub username, shift ID, or report public ID.
+
+## 4. Anti-Gaming Strategy
+
+v1 tried to prevent gaming after the fact. In v2, the architecture *is* the anti-gaming.
+
+**No universal answer key.** Each board draws 3–5 hidden line families from a pool, seeded per-board. The compatibility matrix is jittered per-board on top of that. There is no fixed solution that transfers, and even partial solutions from a previous board can actively mislead you on the next one if you don't verify them against fresh evidence.
+
+**Probes reveal, not solve.** The probe system returns narrative operational summaries — what happened under live conditions, framed as shift reports and incident notes. They expose where your model was wrong without leaking the hidden state directly. The candidate has to extract signal from prose, the same way you'd work from production logs or postmortems.
+
+**The sandbox is the constraint.** QuickJS enforces pure computation. The agent loop lives outside; only the compiled routing policy goes in. This means the challenge doesn't measure whether you can write code — it measures whether you can build the infrastructure that writes better code each iteration.
 
 The difficulty isn't a wall to climb over. It's the shape of the problem itself.
 
-## What We Kept, What We Replaced
+## 5. Scoring and Evaluation
 
-**Kept**: Convex, Next.js, Auth.js, GitHub OAuth, the leaderboard concept, timed shifts.
+Traffic simulation uses a pressure curve built from superimposed sine waves plus random Gaussian-shaped bursts. Probe runs (`fit` and `stress`) use lower pressure with fewer bursts; the final run adds phase changes that shift traffic composition mid-simulation — route weight changes and capacity swings that only appear under sustained load. A board's hidden traits (`finalShiftSensitivity`, `tempoLag`, `pressureCollapse`) determine how much the final run diverges from what probes predicted. The system explicitly tells players how much to trust their probe data via a transfer warning — `stable`, `stress_only`, or `likely_final_shift_sensitive` — so the signal is there if they know to use it.
 
-**Replaced**: Everything else. The entire game engine (`src/core/engine/`), scoring system, artifact pipeline, board generation, observation synthesis, probe system, policy sandbox, UI, theme, and design system. The v1 codebase was a different product.
+After each probe, a multi-stage analysis pipeline generates diagnostic feedback without any LLM. It aggregates trace events into call-bucket and load-band tables, derives ~20 numeric signals (hot connect rate, premium misuse rate, hold failure rate, second-half drop rate, and others), then scores 6 named failure archetypes — `collapse_under_pressure`, `premium_thrash`, `overholding`, `false_generalist`, `tempo_lag`, `misleading_history` — against weighted signal combinations. The top-ranked failure modes generate themed diagnostic prose in switchboard patois, plus a set of "Questions to Carry" forward. This is deliberately unstructured: extracting actionable signal from narrative text is part of the skill being tested.
 
-## How It Was Built
+Premium lines accumulate a `premiumHeat` value with each use, decaying at a rate modulated by a hidden fragility trait. This creates a genuine resource management problem — aggressive premium routing works until it doesn't, and the cost compounds under sustained pressure in ways a static model can't predict.
 
-This was built almost entirely with Claude Code — the same kind of agent workflow the game is designed to evaluate. That's not a flex; it's evidence. If you're building a tool to measure whether people can orchestrate agents effectively, you should be able to demonstrate the skill yourself.
+The hiring-bar benchmark agent is worth describing because it demonstrates the expected ceiling: it ingests the observation log, computes grade-weighted compatibility scores per line group, infers a board profile posterior from traffic mix ratios, builds 8-dimensional trait vectors per group (pressure sensitivity, premium fragility, government bias, and others), and maintains runtime state including premium heat tracking and a pending-line feedback loop that reinforces successful selections. The entire model — learned constants, helper functions, runtime state management — self-serializes into a single JavaScript source string that the QuickJS sandbox evaluates identically to player code. The benchmark agent *is* a valid submission.
 
-The build process mirrored what the game tests. I set up tests, linters, and hooks that gated what code reached main. I wrote benchmark agents first — starter, baseline, hiring-bar — and set score expectations before the engine existed. Then I used Claude Code to build the engine iteratively, running benchmarks after each change to keep the difficulty curve calibrated. When the hiring-bar agent scored too high, I tightened noise. When it scored too low, I loosened visible signal fidelity. The game was tuned the same way it's meant to be played: build a feedback loop, measure, adjust.
+## 6. What Changed vs v1
 
-The design system was also agent-generated. I maintain a design language doc that Paper MCP reads when generating or modifying artboards — the same tokens that drive `globals.css`. I had ideas about pushing the skeuomorphic switchboard aesthetic further. If I had more time, I'd explore that.
+**Kept:** Convex, Next.js, Auth.js, GitHub OAuth, the leaderboard concept, timed shifts.
 
-## Architecture
+**Replaced:** Everything else. The entire game engine, scoring system, artifact pipeline, board generation, observation synthesis, probe system, policy sandbox, UI, theme, and design system.
 
-Three roots, clean dependency rules:
+The telephone exchange theme came from wanting a game surface where inference under uncertainty feels natural. A routing problem with hidden line families and noisy historical data fits that better than a blank coding canvas. The 1963 aesthetic — honestly, too much Mad Men — gives people a reason to care whether they hit "Line 01 — Chief Operator." Engagement drives repeated play, and repeated play is where the real signal lives.
 
-- **`src/core/engine/`** — Pure domain. Board generation, traffic simulation, observation synthesis, scoring, probe summaries. No React, no Next.js, no Convex imports. This is where the game lives.
-- **`src/features/*/`** — Feature slices: `shift` (gameplay console), `landing` (leaderboard + hero), `report` (public shift reports), `admin` (inspection). Each slice owns its client and server code.
-- **`src/server/`** — Infrastructure adapters. Auth helpers, Convex client, HTTP utilities.
+The product craft runs deeper than the theme, though, because it has to — a challenge platform that looks like a hackathon project won't make anyone care about their ranking. The public report is styled as Form SR-57, Supervisor's Shift Report, with letterhead, classification badges, a supervisor's note in serif type, and a signature line. It's designed to survive a screenshot to Twitter intact. The shift console clock animates each digit independently as a slot-machine flip. The in-world vocabulary is consistent end to end: callsigns, not usernames; board efficiency, not score; dispatch log, not leaderboard; line numbers, not ranks. Even the probe feedback speaks in character. These aren't decorative choices — they're what makes someone play twice.
 
-Policy execution runs in a deterministic QuickJS sandbox (`src/core/engine/policy-vm.ts`). The benchmark suite (`scripts/v3-agent-policies.mjs`) validates the difficulty curve against 10 fixed seeds with four agent tiers.
+This was built almost entirely with my agentic stack, which felt like the right way to build it. I maintain a design language doc that feeds the same tokens into both code and design tooling, so my agents could generate and modify UI with visual consistency from the start. The build process mirrored the game: write the tests first, build the system iteratively, measure after every change, adjust. The skill the challenge tests is the skill I used to build it.
 
-## Tradeoffs and Limitations
+## 7. Tradeoffs and Future Work
 
-**Platform is stateless across shifts.** Cross-board learning — building memory that transfers between boards — must come from the candidate's own tooling. This is intentional: it tests whether you can build that infrastructure, not whether the platform can hand it to you.
+**Cross-board memory is the candidate's problem, by design.** The platform is stateless across shifts. Building memory that transfers — the thing that moves you from 50% to 85% — requires the candidate to build that infrastructure themselves. That's intentional; the platform handing it to you would remove the signal.
 
-**Observation noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility feels right against the benchmark suite, but I haven't run adversarial optimization against the noise model itself. A determined attacker with enough runs could likely characterize the noise distribution.
+**Noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility holds against the benchmark suite. A determined attacker with enough runs could likely characterize the noise distribution. The fix is session-level noise re-seeding, which isn't currently implemented.
 
-**Probe output is narrative prose.** The chief operator notes, counterfactuals, and incident reports are themed and human-readable. A more structured output format would be easier for LLMs to consume. I chose narrative because it tests whether your agent can extract signal from unstructured text — a real-world skill — but there's a valid argument for offering both.
+**Probe output is narrative prose.** Themed, human-readable, unstructured. Easier to read, harder for LLMs to parse reliably. The tradeoff is intentional — extracting signal from unstructured text is a real skill — but a structured alternative format would be worth adding.
 
-**No mobile play.** This is a tooling challenge. You need a terminal, an editor, and an agent runtime. Mobile browsing is supported for viewing reports and the leaderboard, but gameplay is desktop-only.
+**No mobile gameplay.** This is a tooling challenge. Terminal, editor, agent runtime. Mobile is supported for leaderboard browsing and report viewing, but play is desktop-only and will stay that way.
 
-**One board profile is public flavor, not a public label.** Players can learn to recognize board tendencies across runs, but the profile name is never announced. This could frustrate players who want more transparency. I think the opacity is correct — real production systems don't announce their operating mode — but it's a product judgment call, not a technical constraint.
+**Board profile opacity is a product call.** Players can learn to recognize board tendencies across runs, but the profile name is never surfaced. Real production systems don't announce their operating mode. Some players will find this frustrating; I think it's correct.

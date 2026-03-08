@@ -17,13 +17,13 @@ const RESOLUTION_POLL_DELAY_MS = 10
 
 type ClaimRunForProcessingResult =
   | {
-      kind: 'busy' | 'completed' | 'missing';
-      shift: StoredShiftRecord | null;
-    }
+    kind: 'busy' | 'completed' | 'missing';
+    shift: StoredShiftRecord | null;
+  }
   | {
-      kind: 'claimed';
-      shift: StoredShiftRecord;
-    }
+    kind: 'claimed';
+    shift: StoredShiftRecord;
+  }
 
 function reportPublicIdForRun (shiftId: string, runId: string) {
   return stableHash(`${shiftId}:${runId}`).slice(0, 16)

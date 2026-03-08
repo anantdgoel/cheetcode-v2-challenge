@@ -20,7 +20,7 @@ type ProbeBucketAccumulator = {
   dropped: number;
   holdSeconds: number;
   premium: number;
-};
+}
 
 type LoadBucketAccumulator = {
   attempts: number;
@@ -28,14 +28,14 @@ type LoadBucketAccumulator = {
   dropped: number;
   holdSeconds: number;
   premium: number;
-};
+}
 
 type LineGroupAccumulator = {
   usageCount: number;
   connected: number;
   faults: number;
   premium: number;
-};
+}
 
 export type SummarySignals = {
   hotConnectRate: number;
@@ -60,7 +60,7 @@ export type SummarySignals = {
   tempoLag: number;
   pressureCollapse: number;
   premiumFragility: number;
-};
+}
 
 function getFailureBucketReason (
   event: FailureEvent

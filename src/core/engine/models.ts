@@ -24,7 +24,7 @@ export type TrafficEvent = {
   subscriberClass: SubscriberClass;
   billingMode: BillingMode;
   urgency: Urgency;
-};
+}
 
 export type LineModel = PublicLine & {
   historicalAlias: string;
@@ -36,12 +36,12 @@ export type LineModel = PublicLine & {
   premiumBoost: number;
   maintenanceOffset: number;
   compatibility: Record<string, number>;
-};
+}
 
 export type PressureCurve = {
   duration: number;
   points: number[];
-};
+}
 
 export type ObservationRow = {
   logId: string;
@@ -71,7 +71,7 @@ export type ObservationRow = {
     result: 'connected' | 'held' | 'fault' | 'dropped';
     holdBand?: 'brief' | 'moderate' | 'long';
   };
-};
+}
 
 export type FinalPhaseChange = {
   kind: FinalShiftKind;
@@ -81,7 +81,7 @@ export type FinalPhaseChange = {
   trafficDelta: Partial<Record<RouteCode, number>>;
   targetFamily: LineFamily;
   capDelta: number;
-};
+}
 
 export type BoardHiddenTraits = {
   pressureCollapse: number;
@@ -89,7 +89,7 @@ export type BoardHiddenTraits = {
   historyReliability: number;
   finalShiftSensitivity: number;
   tempoLag: number;
-};
+}
 
 export type BoardModel = {
   seed: string;
@@ -100,7 +100,7 @@ export type BoardModel = {
   visibleNoiseRate: number;
   finalPhaseChanges: FinalPhaseChange[];
   hiddenTraits: BoardHiddenTraits;
-};
+}
 
 export type FailureReason =
   | 'policy_hold'
@@ -108,7 +108,7 @@ export type FailureReason =
   | 'busy_line'
   | 'faulted_line'
   | 'invalid_line'
-  | 'low_margin_fault';
+  | 'low_margin_fault'
 
 export type FailureEvent = {
   atSecond: number;
@@ -123,7 +123,7 @@ export type FailureEvent = {
   lineId: string | null;
   reason: FailureReason;
   detail: string;
-};
+}
 
 export type SimulationTraceEvent = {
   atSecond: number;
@@ -143,14 +143,14 @@ export type SimulationTraceEvent = {
   outcome: 'connected' | 'held' | 'dropped' | 'fault';
   lineId: string | null;
   reason: string;
-};
+}
 
 export type SimulationResult = {
   metrics: SimulationMetrics;
   title: Title;
   failures: FailureEvent[];
   trace: SimulationTraceEvent[];
-};
+}
 
 export type ShiftArtifacts = {
   board: BoardModel;
@@ -158,16 +158,16 @@ export type ShiftArtifacts = {
   starterJs: string;
   linesJson: string;
   observationsJsonl: string;
-};
+}
 
 export type RangeTuning = {
   base: number;
   spread: number;
   min: number;
   max: number;
-};
+}
 
 export type ClampRange = {
   min: number;
   max: number;
-};
+}

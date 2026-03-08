@@ -9,7 +9,7 @@ export type MutableLineState = {
   line: LineModel;
   busyUntil: number;
   faultUntil: number;
-};
+}
 
 export type RuntimeContext = {
   board: BoardModel;
@@ -20,7 +20,7 @@ export type RuntimeContext = {
   };
   rng: Rng;
   premiumHeatByGroup: Map<string, number>;
-};
+}
 
 export function getCurrentLoad (curve: RuntimeContext['curve'], second: number, queueDepth: number) {
   const base = curve.points[Math.min(second, curve.points.length - 1)] ?? GAME_BALANCE.runtimePenalties.defaultCurveLoad

@@ -23,8 +23,8 @@ function FadeIn ({ children, delay = 0, className, style }: { children: ReactNod
       className={className}
       style={style}
       variants={FADE_VARIANTS}
-      initial="hidden"
-      whileInView="visible"
+      initial='hidden'
+      whileInView='visible'
       viewport={VIEWPORT}
       transition={{ ...FADE_SPRING, delay }}
     >
@@ -58,28 +58,28 @@ function efficiencyFillClass (index: number, title: LeaderboardEntry['title']) {
 function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }) {
   if (!entry) {
     return (
-      <div className="line-tile line-tile--vacant">
-        <div className="line-tile__header">
-          <div className="line-tile__indicator">
-            <div className="line-dot" />
-            <span className="line-number">Line {lineNumber(index)}</span>
+      <div className='line-tile line-tile--vacant'>
+        <div className='line-tile__header'>
+          <div className='line-tile__indicator'>
+            <div className='line-dot' />
+            <span className='line-number'>Line {lineNumber(index)}</span>
           </div>
         </div>
-        <p className="line-callsign">No signal</p>
-        <div className="line-stats">
-          <div className="line-stats__row">
+        <p className='line-callsign'>No signal</p>
+        <div className='line-stats'>
+          <div className='line-stats__row'>
             {(['Connected', 'Dropped', 'Avg Hold'] as const).map((label) => (
-              <div key={label} className="line-stat">
-                <span className="line-stat__label">{label}</span>
-                <span className="line-stat__value">—</span>
+              <div key={label} className='line-stat'>
+                <span className='line-stat__label'>{label}</span>
+                <span className='line-stat__value'>—</span>
               </div>
             ))}
           </div>
-          <div className="line-efficiency">
-            <div className="line-efficiency__header">
-              <span className="line-efficiency__label">Board Efficiency</span>
+          <div className='line-efficiency'>
+            <div className='line-efficiency__header'>
+              <span className='line-efficiency__label'>Board Efficiency</span>
             </div>
-            <div className="line-efficiency__track" />
+            <div className='line-efficiency__track' />
           </div>
         </div>
       </div>
@@ -91,37 +91,37 @@ function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }
 
   return (
     <Link href={`/report/${entry.publicId}`} className={`line-tile${isTop ? ' line-tile--top' : ''}`}>
-      <div className="line-tile__header">
-        <div className="line-tile__indicator">
+      <div className='line-tile__header'>
+        <div className='line-tile__indicator'>
           <div className={`line-dot${isTop ? ' line-dot--gold' : ''}`} />
           <span className={`line-number${isTop ? ' line-number--gold' : ''}`}>Line {lineNumber(index)}</span>
         </div>
-        <span className="line-classification">{formatTitle(entry.title)}</span>
+        <span className='line-classification'>{formatTitle(entry.title)}</span>
       </div>
-      <p className="line-callsign">{entry.github}</p>
-      <div className="line-stats">
-        <div className="line-stats__row">
-          <div className="line-stat">
-            <span className="line-stat__label">Connected</span>
+      <p className='line-callsign'>{entry.github}</p>
+      <div className='line-stats'>
+        <div className='line-stats__row'>
+          <div className='line-stat'>
+            <span className='line-stat__label'>Connected</span>
             <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{connectedDisplay(entry)}</span>
           </div>
-          <div className="line-stat">
-            <span className="line-stat__label">Dropped</span>
+          <div className='line-stat'>
+            <span className='line-stat__label'>Dropped</span>
             <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{entry.droppedCalls ?? '—'}</span>
           </div>
-          <div className="line-stat">
-            <span className="line-stat__label">Avg Hold</span>
+          <div className='line-stat'>
+            <span className='line-stat__label'>Avg Hold</span>
             <span className={`line-stat__value${isMuted ? ' line-stat__value--muted' : ''}`}>{formatHold(entry.avgHoldSeconds)}</span>
           </div>
         </div>
-        <div className="line-efficiency">
-          <div className="line-efficiency__header">
-            <span className="line-efficiency__label">Board Efficiency</span>
+        <div className='line-efficiency'>
+          <div className='line-efficiency__header'>
+            <span className='line-efficiency__label'>Board Efficiency</span>
             <span className={`line-efficiency__value${isTop ? ' line-efficiency__value--gold' : ''}`}>
               {formatPercent(entry.boardEfficiency)}
             </span>
           </div>
-          <div className="line-efficiency__track">
+          <div className='line-efficiency__track'>
             <div
               className={`line-efficiency__fill ${efficiencyFillClass(index, entry.title)}`}
               style={{ width: `${Math.round(entry.boardEfficiency * 100)}%` }}
@@ -136,7 +136,7 @@ function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }
 function Chevron ({ direction }: { direction: 'left' | 'right' }) {
   const d = direction === 'left' ? 'M7.5 2.5L4 6l3.5 3.5' : 'M4.5 2.5L8 6l-3.5 3.5'
   return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'>
       <path d={d} />
     </svg>
   )
@@ -146,12 +146,12 @@ function Chevron ({ direction }: { direction: 'left' | 'right' }) {
 
 export function LandingLeaderboardSkeleton () {
   return (
-    <section className="leaderboard-card" aria-busy="true">
-      <div className="leaderboard-card__header">
-        <p className="eyebrow">{SECTION_EYEBROW}</p>
-        <h2 className="shift-reports-heading">{SECTION_HEADING}</h2>
+    <section className='leaderboard-card' aria-busy='true'>
+      <div className='leaderboard-card__header'>
+        <p className='eyebrow'>{SECTION_EYEBROW}</p>
+        <h2 className='shift-reports-heading'>{SECTION_HEADING}</h2>
       </div>
-      <p className="console-supervisor__empty">Loading leaderboard...</p>
+      <p className='console-supervisor__empty'>Loading leaderboard...</p>
     </section>
   )
 }
@@ -171,14 +171,14 @@ export function LandingLeaderboard ({
   const showEnd = showStart + dispatchEntries.length - 1
 
   return (
-    <div className="leaderboard-card">
+    <div className='leaderboard-card'>
 
-      <FadeIn className="leaderboard-card__header">
-        <p className="eyebrow">{SECTION_EYEBROW}</p>
-        <h2 className="shift-reports-heading">{SECTION_HEADING}</h2>
+      <FadeIn className='leaderboard-card__header'>
+        <p className='eyebrow'>{SECTION_EYEBROW}</p>
+        <h2 className='shift-reports-heading'>{SECTION_HEADING}</h2>
       </FadeIn>
 
-      <div className="line-tiles">
+      <div className='line-tiles'>
         {[0, 1, 2].map((i) => (
           <FadeIn key={topEntries[i]?.publicId ?? `slot-${i}`} delay={0.1 + i * 0.1} style={{ flex: 1, minWidth: 0 }}>
             <LineTile entry={topEntries[i]} index={i} />
@@ -187,14 +187,14 @@ export function LandingLeaderboard ({
       </div>
 
       {dispatchEntries.length > 0 && (
-        <div className="dispatch-log">
-          <FadeIn delay={0.4} className="dispatch-log__head">
-            <span className="dispatch-log__col--line">Line</span>
-            <span className="dispatch-log__col--callsign">Callsign</span>
-            <span className="dispatch-log__col--class">Classification</span>
-            <span className="dispatch-log__col--spacer" />
-            <span className="dispatch-log__col--connected">Connected</span>
-            <span className="dispatch-log__col--efficiency">Efficiency</span>
+        <div className='dispatch-log'>
+          <FadeIn delay={0.4} className='dispatch-log__head'>
+            <span className='dispatch-log__col--line'>Line</span>
+            <span className='dispatch-log__col--callsign'>Callsign</span>
+            <span className='dispatch-log__col--class'>Classification</span>
+            <span className='dispatch-log__col--spacer' />
+            <span className='dispatch-log__col--connected'>Connected</span>
+            <span className='dispatch-log__col--efficiency'>Efficiency</span>
           </FadeIn>
 
           {dispatchEntries.map((entry, i) => {
@@ -208,19 +208,19 @@ export function LandingLeaderboard ({
                   href={`/report/${entry.publicId}`}
                   className={`dispatch-log__row${isOff ? ' dispatch-log__row--muted' : ''}`}
                 >
-                  <span className="dispatch-log__col--line">{lineNumber(globalIndex)}</span>
-                  <span className="dispatch-log__col--callsign">{entry.github}</span>
-                  <span className="dispatch-log__col--class">{formatTitle(entry.title)}</span>
-                  <span className="dispatch-log__col--spacer" />
-                  <span className="dispatch-log__col--connected">{connectedDisplay(entry)}</span>
-                  <div className="dispatch-log__col--efficiency">
-                    <div className="dispatch-log__bar-track">
+                  <span className='dispatch-log__col--line'>{lineNumber(globalIndex)}</span>
+                  <span className='dispatch-log__col--callsign'>{entry.github}</span>
+                  <span className='dispatch-log__col--class'>{formatTitle(entry.title)}</span>
+                  <span className='dispatch-log__col--spacer' />
+                  <span className='dispatch-log__col--connected'>{connectedDisplay(entry)}</span>
+                  <div className='dispatch-log__col--efficiency'>
+                    <div className='dispatch-log__bar-track'>
                       <div
-                        className="dispatch-log__bar-fill"
+                        className='dispatch-log__bar-fill'
                         style={{ backgroundColor: isOff ? 'rgba(26,20,16,0.12)' : 'var(--accent-bar)', width: `${pct}%` }}
                       />
                     </div>
-                    <span className="dispatch-log__pct">{formatPercent(entry.boardEfficiency)}</span>
+                    <span className='dispatch-log__pct'>{formatPercent(entry.boardEfficiency)}</span>
                   </div>
                 </Link>
               </FadeIn>
@@ -228,17 +228,17 @@ export function LandingLeaderboard ({
           })}
 
           {totalDispatchPages > 1 && (
-            <div className="dispatch-log__pagination">
-              <span className="dispatch-log__pagination-info">
+            <div className='dispatch-log__pagination'>
+              <span className='dispatch-log__pagination-info'>
                 Showing {showStart}–{showEnd} of {totalEntries}
               </span>
-              <div className="dispatch-log__pagination-controls">
-                <button type="button" className="dispatch-log__pagination-btn" disabled={dispatchPage === 0} onClick={() => onPageChange(Math.max(0, dispatchPage - 1))}>
-                  <Chevron direction="left" />
+              <div className='dispatch-log__pagination-controls'>
+                <button type='button' className='dispatch-log__pagination-btn' disabled={dispatchPage === 0} onClick={() => onPageChange(Math.max(0, dispatchPage - 1))}>
+                  <Chevron direction='left' />
                 </button>
-                <span className="dispatch-log__pagination-label">Page {dispatchPage + 1} of {totalDispatchPages}</span>
-                <button type="button" className="dispatch-log__pagination-btn" disabled={dispatchPage === totalDispatchPages - 1} onClick={() => onPageChange(Math.min(totalDispatchPages - 1, dispatchPage + 1))}>
-                  <Chevron direction="right" />
+                <span className='dispatch-log__pagination-label'>Page {dispatchPage + 1} of {totalDispatchPages}</span>
+                <button type='button' className='dispatch-log__pagination-btn' disabled={dispatchPage === totalDispatchPages - 1} onClick={() => onPageChange(Math.min(totalDispatchPages - 1, dispatchPage + 1))}>
+                  <Chevron direction='right' />
                 </button>
               </div>
             </div>

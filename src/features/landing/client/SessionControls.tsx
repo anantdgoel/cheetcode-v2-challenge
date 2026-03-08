@@ -10,7 +10,7 @@ type StartShiftResponse = {
   shift?: {
     id: string;
   } | null;
-};
+}
 
 async function readJson<T> (response: Response): Promise<T> {
   return response.json() as Promise<T>
@@ -54,47 +54,47 @@ export default function SessionControls ({
 
   if (!github) {
     return (
-      <button type="button" className="app-button" onClick={() => signIn('github')}>
+      <button type='button' className='app-button' onClick={() => signIn('github')}>
         Sign in with GitHub
       </button>
     )
   }
 
   return (
-    <div className="session-controls">
-      <div className="session-controls__actions">
+    <div className='session-controls'>
+      <div className='session-controls__actions'>
         {activeShiftId
           ? (
-          <button
-            type="button"
-            className="app-button"
-            onClick={() => router.push(`/shift/${activeShiftId}`)}
-          >
-            Resume Shift
-          </button>
+            <button
+              type='button'
+              className='app-button'
+              onClick={() => router.push(`/shift/${activeShiftId}`)}
+            >
+              Resume Shift
+            </button>
             )
           : (
-          <button
-            type="button"
-            className="app-button"
-            disabled={isPending}
-            onClick={startShift}
-          >
-            {isPending ? 'Opening Exchange...' : 'Start Shift'}
-          </button>
+            <button
+              type='button'
+              className='app-button'
+              disabled={isPending}
+              onClick={startShift}
+            >
+              {isPending ? 'Opening Exchange...' : 'Start Shift'}
+            </button>
             )}
         <button
-          type="button"
-          className="app-button app-button--secondary"
+          type='button'
+          className='app-button app-button--secondary'
           onClick={() => signOut({ callbackUrl: '/' })}
         >
           Sign Out
         </button>
       </div>
-      <span className="session-controls__identity">
+      <span className='session-controls__identity'>
         Signed in as <strong>{github}</strong>
       </span>
-      {error ? <p className="session-controls__error">{error}</p> : null}
+      {error ? <p className='session-controls__error'>{error}</p> : null}
     </div>
   )
 }

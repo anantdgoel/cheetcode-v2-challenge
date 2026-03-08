@@ -1,9 +1,9 @@
 import type { ProbeKind, ProbeSummary, SimulationMetrics, Title } from '@/core/domain/game'
 
-export type StoredShiftState = 'active' | 'completed' | 'expired';
-export type StoredRunKind = ProbeKind | 'final';
-export type StoredRunTrigger = 'manual' | 'auto_expire';
-export type StoredRunState = 'accepted' | 'processing' | 'completed';
+export type StoredShiftState = 'active' | 'completed' | 'expired'
+export type StoredRunKind = ProbeKind | 'final'
+export type StoredRunTrigger = 'manual' | 'auto_expire'
+export type StoredRunState = 'accepted' | 'processing' | 'completed'
 
 export type StoredRunRecord = {
   id: string;
@@ -19,7 +19,7 @@ export type StoredRunRecord = {
   title?: Title;
   chiefOperatorNote?: string;
   reportPublicId?: string;
-};
+}
 
 export type StoredShiftRecord = {
   id: string;
@@ -46,4 +46,4 @@ export type StoredShiftRecord = {
   };
   runs: StoredRunRecord[];
   reportPublicId?: string;
-};
+}

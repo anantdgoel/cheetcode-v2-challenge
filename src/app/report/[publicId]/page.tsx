@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ReportCard } from '@/features/report/client/ReportCard'
-import { getReportView } from '@/features/report/server/queries'
+import { ContactForm } from '@/features/report/client/ContactForm'
+import { getContactSubmission, getReportView } from '@/features/report/server/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,5 +16,17 @@ export default async function ReportPage ({
   if (!report) {
     notFound()
   }
-  return <ReportCard publicId={publicId} report={report} />
+
+  const contactCheck = await getContactSubmission(publicId)
+
+  return (
+    <main className='report-shell'>
+      <ReportCard publicId={publicId} report={report} />
+      <ContactForm
+        github={report.github}
+        reportPublicId={publicId}
+        alreadySubmitted={!!contactCheck}
+      />
+    </main>
+  )
 }

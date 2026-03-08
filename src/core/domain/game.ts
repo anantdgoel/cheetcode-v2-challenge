@@ -43,27 +43,27 @@ export const FAILURE_MODES = [
 ] as const
 export const TRANSFER_WARNINGS = ['stable', 'stress_only', 'likely_final_shift_sensitive'] as const
 
-export type ProbeKind = (typeof PROBE_KINDS)[number];
-export type Title = (typeof TITLES)[number];
-export type RouteCode = (typeof ROUTE_CODES)[number];
-export type SubscriberClass = (typeof SUBSCRIBER_CLASSES)[number];
-export type BillingMode = (typeof BILLING_MODES)[number];
-export type Urgency = (typeof URGENCIES)[number];
-export type MaintenanceBand = (typeof MAINTENANCE_BANDS)[number];
-export type BoardProfile = (typeof BOARD_PROFILES)[number];
-export type LineFamily = (typeof LINE_FAMILIES)[number];
-export type BoardCondition = (typeof BOARD_CONDITIONS)[number];
-export type BoardTempo = (typeof BOARD_TEMPOS)[number];
-export type LoadBand = (typeof LOAD_BANDS)[number];
-export type QueueBand = (typeof QUEUE_BANDS)[number];
-export type TrafficRegime = (typeof TRAFFIC_REGIMES)[number];
-export type OperatorGrade = (typeof OPERATOR_GRADES)[number];
-export type PressureBand = (typeof PRESSURE_BANDS)[number];
-export type PremiumReuseBand = (typeof PREMIUM_REUSE_BANDS)[number];
-export type FinalShiftKind = (typeof FINAL_SHIFT_KINDS)[number];
-export type ArtifactName = (typeof ARTIFACT_NAMES)[number];
-export type FailureMode = (typeof FAILURE_MODES)[number];
-export type TransferWarning = (typeof TRANSFER_WARNINGS)[number];
+export type ProbeKind = (typeof PROBE_KINDS)[number]
+export type Title = (typeof TITLES)[number]
+export type RouteCode = (typeof ROUTE_CODES)[number]
+export type SubscriberClass = (typeof SUBSCRIBER_CLASSES)[number]
+export type BillingMode = (typeof BILLING_MODES)[number]
+export type Urgency = (typeof URGENCIES)[number]
+export type MaintenanceBand = (typeof MAINTENANCE_BANDS)[number]
+export type BoardProfile = (typeof BOARD_PROFILES)[number]
+export type LineFamily = (typeof LINE_FAMILIES)[number]
+export type BoardCondition = (typeof BOARD_CONDITIONS)[number]
+export type BoardTempo = (typeof BOARD_TEMPOS)[number]
+export type LoadBand = (typeof LOAD_BANDS)[number]
+export type QueueBand = (typeof QUEUE_BANDS)[number]
+export type TrafficRegime = (typeof TRAFFIC_REGIMES)[number]
+export type OperatorGrade = (typeof OPERATOR_GRADES)[number]
+export type PressureBand = (typeof PRESSURE_BANDS)[number]
+export type PremiumReuseBand = (typeof PREMIUM_REUSE_BANDS)[number]
+export type FinalShiftKind = (typeof FINAL_SHIFT_KINDS)[number]
+export type ArtifactName = (typeof ARTIFACT_NAMES)[number]
+export type FailureMode = (typeof FAILURE_MODES)[number]
+export type TransferWarning = (typeof TRANSFER_WARNINGS)[number]
 
 export type PublicLine = {
   id: string;
@@ -73,13 +73,13 @@ export type PublicLine = {
   lineGroupId: string;
   isPremiumTrunk: boolean;
   maintenanceBand: MaintenanceBand;
-};
+}
 
 export type RuntimeLineView = PublicLine & {
   status: 'idle' | 'busy' | 'fault';
   secondsUntilBusyClears: number;
   secondsUntilFaultClears: number;
-};
+}
 
 export type ExchangeCall = {
   id: string;
@@ -89,12 +89,12 @@ export type ExchangeCall = {
   urgency: Urgency;
   queuedForSeconds: number;
   attempt: number;
-};
+}
 
 export type PolicyClock = {
   second: number;
   remainingSeconds: number;
-};
+}
 
 export type PolicyBoard = {
   load: number;
@@ -102,14 +102,14 @@ export type PolicyBoard = {
   queueDepth: number;
   callsHandled: number;
   tempo: BoardTempo;
-};
+}
 
 export type PolicyInput = {
   clock: PolicyClock;
   board: PolicyBoard;
   call: ExchangeCall;
   lines: RuntimeLineView[];
-};
+}
 
 export type PolicyInitContext = {
   shift: {
@@ -125,7 +125,7 @@ export type PolicyInitContext = {
       lineIds: string[];
     }>;
   };
-};
+}
 
 export type SimulationMetrics = {
   connectedCalls: number;
@@ -138,7 +138,7 @@ export type SimulationMetrics = {
   trunkMisuseCount: number;
   efficiency: number;
   hiddenScore: number;
-};
+}
 
 export type ProbeTableRow = {
   bucketId: string;
@@ -147,7 +147,7 @@ export type ProbeTableRow = {
   dropRate: number;
   avgHoldSeconds: number;
   premiumUsageRate: number;
-};
+}
 
 export type ProbeSummary = {
   probeKind: ProbeKind;
@@ -195,7 +195,7 @@ export type ProbeSummary = {
     second: number;
     note: string;
   }>;
-};
+}
 
 export type FinalReport = {
   publicId: string;
@@ -212,15 +212,15 @@ export type FinalReport = {
   achievedAt: number;
   hiddenScore: number;
   kind: 'final' | 'auto_final';
-};
+}
 
 export type PolicyValidationResult =
   | {
-      ok: true;
-      normalizedSource: string;
-      sourceHash: string;
-    }
+    ok: true;
+    normalizedSource: string;
+    sourceHash: string;
+  }
   | {
-      ok: false;
-      error: string;
-    };
+    ok: false;
+    error: string;
+  }

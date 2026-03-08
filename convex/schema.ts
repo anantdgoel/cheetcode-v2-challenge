@@ -76,5 +76,15 @@ export default defineSchema({
 
   leaderboardMeta: defineTable({
     totalEntries: v.number()
+  }),
+
+  contactSubmissions: defineTable({
+    github: v.string(),
+    name: v.string(),
+    email: v.string(),
+    reportPublicId: v.string(),
+    submittedAt: v.number()
   })
+    .index('by_github', ['github'])
+    .index('by_reportPublicId', ['reportPublicId'])
 })
