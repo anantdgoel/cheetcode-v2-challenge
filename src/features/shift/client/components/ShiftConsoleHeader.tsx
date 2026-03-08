@@ -2,6 +2,7 @@
 
 import type { ShiftView } from '@/core/domain/views'
 import { useShiftConsoleTiming } from '../hooks/use-shift-console-timing'
+import { AnimatedClock } from './AnimatedClock'
 
 export function ShiftConsoleHeader ({
   shift,
@@ -31,9 +32,10 @@ export function ShiftConsoleHeader ({
             </span>
           )}
         </div>
-        <span className={`console-header__clock console-header__clock--${timing.clockTone}`}>
-          {timing.countdownLabel}
-        </span>
+        <AnimatedClock
+          value={timing.countdownLabel}
+          className={`console-header__clock console-header__clock--${timing.clockTone}`}
+        />
       </div>
     </header>
   )

@@ -135,7 +135,7 @@
 }
 
 .console-header__clock {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 28px;
   letter-spacing: -0.02em;
   line-height: 34px;
