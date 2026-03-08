@@ -27,50 +27,56 @@ function stringifyObservations (board: BoardModel) {
 
 function buildManual (board: BoardModel) {
   const lineGroups = Array.from(new Set(board.lines.map((line) => line.lineGroupId))).length
-  return `# Madison Exchange — Operator Manual
+  return `# Firecrawl Exchange — Operator Manual
 
-The room opens hot and crowded, with the old Madison Avenue board humming
-like it remembers every bad decision made on it. Your job is not to guess.
-It is to build a disciplined routing policy and keep your head when the load rises.
+I left this for whoever takes the next shift.
 
-## 1. Submission Contract
+The desk is yours now. I kept it clean, wrote down what I could, and left the files in order. You'll figure out the rest — everybody does. The board teaches you whether you want it to or not.
 
-Submit one JavaScript policy file.
+Don't let the first few minutes rattle you. It's loud, then it makes sense, then it's loud again. That's normal.
 
-The runtime calls:
+## The Contract
 
-    init(context)      // optional, once per run
-    connect(input)     // required, once per decision
+They don't ask much. One file, two functions, and whatever judgment you bring to the chair.
 
-\`connect(input)\` must return:
+You submit one JavaScript file. The runtime calls two functions:
+
+    init(context)      // optional — called once at the start of a run
+    connect(input)     // required — called once per incoming call
+
+\`connect\` must return:
 
     { lineId: string | null }
 
-Returning \`null\` keeps the caller on hold.
-State persists within a probe or final run and resets between runs.
+Return a line ID to route the call. Return \`null\` to hold.
 
-## 2. What Matters
+State you set in \`init\` or \`connect\` persists for the duration of a run, then resets.
 
-- Different line groups carry different traffic families well.
-- Some lines hold up under rising load; others go soft.
-- Premium trunks help only in a narrow set of cases.
-- The same board law governs both probes and final.
+## The Board
 
-## 3. Live Runtime
+When a call comes in, this is what lands on your desk:
 
-Every decision includes:
+**clock**
+- \`second\`
+- \`remainingSeconds\`
 
-- \`clock.second\`
-- \`clock.remainingSeconds\`
-- \`board.load\` from 0 to 1
-- \`board.pressure\` from 0 to 1, a noisy live gauge
-- \`board.tempo\` to warn when the room is surging or cooling
-- \`board.queueDepth\`
-- \`call\`
-- \`lines\`
+**board**
+- \`load\`
+- \`pressure\`
+- \`queueDepth\`
+- \`callsHandled\`
+- \`tempo\`
 
-Every visible line includes:
+**call**
+- \`id\`
+- \`routeCode\`
+- \`subscriberClass\`
+- \`billingMode\`
+- \`urgency\`
+- \`queuedForSeconds\`
+- \`attempt\`
 
+**lines[]**
 - \`id\`
 - \`label\`
 - \`switchMark\`
@@ -82,51 +88,36 @@ Every visible line includes:
 - \`secondsUntilBusyClears\`
 - \`secondsUntilFaultClears\`
 
-## 4. Desk Notes
+## What I Left You
 
-The room tells on itself if you listen:
+I didn't have to leave these. Most people don't. But I sat in this chair cold once and I wouldn't wish that on anyone.
 
-- Similar markings often travel together, but never perfectly.
-- Some desks look alike and still fail for different reasons when the room turns.
-- Some groups carry cleanly until the lamps stack up, then fail fast.
-- Premium habit is not premium judgment.
-- The expensive room helps most when the call is real trouble, not merely loud trouble.
-- The books may flatter a desk that stops telling the truth once the room turns.
+Four files in the desk:
 
-## 5. Evidence
+- \`manual.md\` — you're reading it
+- \`starter.js\` — nothing special, but it runs. Start there if you want something on the board while you think
+- \`lines.json\` — the full inventory of lines on this board, everything static you'd want to know
+- \`observations.jsonl\` — records I kept from previous traffic on this board. I tried my best
 
-- \`manual.md\`: this briefing
-- \`starter.js\`: a weak but valid baseline
-- \`lines.json\`: the live board inventory
-- \`observations.jsonl\`: this board's own historical traffic, useful but noisy
+## If You Need a Second Opinion
 
-The history is useful because it teaches the habits of this board, not because it hands you a clean answer key.
-Visible similarities are suggestive, never absolute. Some operators kept cleaner books than others.
+There's a trial button on the console. Press it and I'll see how I can help. Use it strategically — I have a life.
 
-## 6. Probes
+Either way, easier to fix things before the board is watching for real.
 
-Two live probes are available:
+## What They're Watching
 
-- \`fit\`: broad daytime coverage at manageable load
-- \`stress\`: denser traffic to expose collapse thresholds
+They care about connections. That's the job — get callers routed.
 
-Probe output is structured on purpose. Use it to tune your model, not to search for one magic replacement line.
-The probe room will tell you what changed, but not how to patch it.
-The final can change pace more than once. A good operator notices before the whole desk notices.
+Board Efficiency goes up on the wall. The rest, you'll figure out.
 
-## 7. Scoring
+## This Board
 
-Connections matter most.
-Drops hurt.
-Excessive holding hurts.
-Wasting premium trunks hurts.
+${board.lines.length} lines, ${lineGroups} groups.
 
-You are judged in public on Board Efficiency. The full score remains private.
+Good luck. You won't need it if you read the files.
 
-## 8. The Room
-
-There are ${board.lines.length} live lines on this board, spread across ${lineGroups} visible groups.
-The board will not explain itself. It will, however, repeat its habits if you watch closely enough.
+I'm going to go get a drink.
 `
 }
 
