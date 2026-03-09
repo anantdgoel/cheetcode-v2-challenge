@@ -55,7 +55,11 @@ export function AdminTableView ({ data }: { data: AdminCandidatePage }) {
               <tr
                 key={row.github}
                 className='admin-table-row'
+                tabIndex={0}
+                role='link'
+                style={{ cursor: 'pointer' }}
                 onClick={() => { router.push(`/admin?candidate=${encodeURIComponent(row.github)}`) }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/admin?candidate=${encodeURIComponent(row.github)}`) } }}
               >
                 <td className='col-rank'>
                   {data.startRank + i + 1}

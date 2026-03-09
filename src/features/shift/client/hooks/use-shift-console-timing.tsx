@@ -18,7 +18,7 @@ type ShiftConsoleTimingParams = {
   shift: ShiftView;
 }
 
-export type ShiftConsoleTimingState = {
+type ShiftConsoleTimingState = {
   clockTone: ReturnType<typeof getClockTone>;
   countdownLabel: string;
   dotClass: string;

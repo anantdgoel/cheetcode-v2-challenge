@@ -73,8 +73,8 @@ function renderManual (raw: string) {
       }
       elements.push(
         <ul key={key++} className='console-manual__list'>
-          {items.map((item, itemIndex) => (
-            <li key={itemIndex}>{inlineCode(item)}</li>
+          {items.map((item) => (
+            <li key={item}>{inlineCode(item)}</li>
           ))}
         </ul>
       )

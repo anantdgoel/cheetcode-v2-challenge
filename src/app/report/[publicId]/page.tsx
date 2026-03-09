@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ConvexAuthProvider } from '@/features/landing/client/ConvexAuthProvider'
 import { ReportCard } from '@/features/report/client/ReportCard'
@@ -6,6 +7,20 @@ import { getContactSubmission, getReportView } from '@/features/report/server/qu
 import { getGithubUsername } from '@/server/auth/github'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata ({
+  params
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
+  const { publicId } = await params
+  const report = await getReportView(publicId)
+  if (!report) return { title: 'Shift Report — Firecrawl Exchange' }
+  return {
+    title: `${report.github} — Shift Report`,
+    description: `${report.title} · Board Efficiency ${Math.round(report.boardEfficiency * 100)}%`
+  }
+}
 
 export default async function ReportPage ({
   params

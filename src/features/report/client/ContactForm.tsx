@@ -14,7 +14,8 @@ export function ContactForm ({
   reportPublicId: string;
   alreadySubmitted: boolean;
 }) {
-  const [submitted, setSubmitted] = useState(alreadySubmitted)
+  const [justSubmitted, setJustSubmitted] = useState(false)
+  const submitted = alreadySubmitted || justSubmitted
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const submitContact = useMutation(submitContactMutation)
@@ -37,7 +38,7 @@ export function ContactForm ({
 
     try {
       await submitContact({ name, email, reportPublicId })
-      setSubmitted(true)
+      setJustSubmitted(true)
     } catch (err) {
       setError(extractErrorMessage(err, 'Something went wrong'))
     } finally {

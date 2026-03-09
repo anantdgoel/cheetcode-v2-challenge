@@ -239,7 +239,7 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
           <p className='eyebrow'>Score Progression</p>
           <div className='score-progression'>
             {scoreHistory.map((entry, i) => (
-              <div key={i} className='score-progression-bar'>
+              <div key={`${entry.shiftStarted}-${entry.score}-${i}`} className='score-progression-bar'>
                 <ScoreBar score={entry.score} max={maxScore} />
                 <span className='score-label'>{entry.score}</span>
               </div>

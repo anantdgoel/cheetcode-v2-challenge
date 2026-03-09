@@ -22,7 +22,7 @@ function getConvexAdminKey () {
   return key
 }
 
-export function parseShiftId (shiftId: string): ShiftId {
+export function asShiftId (shiftId: string): ShiftId {
   const normalizedShiftId = shiftId.trim()
   if (!normalizedShiftId) {
     throw new Error('shift id is required')
@@ -33,8 +33,6 @@ export function parseShiftId (shiftId: string): ShiftId {
 
   return normalizedShiftId as ShiftId
 }
-
-export const asShiftId = parseShiftId
 
 function getAdminClient () {
   const client = new ConvexHttpClient(getConvexDeploymentUrl()) as AdminAuthClient
@@ -64,15 +62,6 @@ export async function fetchInternalQuery<Query extends FunctionReference<'query'
   args: FunctionArgs<Query>
 ): Promise<FunctionReturnType<Query>> {
   return getAdminClient().query(coerceFunctionReference(query), args) as Promise<FunctionReturnType<Query>>
-}
-
-export async function fetchInternalMutation<
-  Mutation extends FunctionReference<'mutation', 'public' | 'internal'>
-> (
-  mutation: Mutation,
-  args: FunctionArgs<Mutation>
-): Promise<FunctionReturnType<Mutation>> {
-  return getAdminClient().mutation(coerceFunctionReference(mutation), args) as Promise<FunctionReturnType<Mutation>>
 }
 
 export async function fetchInternalAction<
