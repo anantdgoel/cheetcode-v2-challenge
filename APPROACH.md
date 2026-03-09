@@ -12,72 +12,84 @@ Production agent work is messier. You're operating on incomplete data. The signa
 
 The challenge should test exactly one thing: **can you build a learning loop?**
 
-Not prompting speed. Not raw coding ability. The skill that separates a script from a production system is the full cycle: observe, infer, act, learn, repeat. From messy evidence, fit a model. Test it against reality. Find where the model breaks. Revise. Ship something better. The challenge should make that loop the only path to a high score, and it should be calibrated tightly enough that you can read the score and know which part of the loop a candidate reached.
+Not prompting speed. Not raw coding ability. The skill that separates a script from a production system is the full cycle: observe, infer, act, learn, repeat. From messy evidence, fit a model. Test it against reality. Find where the model breaks. Revise. Ship something better. That loop should be the only path to a high score, calibrated tightly enough that you can read the score and know which part of the loop a candidate reached. However, the details of how to build each stage are left to the end user's creativity.
 
-The game's benchmark tiers map directly to that model:
+The benchmark tiers were the acceptance criteria:
 
 - **Under 10% (Starter)** — You showed up but didn't bring tools. Manual play against a routing problem with hidden state is a losing proposition by design.
 - **~25–50% (Baseline)** — You used agents to write code, or you're personally strong at statistical reasoning. A reasonable first-pass policy gets you here.
 - **~75–85% (Hiring bar)** — Your pipeline actually learns. It parses 4,800 noisy observation rows, weighs operator grades, fits per-group compatibility scores, runs probes to discover where the history lied, and rewrites control logic — not just rankings — before the final run. Across boards, it builds cross-session memory that transfers.
 
-These tiers weren't aspirational targets — they were the acceptance criteria. I wrote the benchmark agents (starter, baseline, hiring-bar) and set score expectations before the engine existed, then built the engine iteratively, running benchmarks after every meaningful change to keep the curve calibrated. When the hiring-bar agent scored too high, I tightened noise. When it scored too low, I loosened visible signal fidelity. The game was tuned the same way it's meant to be played.
+I wrote the benchmark agents and set score expectations before the engine existed, then built the engine iteratively, running benchmarks after every meaningful change to keep the curve calibrated. The game was tuned the same way it's meant to be played.
+
+Secondary goals:
+- Anti-gaming should be structural, not bolted on after the fact
+- The platform should work end-to-end as a deployed product
+- Setup should be clear enough that another engineer can run it cold
+- The difficulty curve should be calibrated and testable
 
 ## 3. Architecture and Data Flow
 
-The codebase has three roots with clean dependency rules — no circular imports, no framework code in the domain layer.
+Three roots with clean dependency rules — no circular imports, no framework code in the domain layer:
 
-**`src/core/engine/`** is the game. Board generation, traffic simulation, observation synthesis, scoring, probe summaries — all pure TypeScript, no React, no Next.js, no Convex. The domain is isolated so the benchmark suite can run the full engine without standing up infrastructure, and so my coding agents could work on it independently. **`src/features/*/`** contains the product as four feature slices — `shift`, `landing`, `report`, `admin` — each owning their own client and server code. **`src/server/`** handles infrastructure adapters: auth, Convex client, HTTP utilities. These layers produce four surfaces: a public landing page with leaderboard, a timed shift console for gameplay, a shareable report for each completed shift, and an admin panel for internal inspection.
+**`src/core/engine/`** — Pure domain logic. Board generation, traffic simulation, observation synthesis, scoring, probe summaries. No React, no Next.js, no Convex. Isolated so the benchmark suite runs without infrastructure and coding agents can work on it independently.
 
-**The game itself** is a signal-extraction problem disguised as a routing problem. Each board generates 8–16 telephone lines with hidden *families* — the true compatibility profiles that determine which line handles which traffic type well. The player receives `lines.json` (metadata including a `visibleFamily` field) and `observations.jsonl` (4,800 historical call records). The catch: 20–26% of visible family assignments are deliberately wrong, and the observation log is corrupted by grade-weighted noise. Senior operator observations are reliable; trainee observations can have outcomes flipped in borderline probability windows. Naively averaging the historical data gets worse results than being selective about which records to trust — which mirrors what real data pipelines actually look like.
+**`src/features/*/`** — Feature slices: `shift` (gameplay console), `landing` (leaderboard + hero), `report` (public shift reports), `admin` (inspection). Each slice owns its client and server code.
 
-Each line's true compatibility is a 24-entry matrix (4 route codes x 3 billing modes x 2 urgency levels), derived from family baselines but jittered per-board with seed-stable RNG. So even knowing a line's true family isn't sufficient — you still need to learn its board-specific calibration from the observations. Every board is fully deterministic from a single seed string, which means any policy run is exactly reproducible.
+**`src/server/`** — Infrastructure adapters. Auth helpers, Convex client, HTTP utilities.
 
-**Policy execution** runs in a QuickJS WASM sandbox — no network, no filesystem, no timers, 16KB source limit. Data crosses the VM boundary as JSON strings, preventing any reference sharing. The agent work must happen before submission; only the compiled routing policy goes in.
+**The game** is a signal-extraction problem disguised as a routing problem. Each board generates 8–16 telephone lines with hidden *families* — compatibility profiles governing which line handles which traffic well. The player gets `lines.json` (metadata including a `visibleFamily` field) and `observations.jsonl` (4,800 historical call records). The catch: 20–26% of visible family assignments are wrong, and the observation log is corrupted by grade-weighted noise. Senior operator observations are reliable; trainee observations can have outcomes flipped in borderline probability windows. Each line's true compatibility is a 24-entry matrix (4 route codes × 3 billing modes × 2 urgency levels), derived from family baselines but jittered per-board with seed-stable RNG. Even knowing a line's true family isn't enough — you still need to learn its board-specific calibration from the observations.
 
-**Reliability.** One-active-shift enforcement at the database level. Probe and final submissions use an atomic claim-then-process pattern: a `claimRunForProcessing` mutation transitions state from `accepted` to `processing`, so concurrent requests can't double-submit. Auto-finalization on expiry runs the latest validated policy if the timer runs out. Every probe and final run is stored as a full trace — source snapshot, timestamps, probe summaries with call buckets and failure analysis, final metrics with hidden score. The admin panel provides read-only lookup by GitHub username, shift ID, or report public ID.
+**Policy execution** runs in a deterministic QuickJS WASM sandbox: no network, no filesystem, no timers, 16KB size limit. Data crosses the VM boundary as JSON strings. Your policy is pure computation — the agent work happens before submission.
+
+**The benchmark suite** (`scripts/v3-agent-policies.mjs`) validates the difficulty curve against 10 fixed seeds with four agent tiers.
+
+**Reliability.** One-active-shift enforcement at the database level. Probe and final submissions use an atomic claim-then-process pattern: `claimRunForProcessing` transitions state from `accepted` to `processing`, preventing double-submits. Auto-finalization on expiry runs the latest validated policy if the timer runs out. Every run is stored as a full trace — source snapshot, timestamps, probe summaries, final metrics with hidden score.
 
 ## 4. Anti-Gaming Strategy
 
-v1 tried to prevent gaming after the fact. In v2, the architecture *is* the anti-gaming.
+v1's anti-gaming was an afterthought. In v2, the architecture *is* the anti-gaming.
 
-**No universal answer key.** Each board draws 3–5 hidden line families from a pool, seeded per-board. The compatibility matrix is jittered per-board on top of that. There is no fixed solution that transfers, and even partial solutions from a previous board can actively mislead you on the next one if you don't verify them against fresh evidence.
+**No universal answer key.** Each board draws 3–5 hidden line families from a pool of 5, seeded per-board, with the compatibility matrix jittered on top. No fixed answer transfers — partial solutions from one board can mislead you on the next.
 
-**Probes reveal, not solve.** The probe system returns narrative operational summaries — what happened under live conditions, framed as shift reports and incident notes. They expose where your model was wrong without leaking the hidden state directly. The candidate has to extract signal from prose, the same way you'd work from production logs or postmortems.
+**Noisy historical data.** `observations.jsonl` has 4,800 rows with ~25% seeded noise and adversarial trainee rows. Grade weights (`senior: 1.0`, `operator: 0.72`, `trainee: 0.18`) mean raw statistics mislead. Naively averaging everything gets worse results than being selective — same as real data pipelines.
 
-**The sandbox is the constraint.** QuickJS enforces pure computation. The agent loop lives outside; only the compiled routing policy goes in. This means the challenge doesn't measure whether you can write code — it measures whether you can build the infrastructure that writes better code each iteration.
+**Probes reveal, not solve.** Probes return narrative summaries — what happened under live conditions, framed as shift reports and incident notes. They show where your model broke without leaking hidden state. You have to extract signal from prose, same as you would from production logs.
 
-The difficulty isn't a wall to climb over. It's the shape of the problem itself.
+**The sandbox is the constraint.** QuickJS enforces pure computation. The agent loop lives outside; only the compiled routing policy goes in. The challenge doesn't measure whether you can write code — it measures whether you can build the infrastructure that writes better code each iteration.
 
-## 5. Scoring and Evaluation
+## 5. Scoring and Evaluation Strategy
 
-Traffic simulation uses a pressure curve built from superimposed sine waves plus random Gaussian-shaped bursts. Probe runs (`fit` and `stress`) use lower pressure with fewer bursts; the final run adds phase changes that shift traffic composition mid-simulation — route weight changes and capacity swings that only appear under sustained load. A board's hidden traits (`finalShiftSensitivity`, `tempoLag`, `pressureCollapse`) determine how much the final run diverges from what probes predicted. The system explicitly tells players how much to trust their probe data via a transfer warning — `stable`, `stress_only`, or `likely_final_shift_sensitive` — so the signal is there if they know to use it.
+Traffic simulation uses a pressure curve built from superimposed sine waves and Gaussian bursts. Probes run at lower pressure; the final run adds phase changes that shift traffic composition mid-simulation — route weight changes and capacity swings that only appear under sustained load. Hidden board traits (`finalShiftSensitivity`, `tempoLag`, `pressureCollapse`) determine how much the final diverges from probes. A transfer warning tells players how much to trust their probe data: `stable`, `stress_only`, or `likely_final_shift_sensitive`.
 
-After each probe, a multi-stage analysis pipeline generates diagnostic feedback without any LLM. It aggregates trace events into call-bucket and load-band tables, derives ~20 numeric signals (hot connect rate, premium misuse rate, hold failure rate, second-half drop rate, and others), then scores 6 named failure archetypes — `collapse_under_pressure`, `premium_thrash`, `overholding`, `false_generalist`, `tempo_lag`, `misleading_history` — against weighted signal combinations. The top-ranked failure modes generate themed diagnostic prose in switchboard patois, plus a set of "Questions to Carry" forward. This is deliberately unstructured: extracting actionable signal from narrative text is part of the skill being tested.
+After each probe, a pipeline generates diagnostic feedback with no LLM. It aggregates trace events into call-bucket and load-band tables, derives ~20 signals (hot connect rate, premium misuse rate, hold failure rate, second-half drop rate, etc.), then scores 6 failure archetypes — `collapse_under_pressure`, `premium_thrash`, `overholding`, `false_generalist`, `tempo_lag`, `misleading_history` — against weighted signal combinations. Top-ranked modes generate themed prose in switchboard patois, plus "Questions to Carry" forward. Deliberately unstructured: extracting signal from narrative text is part of the skill being tested.
 
-Premium lines accumulate a `premiumHeat` value with each use, decaying at a rate modulated by a hidden fragility trait. This creates a genuine resource management problem — aggressive premium routing works until it doesn't, and the cost compounds under sustained pressure in ways a static model can't predict.
+Premium lines accumulate `premiumHeat` with each use, decaying at a rate set by a hidden fragility trait. Aggressive premium routing works until it doesn't, and the cost compounds under pressure in ways a static model won't predict.
 
-The hiring-bar benchmark agent is worth describing because it demonstrates the expected ceiling: it ingests the observation log, computes grade-weighted compatibility scores per line group, infers a board profile posterior from traffic mix ratios, builds 8-dimensional trait vectors per group (pressure sensitivity, premium fragility, government bias, and others), and maintains runtime state including premium heat tracking and a pending-line feedback loop that reinforces successful selections. The entire model — learned constants, helper functions, runtime state management — self-serializes into a single JavaScript source string that the QuickJS sandbox evaluates identically to player code. The benchmark agent *is* a valid submission.
+The hiring-bar benchmark agent shows the expected ceiling: it ingests observations, computes grade-weighted compatibility per line group, infers a board profile posterior from traffic mix, builds 8-dimensional trait vectors (pressure sensitivity, premium fragility, government bias, etc.), and tracks runtime state including premium heat and a pending-line feedback loop. The entire model self-serializes into a JavaScript source string the sandbox evaluates like any player code. The benchmark agent *is* a valid submission.
+
+The difficulty curve is validated against the benchmark suite after every meaningful engine change. When the hiring-bar agent scored too high, noise was tightened. When it scored too low, visible signal fidelity was loosened.
 
 ## 6. What Changed vs v1
 
 **Kept:** Convex, Next.js, Auth.js, GitHub OAuth, the leaderboard concept, timed shifts.
 
-**Replaced:** Everything else. The entire game engine, scoring system, artifact pipeline, board generation, observation synthesis, probe system, policy sandbox, UI, theme, and design system.
+**Replaced:** Everything else. The entire game engine (`src/core/engine/`), scoring system, artifact pipeline, board generation, observation synthesis, probe system, policy sandbox, UI, theme, and design system. v1 was a different product.
 
-The telephone exchange theme came from wanting a game surface where inference under uncertainty feels natural. A routing problem with hidden line families and noisy historical data fits that better than a blank coding canvas. The 1963 aesthetic — honestly, too much Mad Men — gives people a reason to care whether they hit "Line 01 — Chief Operator." Engagement drives repeated play, and repeated play is where the real signal lives.
+The telephone exchange theme isn't cosmetic. A routing problem with hidden line families, noisy history, and mid-run pressure dynamics fits inference under uncertainty naturally. The 1963 aesthetic — too many Mad Men reruns — gives players a reason to care about their score. "Line 01 — Chief Operator" on a Shift Report feels worth sharing. Engagement drives repeated play, and repeated play is where real signal lives.
 
-The product craft runs deeper than the theme, though, because it has to — a challenge platform that looks like a hackathon project won't make anyone care about their ranking. The public report is styled as Form SR-57, Supervisor's Shift Report, with letterhead, classification badges, a supervisor's note in serif type, and a signature line. It's designed to survive a screenshot to Twitter intact. The shift console clock animates each digit independently as a slot-machine flip. The in-world vocabulary is consistent end to end: callsigns, not usernames; board efficiency, not score; dispatch log, not leaderboard; line numbers, not ranks. Even the probe feedback speaks in character. These aren't decorative choices — they're what makes someone play twice.
+The product craft runs deeper than the theme, because it has to get others excited. The public report is styled as Form SR-57, Supervisor's Shift Report, with letterhead, classification badges, a supervisor's note in serif type, and a signature line. It's designed to be a screenshot to Twitter intact. The shift console clock animates each digit independently as a slot-machine flip. The in-world vocabulary is consistent end to end: callsigns, not usernames; board efficiency, not score; dispatch log, not leaderboard. Even the probe feedback speaks in character. These aren't decorative choices — they're what makes someone play twice.
 
-This was built almost entirely with my agentic stack, which felt like the right way to build it. I maintain a design language doc that feeds the same tokens into both code and design tooling, so my agents could generate and modify UI with visual consistency from the start. The build process mirrored the game: write the tests first, build the system iteratively, measure after every change, adjust. The skill the challenge tests is the skill I used to build it.
+The build process mirrored what the game tests. Benchmark agents were written before the engine existed. Tests, linters, and hooks gated what reached `main`. My agents did the heavy lifting — which is evidence, not a flex. If you're building a tool to measure agent orchestration, demonstrating the skill yourself is the minimum bar. The skill the challenge tests is the skill I used to build it.
 
 ## 7. Tradeoffs and Future Work
 
-**Cross-board memory is the candidate's problem, by design.** The platform is stateless across shifts. Building memory that transfers — the thing that moves you from 50% to 85% — requires the candidate to build that infrastructure themselves. That's intentional; the platform handing it to you would remove the signal.
+**Cross-board memory is the candidate's problem, by design.** The platform is stateless across shifts. Building memory that transfers — the thing that gets you from 50% to 85% — is on the candidate. Handing it to them removes the signal.
 
-**Noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility holds against the benchmark suite. A determined attacker with enough runs could likely characterize the noise distribution. The fix is session-level noise re-seeding, which isn't currently implemented.
+**Noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility holds up against the benchmark suite. A determined attacker with enough runs could likely characterize the noise distribution. The fix is session-level noise re-seeding, not yet implemented.
 
-**Probe output is narrative prose.** Themed, human-readable, unstructured. Easier to read, harder for LLMs to parse reliably. The tradeoff is intentional — extracting signal from unstructured text is a real skill — but a structured alternative format would be worth adding.
+**Probe output is narrative prose.** Chief operator notes, counterfactuals, and incident reports are human-readable and themed. A structured format would be easier for LLMs to parse, but extracting signal from unstructured text is a real-world skill worth testing. Both formats could coexist.
 
-**No mobile gameplay.** This is a tooling challenge. Terminal, editor, agent runtime. Mobile is supported for leaderboard browsing and report viewing, but play is desktop-only and will stay that way.
+**No mobile gameplay.** You need a terminal, an editor, and an agent runtime. Mobile works for browsing the leaderboard and reports, but play is desktop-only.
 
-**Board profile opacity is a product call.** Players can learn to recognize board tendencies across runs, but the profile name is never surfaced. Real production systems don't announce their operating mode. Some players will find this frustrating; I think it's correct.
+**Board profile opacity is a product call.** Players can learn to recognize board tendencies across runs, but the actual board profiles are never revealed. Real production systems don't announce their operating mode. Some players will find this frustrating; I think it's correct. Esp given firecrawl's product.
