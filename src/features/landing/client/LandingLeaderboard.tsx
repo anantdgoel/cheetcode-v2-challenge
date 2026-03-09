@@ -180,7 +180,7 @@ export function LandingLeaderboard ({
         ))}
       </div>
 
-      {dispatchEntries.length > 0 && (
+      {(dispatchEntries.length > 0 || page > 0) && (
         <div className='dispatch-log'>
           <FadeIn delay={0.4} className='dispatch-log__head'>
             <span className='dispatch-log__col--line'>Line</span>

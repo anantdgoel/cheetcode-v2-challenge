@@ -1,7 +1,7 @@
 'use client'
 
 import { usePaginatedQuery } from 'convex/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../../../convex/_generated/api'
 import { normalizeLeaderboardRecord } from '@/core/domain/normalizers'
 import type { LeaderboardEntry } from '@/core/domain/views'
@@ -32,16 +32,19 @@ export function LiveLandingLeaderboard ({
   const allDispatch = entries.slice(3)
   const dispatchEntries = allDispatch.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-  const exhausted = status === 'Exhausted'
-  const canPrev = page > 0
-  const canNext = allDispatch.length > (page + 1) * PAGE_SIZE || status === 'CanLoadMore'
-
-  function goNext () {
-    if (!canNext) return
+  // Prefetch: ensure the next page's data is loaded ahead of time
+  useEffect(() => {
     if (allDispatch.length <= (page + 1) * PAGE_SIZE && status === 'CanLoadMore') {
       loadMore(PAGE_SIZE)
     }
-    setPage(p => p + 1)
+  }, [allDispatch.length, page, status, loadMore])
+
+  const exhausted = status === 'Exhausted'
+  const canPrev = page > 0
+  const canNext = allDispatch.length > (page + 1) * PAGE_SIZE
+
+  function goNext () {
+    if (canNext) setPage(p => p + 1)
   }
 
   return (
