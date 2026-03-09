@@ -6,6 +6,7 @@ import { type CSSProperties, type ReactNode } from 'react'
 import { formatPercent, formatTitle } from '@/core/engine/report'
 import type { LeaderboardEntry } from '@/core/domain/views'
 
+const DISPATCH_PAGE_SIZE = 7
 const SECTION_EYEBROW = 'from the archives'
 const SECTION_HEADING = 'Prior Operators'
 
@@ -140,16 +141,28 @@ export function LandingLeaderboardSkeleton () {
 }
 
 export function LandingLeaderboard ({
-  entries,
-  status,
-  loadMore
+  topEntries,
+  dispatchEntries,
+  page,
+  totalPages,
+  totalEntries,
+  canPrev,
+  canNext,
+  onPrev,
+  onNext
 }: {
-  entries: LeaderboardEntry[];
-  status: string;
-  loadMore: (n: number) => void;
+  topEntries: LeaderboardEntry[];
+  dispatchEntries: LeaderboardEntry[];
+  page: number;
+  totalPages: number | null;
+  totalEntries: number | null;
+  canPrev: boolean;
+  canNext: boolean;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
-  const topEntries = entries.slice(0, 3)
-  const dispatchEntries = entries.slice(3)
+  const showStart = 4 + page * DISPATCH_PAGE_SIZE
+  const showEnd = showStart + dispatchEntries.length - 1
 
   return (
     <div className='leaderboard-card'>
@@ -179,7 +192,7 @@ export function LandingLeaderboard ({
           </FadeIn>
 
           {dispatchEntries.map((entry, i) => {
-            const globalIndex = i + 3
+            const globalIndex = showStart - 1 + i
             const isOff = entry.title === 'off_the_board'
             const pct = Math.round(entry.boardEfficiency * 100)
 
@@ -208,13 +221,26 @@ export function LandingLeaderboard ({
             )
           })}
 
-          {status === 'CanLoadMore' && (
-            <div className='dispatch-log__pagination'>
-              <button type='button' className='dispatch-log__pagination-btn' onClick={() => { loadMore(7) }}>
-                Load more
+          <div className='dispatch-log__pagination'>
+            <span className='dispatch-log__pagination-info'>
+              Showing {showStart}–{showEnd}{totalEntries != null ? ` of ${totalEntries}` : ''}
+            </span>
+            <div className='dispatch-log__pagination-controls'>
+              <button type='button' className='dispatch-log__pagination-btn' disabled={!canPrev} onClick={onPrev}>
+                <svg width='14' height='14' viewBox='0 0 14 14' fill='none'>
+                  <path d='M8.5 3.5L5 7L8.5 10.5' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' />
+                </svg>
+              </button>
+              <span className='dispatch-log__pagination-label'>
+                Page {page + 1}{totalPages != null ? ` of ${totalPages}` : ''}
+              </span>
+              <button type='button' className='dispatch-log__pagination-btn' disabled={!canNext} onClick={onNext}>
+                <svg width='14' height='14' viewBox='0 0 14 14' fill='none'>
+                  <path d='M5.5 3.5L9 7L5.5 10.5' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round' />
+                </svg>
               </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
