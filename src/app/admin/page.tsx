@@ -1,20 +1,10 @@
 import { redirect } from 'next/navigation'
-import {
-  AdminPageContent,
-  type AdminFieldDefaults
-} from '@/features/admin/client/AdminPageContent'
-import { getAdminSnapshot } from '@/features/admin/server/queries'
+import { AdminTableView } from '@/features/admin/client/AdminTableView'
+import { AdminDetailView } from '@/features/admin/client/AdminDetailView'
+import { getCandidates, getCandidateDetail } from '@/features/admin/server/queries'
 import { getGithubUsername, isAdminGithub } from '@/server/auth/github'
 
 export const dynamic = 'force-dynamic'
-
-function parseParam (params: Record<string, string | string[] | undefined>, name: string) {
-  const raw = Array.isArray(params[name]) ? params[name][0] : params[name] ?? null
-  if (!raw) return null
-
-  const value = raw.trim()
-  return value.length ? value : null
-}
 
 export default async function AdminPage ({
   searchParams
@@ -25,20 +15,26 @@ export default async function AdminPage ({
   if (!isAdminGithub(github)) {
     redirect('/')
   }
-  const lookupGithub = parseParam(params, 'github')
-  const shiftId = parseParam(params, 'shiftId')
-  const publicId = parseParam(params, 'publicId')
 
-  const snapshot = await getAdminSnapshot({
-    github: lookupGithub,
-    shiftId,
-    publicId
-  })
+  const candidateParam = Array.isArray(params.candidate) ? params.candidate[0] : params.candidate
+  const candidate = candidateParam?.trim() || null
 
-  const fieldDefaults: AdminFieldDefaults = {
-    github: lookupGithub ?? '',
-    shiftId: shiftId ?? '',
-    publicId: publicId ?? ''
+  if (candidate) {
+    const detail = await getCandidateDetail(candidate)
+    return (
+      <main className='admin-shell'>
+        <AdminDetailView detail={detail} />
+      </main>
+    )
   }
-  return <AdminPageContent fieldDefaults={fieldDefaults} snapshot={snapshot} />
+
+  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page
+  const page = Math.max(0, parseInt(pageParam ?? '0', 10) || 0)
+
+  const data = await getCandidates(page)
+  return (
+    <main className='admin-shell'>
+      <AdminTableView data={data} />
+    </main>
+  )
 }

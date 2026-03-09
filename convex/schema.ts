@@ -86,5 +86,11 @@ export default defineSchema({
     submittedAt: v.number()
   })
     .index('by_github', ['github'])
-    .index('by_reportPublicId', ['reportPublicId'])
+    .index('by_reportPublicId', ['reportPublicId']),
+
+  candidateSummaries: defineTable({
+    github: v.string(),
+    summary: v.string(),
+    generatedAt: v.number()
+  }).index('by_github', ['github'])
 })

@@ -97,3 +97,69 @@ export type AdminSnapshot = {
   runs: AdminRunView[];
   contact?: { name: string; email: string; submittedAt: number } | null;
 }
+
+export type AdminCandidateRow = {
+  github: string;
+  title: Title;
+  hiddenScore: number;
+  boardEfficiency: number;
+  achievedAt: number;
+  publicId: string;
+  shiftCount: number;
+  hasContact: boolean;
+  lastActive: number;
+  connectedCalls?: number;
+  totalCalls?: number;
+  droppedCalls?: number;
+  avgHoldSeconds?: number;
+}
+
+export type AdminCandidatePage = {
+  rows: AdminCandidateRow[];
+  totalEntries: number;
+  page: number;
+  totalPages: number;
+}
+
+export type AdminDetailRun = {
+  id: string;
+  kind: string;
+  trigger: string;
+  state: string;
+  acceptedAt: number;
+  resolvedAt?: number;
+  sourceSnapshot: string;
+  metrics?: SimulationMetrics;
+  title?: Title;
+  chiefOperatorNote?: string;
+  probeSummary?: {
+    metrics: {
+      connectedCalls: number;
+      totalCalls: number;
+      droppedCalls: number;
+      avgHoldSeconds: number;
+      premiumUsageRate: number;
+      efficiency: number;
+    };
+    failureModes: string[];
+    deskCondition: string;
+    probeKind: string;
+  };
+}
+
+export type AdminDetailShift = {
+  id: string;
+  state: string;
+  startedAt: number;
+  completedAt?: number;
+  expiresAt: number;
+  runs: AdminDetailRun[];
+}
+
+export type AdminCandidateDetail = {
+  github: string;
+  leaderboardRow: LeaderboardEntry | null;
+  shifts: AdminDetailShift[];
+  contact: { name: string; email: string; submittedAt: number } | null;
+  summary: { summary: string; generatedAt: number } | null;
+}
