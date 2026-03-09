@@ -40,6 +40,7 @@ type RuntimeAccumulators = {
   totalHoldSeconds: number;
   premiumUsageCount: number;
   trunkMisuseCount: number;
+  callsHandled: number;
 }
 
 type PolicyDecisionFn = (input: PolicyInput) => Promise<{ lineId: string | null; error?: string }>
@@ -266,7 +267,6 @@ async function drainQueue (params: {
   failures: FailureEvent[];
   trace: SimulationTraceEvent[];
   accumulators: RuntimeAccumulators;
-  callsHandled: number;
 }) {
   while (params.queue.length) {
     const oldest = params.queue[0]
@@ -274,6 +274,7 @@ async function drainQueue (params: {
     if (queuedForSeconds >= DROP_THRESHOLDS[oldest.routeCode]) {
       params.queue.shift()
       params.accumulators.droppedCalls += 1
+      params.accumulators.totalHoldSeconds += queuedForSeconds
       const load = getCurrentLoad(params.runtime.curve, params.second, params.queue.length)
       const pressure = getPublicPressure(params.runtime, params.second, load)
       params.failures.push({
@@ -323,7 +324,7 @@ async function drainQueue (params: {
       lines: params.lines,
       runtime: params.runtime,
       queueDepth: params.queue.length,
-      callsHandled: params.callsHandled,
+      callsHandled: params.accumulators.callsHandled,
       decide: params.decide,
       failures: params.failures,
       trace: params.trace,
@@ -336,7 +337,7 @@ async function drainQueue (params: {
     }
 
     params.queue.shift()
-    params.callsHandled += 1
+    params.accumulators.callsHandled += 1
   }
 }
 
@@ -361,7 +362,8 @@ export async function simulateExchange (params: {
     droppedCalls: 0,
     totalHoldSeconds: 0,
     premiumUsageCount: 0,
-    trunkMisuseCount: 0
+    trunkMisuseCount: 0,
+    callsHandled: 0
   }
   const runtime: RuntimeContext = {
     board,
@@ -378,7 +380,6 @@ export async function simulateExchange (params: {
   }
 
   const queue: QueueEntry[] = []
-  let callsHandled = 0
   const horizon = (plan.at(-1)?.atSecond ?? 0) + GAME_BALANCE.runtimePenalties.postPlanHorizonSeconds
 
   for (let second = 0; second <= horizon; second += 1) {
@@ -397,7 +398,7 @@ export async function simulateExchange (params: {
         lines,
         runtime,
         queueDepth: queue.length,
-        callsHandled,
+        callsHandled: accumulators.callsHandled,
         decide: params.decide,
         failures,
         trace,
@@ -406,7 +407,7 @@ export async function simulateExchange (params: {
       if (!handled.handled) {
         queue.push({ ...arrival, arrivalAt: second, attempt: 1 })
       } else {
-        callsHandled += 1
+        accumulators.callsHandled += 1
       }
     }
 
@@ -418,8 +419,7 @@ export async function simulateExchange (params: {
       decide: params.decide,
       failures,
       trace,
-      accumulators,
-      callsHandled
+      accumulators
     })
   }
 

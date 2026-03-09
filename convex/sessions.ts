@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { internal } from './_generated/api'
 import { internalMutation, internalQuery, mutation, query } from './_generated/server'
 import { requireAuthenticatedGithub } from './lib/auth'
+import { appError } from './lib/errors'
 import { loadOwnedShift, loadShiftById, toClientShiftRecord, toShiftRecord, type ShiftDoc, type ShiftRunDoc } from './records'
 import { buildArtifactContent } from '../src/core/engine/artifacts'
 import { hasLiveActiveShift } from '../src/features/shift/domain/lifecycle'
@@ -30,8 +31,14 @@ function artifactFieldName (name: 'manual.md' | 'starter.js' | 'lines.json' | 'o
   }
 }
 
+const STUCK_RUN_TIMEOUT_MS = 60_000
+
 function getAcceptedRun (shift: Pick<ShiftDoc, 'runs'>) {
-  return shift.runs.find((run) => run.state === 'accepted' || run.state === 'processing')
+  return shift.runs.find((run) => {
+    if (run.state !== 'accepted' && run.state !== 'processing') return false
+    if (run.acceptedAt && Date.now() - run.acceptedAt > STUCK_RUN_TIMEOUT_MS) return false
+    return true
+  })
 }
 
 function getRunById (shift: Pick<ShiftDoc, 'runs'>, runId: string) {
@@ -60,7 +67,7 @@ function hasFinalRun (shift: Pick<ShiftDoc, 'runs'>) {
 
 function ensureOwnedShift (shift: ShiftDoc | null, github: string) {
   if (!shift || shift.github !== github) {
-    throw new Error('shift not found')
+    throw appError('shift_not_found')
   }
   return shift
 }
@@ -556,16 +563,16 @@ export const requestProbe = mutation({
     )
     const now = Date.now()
     if (shift.state !== 'active' || now >= shift.expiresAt) {
-      throw new Error('shift expired')
+      throw appError('shift_expired')
     }
     if (now >= shift.phase1EndsAt) {
-      throw new Error('trial window closed')
+      throw appError('trial_window_closed')
     }
     if (getAcceptedRun(shift)) {
-      throw new Error('evaluation already in progress')
+      throw appError('evaluation_in_progress')
     }
     if (!shift.latestValidSource || !shift.latestValidSourceHash) {
-      throw new Error('valid module required')
+      throw appError('valid_module_required')
     }
 
     const PROBE_ORDER = ['fit', 'stress'] as const
@@ -573,7 +580,7 @@ export const requestProbe = mutation({
       (kind) => !shift.runs.some((run: ShiftRunDoc) => run.kind === kind && run.state === 'completed')
     )
     if (!nextProbeKind) {
-      throw new Error('all probes exhausted')
+      throw appError('all_probes_exhausted')
     }
 
     const runId = crypto.randomUUID()
@@ -611,16 +618,16 @@ export const requestGoLive = mutation({
       github
     )
     if (shift.state !== 'active') {
-      throw new Error('shift expired')
+      throw appError('shift_expired')
     }
     if (getAcceptedRun(shift)) {
-      throw new Error('evaluation already in progress')
+      throw appError('evaluation_in_progress')
     }
     if (hasFinalRun(shift)) {
-      throw new Error('final evaluation already submitted')
+      throw appError('final_evaluation_unavailable')
     }
     if (!shift.latestValidSource || !shift.latestValidSourceHash) {
-      throw new Error('valid module required')
+      throw appError('valid_module_required')
     }
 
     const runId = crypto.randomUUID()

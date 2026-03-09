@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { useSaveDraft } from '../convex-api'
+import { extractErrorMessage } from '@/lib/convex-error'
 import type { SavingState } from '../types'
 
 export function useDraftAutosave (
@@ -41,7 +42,7 @@ export function useDraftAutosave (
         } catch (error) {
           if (isMountedRef.current) {
             setSavingState('idle')
-            setConsoleError(error instanceof Error ? error.message : 'Draft save failed')
+            setConsoleError(extractErrorMessage(error, 'Draft save failed'))
           }
         }
       })()

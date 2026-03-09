@@ -171,7 +171,7 @@ export function deriveShiftConsoleState (params: {
         },
         {
           label: 'Trial',
-          modifier: trialStatus !== 'Available' ? ' console-readout__value--green' : undefined,
+          modifier: shift.remainingProbes > 0 ? ' console-readout__value--green' : undefined,
           value: trialStatus
         }
       ],

@@ -350,7 +350,7 @@ describe('ShiftConsole', () => {
 
     expect(await screen.findByText('Chief operator reading your board')).toBeTruthy()
     expect(screen.getByText('Live Room Engaged')).toBeTruthy()
-    expect(screen.getByText('Hold the line. Convex is finishing the final read and your shift report will open automatically.')).toBeTruthy()
+    expect(screen.getByText('Hold the line. Central Office is completing the final board read — your shift report will open automatically.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Reading Board...' })).toBeTruthy()
   })
 

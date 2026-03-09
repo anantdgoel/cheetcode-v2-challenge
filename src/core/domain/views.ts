@@ -50,7 +50,9 @@ export type ShiftView = {
   finalEvaluation?: EvaluationRecordView;
 }
 
-export type ReportView = FinalReport
+export type ReportView = FinalReport & {
+  leaderboardPosition?: number | null;
+}
 
 export type LeaderboardEntry = {
   github: string;

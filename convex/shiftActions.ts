@@ -4,6 +4,7 @@ import { v } from 'convex/values'
 import { internal } from './_generated/api'
 import { action } from './_generated/server'
 import { requireAuthenticatedGithub } from './lib/auth'
+import { appError } from './lib/errors'
 import type { StoredShiftRecord } from '../src/features/shift/domain/persistence'
 import { PHASE_1_MS, SHIFT_MS } from '../src/features/shift/domain/lifecycle'
 import { shapeShiftView } from '../src/features/shift/domain/view'
@@ -25,7 +26,7 @@ export const startShift = action({
     const starterSource = buildStarterPolicy()
     const starterValidation = await validatePolicy(starterSource)
     if (!starterValidation.ok) {
-      throw new Error('starter policy invalid')
+      throw appError('starter_policy_invalid')
     }
 
     // ctx.runMutation returns any in action context; type mirrors sessions.start

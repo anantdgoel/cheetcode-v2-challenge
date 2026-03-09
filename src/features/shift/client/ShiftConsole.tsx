@@ -41,7 +41,7 @@ function ShiftConsoleScreen ({ shift }: { shift: ShiftView }) {
             <p className='console-live-modal__eyebrow'>Live Room Engaged</p>
             <h2 id='live-room-title' className='console-live-modal__title'>Chief operator reading your board</h2>
             <p className='console-live-modal__body'>
-              Hold the line. Convex is finishing the final read and your shift report will open automatically.
+              Hold the line. Central Office is completing the final board read — your shift report will open automatically.
             </p>
           </div>
         </div>

@@ -74,6 +74,19 @@ export const list = query({
   }
 })
 
+export const getPositionForGithub = internalQuery({
+  args: { github: v.string() },
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query('leaderboardBest')
+      .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
+      .order('desc')
+      .collect()
+    const index = entries.findIndex((e) => e.github === args.github)
+    return index === -1 ? null : index + 1
+  }
+})
+
 export const getForGithub = internalQuery({
   args: { github: v.string() },
   handler: async (ctx, args) => {

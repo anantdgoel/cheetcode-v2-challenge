@@ -14,6 +14,7 @@ import type * as contactSubmissions from "../contactSubmissions.js";
 import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_errors from "../lib/errors.js";
 import type * as records from "../records.js";
 import type * as reports from "../reports.js";
 import type * as sessions from "../sessions.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   leaderboard: typeof leaderboard;
   "lib/auth": typeof lib_auth;
+  "lib/errors": typeof lib_errors;
   records: typeof records;
   reports: typeof reports;
   sessions: typeof sessions;

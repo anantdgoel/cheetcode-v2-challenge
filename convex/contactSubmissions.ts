@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
-import { internalMutation, internalQuery, mutation, query } from './_generated/server'
+import { internalMutation, internalQuery, mutation } from './_generated/server'
 import { requireAuthenticatedGithub } from './lib/auth'
+import { appError } from './lib/errors'
 
 export const submit = internalMutation({
   args: {
@@ -47,7 +48,7 @@ export const submit = internalMutation({
   }
 })
 
-export const getByReportPublicId = query({
+export const getByReportPublicId = internalQuery({
   args: { reportPublicId: v.string() },
   returns: v.union(v.object({ submitted: v.literal(true) }), v.null()),
   handler: async (ctx, args) => {
@@ -76,11 +77,11 @@ export const submitContact = mutation({
       .unique()
 
     if (!report) {
-      throw new Error('report not found')
+      throw appError('report_not_found')
     }
 
     if (report.github !== github) {
-      throw new Error('Unauthorized: you do not own this report')
+      throw appError('unauthorized')
     }
 
     const existing = await ctx.db

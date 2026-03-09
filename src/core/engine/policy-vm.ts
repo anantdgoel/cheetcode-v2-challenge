@@ -1,6 +1,7 @@
 import releaseVariant from '@jitl/quickjs-singlefile-cjs-release-sync'
 import {
   newQuickJSWASMModuleFromVariant,
+  shouldInterruptAfterDeadline,
   type QuickJSContext,
   type QuickJSWASMModule
 } from 'quickjs-emscripten-core'
@@ -22,6 +23,9 @@ import type { BoardModel, SimulationResult } from './models'
 
 const PROBE_DURATION_SECONDS = 120
 const FINAL_DURATION_SECONDS = 420
+const VM_MEMORY_LIMIT = 24 * 1024 * 1024
+const VM_MAX_STACK_SIZE = 1024 * 1024
+const VM_EXECUTION_TIMEOUT_MS = 30_000
 
 let quickJsModule: Promise<QuickJSWASMModule> | null = null
 
@@ -33,12 +37,9 @@ function getQuickJsModule () {
 }
 
 function primeContext (vm: QuickJSContext) {
-  const anyVm = vm as QuickJSContext & {
-    setMemoryLimit?: (limit: number) => void;
-    setMaxStackSize?: (size: number) => void;
-  }
-  anyVm.setMemoryLimit?.(24 * 1024 * 1024)
-  anyVm.setMaxStackSize?.(1024 * 1024)
+  vm.runtime.setMemoryLimit(VM_MEMORY_LIMIT)
+  vm.runtime.setMaxStackSize(VM_MAX_STACK_SIZE)
+  vm.runtime.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + VM_EXECUTION_TIMEOUT_MS))
 
   const setup = vm.evalCode(`
     globalThis.console = { log(){}, warn(){}, error(){}, info(){} };
@@ -227,6 +228,7 @@ async function createPolicyRunner (params: {
 
   return {
     decide (input: PolicyInput) {
+      vm.runtime.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + VM_EXECUTION_TIMEOUT_MS))
       const result = vm.evalCode(`
         JSON.stringify(globalThis.__connect__(${JSON.stringify(input)}));
       `)

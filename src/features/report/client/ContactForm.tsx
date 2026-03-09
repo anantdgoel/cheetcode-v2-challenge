@@ -3,6 +3,7 @@
 import { useMutation } from 'convex/react'
 import { useState } from 'react'
 import { api } from '../../../../convex/_generated/api'
+import { extractErrorMessage } from '@/lib/convex-error'
 
 const submitContactMutation = api.contactSubmissions.submitContact
 
@@ -38,7 +39,7 @@ export function ContactForm ({
       await submitContact({ name, email, reportPublicId })
       setSubmitted(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(extractErrorMessage(err, 'Something went wrong'))
     } finally {
       setSubmitting(false)
     }

@@ -83,8 +83,146 @@ const DEFAULT_TUNING = {
   businessPriority: 1
 }
 
+/**
+ * Per-second decay rates for stateful agent tracking.
+ * Each rate controls how fast a running metric fades toward zero.
+ */
+const DECAY = {
+  premiumHeat: 0.07,         // ~12-15s from hot to neutral
+  premiumHeatFloor: 0.02,    // cleanup threshold (delete when below)
+  groupAdjustment: 0.018,    // ~40s of feedback memory
+  groupFault: 0.03,          // fault reputation fades in ~20-30s
+  roomStress: 0.045          // aggregate stress recovers in ~15-20s
+}
+
+/**
+ * Nudge magnitudes applied when a pending call resolves as fault or success.
+ * Adjustments track short-term per-group performance; faults track reputation.
+ */
+const FEEDBACK = {
+  faultAdjustment: -0.2,
+  faultReputation: 0.18,
+  faultStressSpike: 0.24,
+  maxRoomStress: 1.8,
+  successAdjustment: 0.04,
+  successReputation: -0.06,
+  successStressRelief: -0.03,
+  adjustmentMin: -0.75,
+  adjustmentMax: 0.25,
+  reputationMin: 0,
+  reputationMax: 1.2,
+  pendingTimeoutSeconds: 3
+}
+
+/**
+ * Weights and thresholds used by scoreLine() to convert model inference,
+ * stress signals, and premium state into a single routing score.
+ */
+const SCORING = {
+  // Phase 1: confidence blend
+  confidenceMin: 0.18,
+  fallbackBiasScale: 0.62,
+
+  // Phase 2: prior integration
+  priorWeightBase: 0.28,
+  priorWeightConfidenceScale: 0.2,
+  priorWeightMin: 0.03,
+  priorWeightMax: 0.18,
+  priorDivergenceThreshold: 0.26,
+  priorDivergenceDampen: 0.45,
+
+  // Phase 3: stress factors
+  pressureOnset: 0.52,
+  pressureRange: 0.34,
+  pressureMax: 1.35,
+  surgingBonus: 0.18,
+  loadOnset: 0.46,
+  loadRange: 0.38,
+  loadMax: 1.3,
+  queueDepthLoadCap: 0.25,
+  queueFactor: { queueScale: 0.9, denominator: 16, max: 1.3 },
+  liveStressPressureOnset: 0.58,
+  liveStressPressureRange: 0.24,
+  liveStressPressureMax: 1.2,
+  liveStressQueueCap: 0.4,
+  liveFaultPenaltyPerLine: 0.05,
+
+  // Phase 4: primary blend weights
+  groupWeight: 1.48,
+  familyWeight: 0.82,
+  biasWeight: 0.2,
+
+  // Trait-scaled stress penalty weights [group, family, stressScale]
+  pressureCollapse: { group: 0.9, family: 0.4, stressScale: 0.22 },
+  loadCollapse: { group: 0.86, family: 0.3, stressScale: 0.18 },
+  queueSensitivity: { group: 0.55, family: 0.22 },
+
+  // Phase 5: subscriber affinity weights [group, family]
+  governmentAffinity: { group: 0.72, family: 0.28 },
+  businessAffinity: { group: 0.7, family: 0.3 },
+
+  // Phase 6: maintenance band adjustments
+  recentlyServicedBonus: 0.12,
+  temperamental: { surging: 0.28, surgingStress: 0.08, normal: 0.2, normalStress: 0.05 },
+
+  // Phase 7: premium trunk scoring
+  premiumEligibleBonus: 0.52,
+  premiumIneligiblePenalty: -0.86,
+  premiumHeatBase: 0.11,
+  premiumHeatFragility: 0.12,
+  premiumHeatWarmDecay: 0.05,
+  premiumHeatStress: 0.03,
+  premiumIneligibleHeatAmp: 1.25,
+  premiumIneligibleStress: 0.08,
+  nonPremiumEligiblePenalty: 0.16,
+  nonPremiumBonus: 0.03,
+
+  // Phase 8: tempo adjustments
+  tempoSurgingPenalty: 0.08,
+  tempoCoolingBonus: 0.04,
+
+  // Fault feedback
+  faultPenaltyBase: 0.08,
+  faultPenaltyStress: 0.03
+}
+
+/**
+ * Premium heat accumulation constants used by recordSelection().
+ */
+const PREMIUM_HEAT = {
+  baseDelta: 0.88,
+  misusePenalty: 0.5,
+  warmDecayWeight: 0.5,
+  fragilityScale: 0.75
+}
+
 function renderConst (name, value) {
   return `const ${name} = ${JSON.stringify(value)};`
+}
+
+const INLINABLE_CONSTANTS = { DECAY, FEEDBACK, SCORING, PREMIUM_HEAT }
+
+function inlinePolicyConstants (source) {
+  let result = source
+  const replacements = []
+  for (const [constName, obj] of Object.entries(INLINABLE_CONSTANTS)) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'object' && value !== null) {
+        for (const [subKey, subValue] of Object.entries(value)) {
+          replacements.push([`${constName}.${key}.${subKey}`, String(subValue)])
+        }
+      }
+      replacements.push([`${constName}.${key}`, typeof value === 'object' ? JSON.stringify(value) : String(value)])
+    }
+  }
+  replacements.sort((a, b) => b[0].length - a[0].length)
+  for (const [pattern, replacement] of replacements) {
+    result = result.replaceAll(pattern, replacement)
+  }
+  for (const constName of Object.keys(INLINABLE_CONSTANTS)) {
+    result = result.replace(new RegExp(`const ${constName}=.*\n?`), '')
+  }
+  return result
 }
 
 function buildPolicySource ({ bindings = [], helpers = [], connectSource }) {
@@ -92,7 +230,7 @@ function buildPolicySource ({ bindings = [], helpers = [], connectSource }) {
     .join('\n')
     .split('\n')
     .map((line) => line.trim())
-    .filter(Boolean)
+    .filter((line) => line && !line.startsWith('//'))
     .map((line) => line
       .replace(/\s+/g, ' ')
       .replace(/\s*([{}()[\],;:+*/<>=%\-&|!?])\s*/g, '$1'))
@@ -255,17 +393,13 @@ function advanceAgentState (state, input) {
   const second = input.clock.second
   const elapsed = state.lastSecond < 0 ? 0 : Math.max(0, second - state.lastSecond)
   if (elapsed > 0) {
-    // Premium heat decays at 0.07/s — a line cools from hot to neutral in ~12-15s
     for (const groupId of Object.keys(state.premiumHeatByGroup)) {
-      state.premiumHeatByGroup[groupId] = Math.max(0, state.premiumHeatByGroup[groupId] - elapsed * 0.07)
-      if (state.premiumHeatByGroup[groupId] < 0.02) delete state.premiumHeatByGroup[groupId]
+      state.premiumHeatByGroup[groupId] = Math.max(0, state.premiumHeatByGroup[groupId] - elapsed * DECAY.premiumHeat)
+      if (state.premiumHeatByGroup[groupId] < DECAY.premiumHeatFloor) delete state.premiumHeatByGroup[groupId]
     }
-    // Group adjustment scores decay at 0.018/s — slow fade gives ~40s of feedback memory
-    decayMap(state.groupAdjustments, elapsed * 0.018)
-    // Group fault reputation decays at 0.03/s — faults fade in ~20-30s
-    decayMap(state.groupFaults, elapsed * 0.03)
-    // Room-wide stress decays at 0.045/s — aggregate stress recovers in ~15-20s
-    state.roomStress = Math.max(0, state.roomStress - elapsed * 0.045)
+    decayMap(state.groupAdjustments, elapsed * DECAY.groupAdjustment)
+    decayMap(state.groupFaults, elapsed * DECAY.groupFault)
+    state.roomStress = Math.max(0, state.roomStress - elapsed * DECAY.roomStress)
   }
 
   const linesById = Object.fromEntries(input.lines.map((line) => [line.id, line]))
@@ -276,22 +410,20 @@ function advanceAgentState (state, input) {
       continue
     }
     if (current.status === 'fault') {
-      // Fault: punish group score (-0.2), accumulate fault reputation (+0.18), spike stress (+0.24)
-      nudgeMap(state.groupAdjustments, pending.groupId, -0.2, -0.75, 0.25)
-      nudgeMap(state.groupFaults, pending.groupId, 0.18, 0, 1.2)
-      state.roomStress = Math.min(1.8, state.roomStress + 0.24)
+      nudgeMap(state.groupAdjustments, pending.groupId, FEEDBACK.faultAdjustment, FEEDBACK.adjustmentMin, FEEDBACK.adjustmentMax)
+      nudgeMap(state.groupFaults, pending.groupId, FEEDBACK.faultReputation, FEEDBACK.reputationMin, FEEDBACK.reputationMax)
+      state.roomStress = Math.min(FEEDBACK.maxRoomStress, state.roomStress + FEEDBACK.faultStressSpike)
       delete state.pendingByLine[lineId]
       continue
     }
     if (current.status === 'busy') {
-      // Success: small reward (+0.04), reduce fault reputation (-0.06), mild stress relief (-0.03)
-      nudgeMap(state.groupAdjustments, pending.groupId, 0.04, -0.75, 0.25)
-      nudgeMap(state.groupFaults, pending.groupId, -0.06, 0, 1.2)
-      state.roomStress = Math.max(0, state.roomStress - 0.03)
+      nudgeMap(state.groupAdjustments, pending.groupId, FEEDBACK.successAdjustment, FEEDBACK.adjustmentMin, FEEDBACK.adjustmentMax)
+      nudgeMap(state.groupFaults, pending.groupId, FEEDBACK.successReputation, FEEDBACK.reputationMin, FEEDBACK.reputationMax)
+      state.roomStress = Math.max(0, state.roomStress + FEEDBACK.successStressRelief)
       delete state.pendingByLine[lineId]
       continue
     }
-    if (second - pending.second >= 3) {
+    if (second - pending.second >= FEEDBACK.pendingTimeoutSeconds) {
       delete state.pendingByLine[lineId]
     }
   }
@@ -307,10 +439,9 @@ function recordSelection (state, line, input, traits) {
   }
   if (!line.isPremiumTrunk) return
 
-  // Premium heat delta: base 0.88 + misuse penalty (0.5 if not eligible) + fragility scaling
-  const premiumPenalty = premiumEligible(input.call) ? 0 : 0.5
-  const fragility = (traits?.[3] ?? DEFAULT_TRAITS[3]) + (traits?.[4] ?? DEFAULT_TRAITS[4]) * 0.5
-  const delta = 0.88 + premiumPenalty + fragility * 0.75
+  const premiumPenalty = premiumEligible(input.call) ? 0 : PREMIUM_HEAT.misusePenalty
+  const fragility = (traits?.[3] ?? DEFAULT_TRAITS[3]) + (traits?.[4] ?? DEFAULT_TRAITS[4]) * PREMIUM_HEAT.warmDecayWeight
+  const delta = PREMIUM_HEAT.baseDelta + premiumPenalty + fragility * PREMIUM_HEAT.fragilityScale
   state.premiumHeatByGroup[line.lineGroupId] = (state.premiumHeatByGroup[line.lineGroupId] ?? 0) + delta
 }
 
@@ -356,100 +487,101 @@ function scoreLine (model, priorSummary, state, tuning, input, line) {
   const familyTraits = lookupTraits(model.visibleFamilyTraits, visibleFamily)
 
   // Phase 1: Confidence-weighted blend of group vs family scores
-  // Higher confidence (trait[7]) trusts group-level data more; lower falls back to family
-  const confidence = clamp(groupTraits[7] ?? DEFAULT_TRAITS[7], 0.18, 1)
+  const confidence = clamp(groupTraits[7] ?? DEFAULT_TRAITS[7], SCORING.confidenceMin, 1)
   const fallbackFamilyScore =
-    familyScore ?? priorFamilyScore ?? familyRouteBias(visibleFamily, input.call) * 0.62
+    familyScore ?? priorFamilyScore ?? familyRouteBias(visibleFamily, input.call) * SCORING.fallbackBiasScale
   const blendedGroup =
     groupScore == null ? fallbackFamilyScore : groupScore * confidence + fallbackFamilyScore * (1 - confidence)
 
   // Phase 2: Prior-board integration (warm-start only)
-  // Prior weight shrinks with confidence (0.28 base, -0.2 per confidence point, clamped [0.03, 0.18])
-  // If prior and current data diverge by >0.26, dampen prior to 45% to avoid overfitting
-  let priorWeight = priorSummary ? clamp(0.28 - confidence * 0.2, 0.03, 0.18) : 0
-  if (priorFamilyScore != null && familyScore != null && Math.abs(priorFamilyScore - familyScore) > 0.26) {
-    priorWeight *= 0.45
+  let priorWeight = priorSummary
+    ? clamp(SCORING.priorWeightBase - confidence * SCORING.priorWeightConfidenceScale, SCORING.priorWeightMin, SCORING.priorWeightMax)
+    : 0
+  if (priorFamilyScore != null && familyScore != null && Math.abs(priorFamilyScore - familyScore) > SCORING.priorDivergenceThreshold) {
+    priorWeight *= SCORING.priorDivergenceDampen
   }
   const blendedFamily =
     priorFamilyScore == null
       ? fallbackFamilyScore
       : fallbackFamilyScore * (1 - priorWeight) + priorFamilyScore * priorWeight
 
-  // Phase 3: Stress factors — each converts a board metric into a 0-1+ penalty multiplier
-  // Pressure kicks in above 0.52 (normalized over 0.34 range); surging tempo adds flat +0.18
+  // Phase 3: Stress factors
   const pressureFactor =
-    clamp((input.board.pressure - 0.52) / 0.34, 0, 1.35) + (input.board.tempo === 'surging' ? 0.18 : 0)
-  // Load kicks in above 0.46 (normalized over 0.38 range); queue depth adds extra
+    clamp((input.board.pressure - SCORING.pressureOnset) / SCORING.pressureRange, 0, SCORING.pressureMax) +
+    (input.board.tempo === 'surging' ? SCORING.surgingBonus : 0)
   const loadFactor =
-    clamp((input.board.load - 0.46) / 0.38, 0, 1.3) + clamp((input.board.queueDepth - 2) / 7, 0, 0.25)
-  // Queue factor blends call wait time + board queue depth
-  const queueFactor = clamp((input.call.queuedForSeconds + input.board.queueDepth * 0.9) / 16, 0, 1.3)
-  // Live stress is the real-time composite: pressure + queue + tempo + accumulated room stress
+    clamp((input.board.load - SCORING.loadOnset) / SCORING.loadRange, 0, SCORING.loadMax) +
+    clamp((input.board.queueDepth - 2) / 7, 0, SCORING.queueDepthLoadCap)
+  const queueFactor = clamp(
+    (input.call.queuedForSeconds + input.board.queueDepth * SCORING.queueFactor.queueScale) / SCORING.queueFactor.denominator,
+    0, SCORING.queueFactor.max
+  )
   const liveStress =
-    clamp((input.board.pressure - 0.58) / 0.24, 0, 1.2) +
-    clamp((input.board.queueDepth - 3) / 5, 0, 0.4) +
-    (input.board.tempo === 'surging' ? 0.18 : 0) +
+    clamp((input.board.pressure - SCORING.liveStressPressureOnset) / SCORING.liveStressPressureRange, 0, SCORING.liveStressPressureMax) +
+    clamp((input.board.queueDepth - 3) / 5, 0, SCORING.liveStressQueueCap) +
+    (input.board.tempo === 'surging' ? SCORING.surgingBonus : 0) +
     state.roomStress
-  const liveFaultPenalty = input.lines.filter((candidate) => candidate.lineGroupId === line.lineGroupId && candidate.status === 'fault').length * 0.05
+  const liveFaultPenalty = input.lines.filter((candidate) => candidate.lineGroupId === line.lineGroupId && candidate.status === 'fault').length * SCORING.liveFaultPenaltyPerLine
 
-  // Phase 4: Primary score blend — group(1.48) + family(0.82) + heuristic bias(0.2)
-  let score = blendedGroup * 1.48 + blendedFamily * 0.82 + familyRouteBias(visibleFamily, input.call) * 0.2
-  // Trait-scaled stress penalties: pressureCollapse(trait[0]) and loadCollapse(trait[1])
+  // Phase 4: Primary score blend
+  let score =
+    blendedGroup * SCORING.groupWeight +
+    blendedFamily * SCORING.familyWeight +
+    familyRouteBias(visibleFamily, input.call) * SCORING.biasWeight
   score -=
-    (groupTraits[0] * 0.9 + familyTraits[0] * 0.4) *
-    (pressureFactor + liveStress * 0.22) *
+    (groupTraits[0] * SCORING.pressureCollapse.group + familyTraits[0] * SCORING.pressureCollapse.family) *
+    (pressureFactor + liveStress * SCORING.pressureCollapse.stressScale) *
     tuning.stressCaution
   score -=
-    (groupTraits[1] * 0.86 + familyTraits[1] * 0.3) *
-    (loadFactor + liveStress * 0.18) *
+    (groupTraits[1] * SCORING.loadCollapse.group + familyTraits[1] * SCORING.loadCollapse.family) *
+    (loadFactor + liveStress * SCORING.loadCollapse.stressScale) *
     tuning.stressCaution
-  // Queue sensitivity penalty (trait[2])
-  score -= (groupTraits[2] * 0.55 + familyTraits[2] * 0.22) * queueFactor * tuning.queueCaution
+  score -= (groupTraits[2] * SCORING.queueSensitivity.group + familyTraits[2] * SCORING.queueSensitivity.family) * queueFactor * tuning.queueCaution
   score -= liveFaultPenalty
 
-  // Phase 5: Subscriber class affinity bonuses (traits[5] = gov, traits[6] = business)
+  // Phase 5: Subscriber class affinity bonuses
   if (input.call.subscriberClass === 'government') {
-    score += (groupTraits[5] * 0.72 + familyTraits[5] * 0.28) * tuning.governmentPriority
+    score += (groupTraits[5] * SCORING.governmentAffinity.group + familyTraits[5] * SCORING.governmentAffinity.family) * tuning.governmentPriority
   } else if (input.call.subscriberClass === 'business') {
-    score += (groupTraits[6] * 0.7 + familyTraits[6] * 0.3) * tuning.businessPriority
+    score += (groupTraits[6] * SCORING.businessAffinity.group + familyTraits[6] * SCORING.businessAffinity.family) * tuning.businessPriority
   }
 
   // Phase 6: Maintenance band adjustments
-  if (line.maintenanceBand === 'recently_serviced') score += 0.12
+  if (line.maintenanceBand === 'recently_serviced') score += SCORING.recentlyServicedBonus
   if (line.maintenanceBand === 'temperamental') {
     score -=
-      (input.board.tempo === 'surging' ? 0.28 + liveStress * 0.08 : 0.2 + liveStress * 0.05) *
+      (input.board.tempo === 'surging'
+        ? SCORING.temperamental.surging + liveStress * SCORING.temperamental.surgingStress
+        : SCORING.temperamental.normal + liveStress * SCORING.temperamental.normalStress) *
       tuning.tempoCaution
   }
 
   // Phase 7: Premium trunk scoring
-  // Eligible calls get +0.52 bonus minus heat penalty; ineligible get -0.86 base penalty
-  // Heat penalty scales with premiumFragility(trait[3]) and premiumWarmDecay(trait[4])
   if (line.isPremiumTrunk) {
     const heat = state.premiumHeatByGroup[line.lineGroupId] ?? 0
     const heatPenalty =
       heat *
-      (0.11 + groupTraits[3] * 0.12 + groupTraits[4] * 0.05 + liveStress * 0.03) *
+      (SCORING.premiumHeatBase + groupTraits[3] * SCORING.premiumHeatFragility + groupTraits[4] * SCORING.premiumHeatWarmDecay + liveStress * SCORING.premiumHeatStress) *
       tuning.premiumCaution
     score += premiumEligible(input.call)
-      ? 0.52 - heatPenalty
-      : -0.86 - heatPenalty * 1.25 - liveStress * 0.08 * tuning.premiumCaution
+      ? SCORING.premiumEligibleBonus - heatPenalty
+      : SCORING.premiumIneligiblePenalty - heatPenalty * SCORING.premiumIneligibleHeatAmp - liveStress * SCORING.premiumIneligibleStress * tuning.premiumCaution
   } else if (premiumEligible(input.call)) {
-    score -= 0.16 * tuning.premiumCaution
+    score -= SCORING.nonPremiumEligiblePenalty * tuning.premiumCaution
   } else {
-    score += 0.03
+    score += SCORING.nonPremiumBonus
   }
 
   // Phase 8: Tempo and live feedback adjustments
   if (input.board.tempo === 'surging' && (visibleFamily === 'exchange' || visibleFamily === 'suburban')) {
-    score -= 0.08 * tuning.tempoCaution
+    score -= SCORING.tempoSurgingPenalty * tuning.tempoCaution
   }
   if (input.board.tempo === 'cooling' && visibleFamily === 'exchange') {
-    score += 0.04
+    score += SCORING.tempoCoolingBonus
   }
 
   score += state.groupAdjustments[line.lineGroupId] ?? 0
-  score -= (state.groupFaults[line.lineGroupId] ?? 0) * (0.08 + liveStress * 0.03) * tuning.faultCaution
+  score -= (state.groupFaults[line.lineGroupId] ?? 0) * (SCORING.faultPenaltyBase + liveStress * SCORING.faultPenaltyStress) * tuning.faultCaution
 
   return { lineId: line.id, line, score, traits: groupTraits }
 }
@@ -534,7 +666,11 @@ const AGENT_BINDINGS = [
   renderConst('BILLING_MODES', BILLING_MODES),
   renderConst('URGENCIES', URGENCIES),
   renderConst('DEFAULT_TRAITS', DEFAULT_TRAITS),
-  renderConst('DEFAULT_TUNING', DEFAULT_TUNING)
+  renderConst('DEFAULT_TUNING', DEFAULT_TUNING),
+  renderConst('DECAY', DECAY),
+  renderConst('FEEDBACK', FEEDBACK),
+  renderConst('SCORING', SCORING),
+  renderConst('PREMIUM_HEAT', PREMIUM_HEAT)
 ]
 
 function roundNumber (value) {
@@ -672,7 +808,7 @@ const AGENT_HELPERS = [
 ]
 
 export function buildHiringBarPolicySourceFromModel (model) {
-  return buildPolicySource({
+  return inlinePolicyConstants(buildPolicySource({
     bindings: [
       ...AGENT_BINDINGS,
       renderConst('__MODEL__', compactSourceModel(model)),
@@ -686,11 +822,11 @@ __STATE__ = createAgentState();
 function connect(input) {
   return { lineId: chooseAgentLineId(__MODEL__, null, __TUNING__, __STATE__, input) };
 }`
-  })
+  }))
 }
 
 export function buildWarmStartPolicySourceFromModel (model, priorSummary, tuning) {
-  return buildPolicySource({
+  return inlinePolicyConstants(buildPolicySource({
     bindings: [
       ...AGENT_BINDINGS,
       renderConst('__MODEL__', compactSourceModel(model)),
@@ -705,5 +841,5 @@ __STATE__ = createAgentState();
 function connect(input) {
   return { lineId: chooseAgentLineId(__MODEL__, __PRIOR__, __TUNING__, __STATE__, input) };
 }`
-  })
+  }))
 }

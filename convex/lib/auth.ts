@@ -1,4 +1,5 @@
 import type { ActionCtx, MutationCtx, QueryCtx } from '../_generated/server'
+import { appError } from './errors'
 
 type AuthCtx = QueryCtx | MutationCtx | ActionCtx
 
@@ -12,7 +13,7 @@ export async function getAuthenticatedGithub (ctx: AuthCtx): Promise<string | nu
 export async function requireAuthenticatedGithub (ctx: AuthCtx): Promise<string> {
   const github = await getAuthenticatedGithub(ctx)
   if (!github) {
-    throw new Error('Authentication required')
+    throw appError('auth_required')
   }
   return github
 }

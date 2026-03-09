@@ -42,7 +42,7 @@ export default async function RootLayout ({
           </div>
           <div className='status-bar__right'>
             {isAdmin && (
-              <Link href='/admin' className='status-bar__label' style={{ marginRight: 12 }}>Admin</Link>
+              <Link href='/admin' className='admin-link'>Admin Panel</Link>
             )}
             <span className='status-bar__dot status-bar__dot--green' />
             <span className='status-bar__label'>System Active</span>

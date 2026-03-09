@@ -140,7 +140,7 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
       })))
     .sort((a, b) => a.shiftStarted - b.shiftStarted)
 
-  const maxScore = Math.max(100, ...scoreHistory.map((s) => s.score))
+  const maxScore = Math.max(1, ...scoreHistory.map((s) => s.score))
 
   return (
     <section className='admin-panel'>

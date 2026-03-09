@@ -22,8 +22,11 @@ function formatLongDate (timestamp: number) {
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
 }
 
-export function ReportCard ({ publicId, report }: { publicId: string; report: ReportView }) {
-  const { isTop, line, tone } = getTitlePresentation(report.title)
+export function ReportCard ({ publicId, report }: { publicId: string; report: Omit<ReportView, 'hiddenScore'> }) {
+  const { isTop, tone } = getTitlePresentation(report.title)
+  const line = report.leaderboardPosition != null
+    ? String(report.leaderboardPosition).padStart(2, '0')
+    : '-'
   const barClass = isTop
     ? 'report-card__bar-fill--gold'
     : report.title === 'off_the_board'

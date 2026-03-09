@@ -27,9 +27,11 @@ export default async function ReportPage ({
     ? await getContactSubmission(publicId)
     : null
 
+  const { hiddenScore: _, ...clientReport } = report
+
   return (
     <main className='report-shell'>
-      <ReportCard publicId={publicId} report={report} />
+      <ReportCard publicId={publicId} report={clientReport} />
       {showContactForm && (
         <ConvexAuthProvider>
           <ContactForm

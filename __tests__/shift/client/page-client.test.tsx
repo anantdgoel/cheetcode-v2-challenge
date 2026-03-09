@@ -64,7 +64,7 @@ describe('ShiftPageClient', () => {
   it('shows a loading shell while the auth session is hydrating', () => {
     render(<ShiftPageClient shiftId='shift_123' />)
 
-    expect(screen.getByText('Loading shift...')).toBeTruthy()
+    expect(screen.getByText('Patching you through…')).toBeTruthy()
     expect(replaceMock).not.toHaveBeenCalled()
   })
 

@@ -140,4 +140,6 @@ Tests, linters, and hooks gated what reached `main`. My agents did the heavy lif
 
 **Deeper skeuomorphism.** The design system in `docs/design/` includes reference material for skeuomorphic elements that didn't make it into the final UI. With more time I would have leaned into this further — physical texture, tactile controls, the feeling of actual hardware — to deepen the immersion and make the 1957 switchboard feel more like a place you're operating in rather than a webpage you're looking at.
 
+**Logging and error reporting.** The platform stores full run traces but has no structured logging pipeline or error reporting beyond what Convex provides out of the box. Adding proper observability — structured logs for shift lifecycle events, probe execution failures, sandbox timeouts, and admin actions — would make it much easier to debug issues in production and catch problems before a candidate reports them.
+
 **Code cleanup and repo organization.** The codebase reflects the pace of development — some modules are cleaner than others, and a few abstractions didn't survive contact with the final design. A focused cleanup pass to improve internal consistency and reduce cognitive overhead for anyone picking this up would make it easier to extend and maintain.

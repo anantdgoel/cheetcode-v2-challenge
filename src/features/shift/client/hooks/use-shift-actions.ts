@@ -4,6 +4,7 @@ import { useState, type Dispatch, type SetStateAction } from 'react'
 import type { ShiftView } from '@/core/domain/views'
 import { useGoLive, useRunProbe, useValidateDraft } from '../convex-api'
 import { getProbeCompletionMessage } from '../selectors'
+import { extractErrorMessage } from '@/lib/convex-error'
 import type { ActiveTab } from '../types'
 
 export function useShiftActions (params: {
@@ -21,10 +22,6 @@ export function useShiftActions (params: {
   const runProbe = useRunProbe()
   const goLive = useGoLive()
 
-  function toActionMessage (error: unknown, fallback: string) {
-    return error instanceof Error ? error.message : fallback
-  }
-
   async function runShiftAction<Result> (config: {
     fallbackError: string;
     onBeforeAction?: () => void;
@@ -40,7 +37,7 @@ export function useShiftActions (params: {
       const result = await config.request()
       config.onSuccess(result)
     } catch (error) {
-      params.setActionError(toActionMessage(error, config.fallbackError))
+      params.setActionError(extractErrorMessage(error, config.fallbackError))
     } finally {
       config.stateSetter(false)
     }

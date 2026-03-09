@@ -53,7 +53,7 @@ export function ShiftPageClient ({ shiftId }: { shiftId: string }) {
   /* eslint-enable react-hooks/purity */
 
   if (isDesktop == null || isSessionLoading) {
-    return <ShiftPageShell message='Loading shift...' />
+    return <ShiftPageShell message='Patching you through…' />
   }
 
   if (
@@ -61,11 +61,11 @@ export function ShiftPageClient ({ shiftId }: { shiftId: string }) {
     status === 'unauthenticated' ||
     (hasAuthenticatedSession && !hasConvexSession)
   ) {
-    return <ShiftPageShell message='Redirecting...' />
+    return <ShiftPageShell message='Returning to the board…' />
   }
 
   if (!hasConvexSession || !shift) {
-    return <ShiftPageShell message='Loading shift...' />
+    return <ShiftPageShell message='Connecting to Central Office…' />
   }
 
   return <ShiftConsole shift={shift} />

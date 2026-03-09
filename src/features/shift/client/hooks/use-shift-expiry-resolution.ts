@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, type Dispatch, type SetStateAction } from 'react'
 import type { ShiftView } from '@/core/domain/views'
 import { useResolveShiftExpiry } from '../convex-api'
+import { extractErrorMessage } from '@/lib/convex-error'
 
 export function useShiftExpiryResolution (
   shift: ShiftView,
@@ -19,7 +20,7 @@ export function useShiftExpiryResolution (
       await resolveShiftExpiry(shift.id)
     } catch (error) {
       hasRequestedResolutionRef.current = false
-      setConsoleError(error instanceof Error ? error.message : 'Shift resolution failed')
+      setConsoleError(extractErrorMessage(error, 'Shift resolution failed'))
     }
   })
 

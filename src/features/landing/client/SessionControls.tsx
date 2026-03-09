@@ -4,6 +4,7 @@ import { signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { useStartShift } from '@/features/shift/client/convex-api'
+import { extractErrorMessage } from '@/lib/convex-error'
 
 export default function SessionControls ({
   activeShiftId,
@@ -33,7 +34,7 @@ export default function SessionControls ({
           router.push(`/shift/${result.shift.id}`)
         }
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : 'Shift launch failed')
+        setError(extractErrorMessage(caught, 'Shift launch failed'))
       }
     })
   }
