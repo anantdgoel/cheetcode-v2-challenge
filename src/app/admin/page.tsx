@@ -28,10 +28,13 @@ export default async function AdminPage ({
     )
   }
 
-  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page
-  const page = Math.max(0, parseInt(pageParam ?? '0', 10) || 0)
+  const cursorParam = Array.isArray(params.cursor) ? params.cursor[0] : params.cursor
+  const cursor = cursorParam?.trim() || null
 
-  const data = await getCandidates(page)
+  const startParam = Array.isArray(params.start) ? params.start[0] : params.start
+  const startRank = Math.max(0, parseInt(startParam ?? '0', 10) || 0)
+
+  const data = await getCandidates(cursor, startRank)
   return (
     <main className='admin-shell'>
       <AdminTableView data={data} />

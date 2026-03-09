@@ -47,3 +47,6 @@ export type StoredShiftRecord = {
   runs: StoredRunRecord[];
   reportPublicId?: string;
 }
+
+/** Client-safe shift record: no seed (hiddenScore stripped at Convex boundary) */
+export type ClientShiftRecord = Omit<StoredShiftRecord, 'seed'>

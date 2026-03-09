@@ -1,22 +1,25 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ContactForm } from '@/features/report/client/ContactForm'
+
+const submitContactMock = vi.fn()
+
+vi.mock('convex/react', () => ({
+  useMutation: () => submitContactMock
+}))
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  submitContactMock.mockReset()
 })
 
 describe('ContactForm', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-  })
-
   it('renders the form with heading and inputs when not already submitted', () => {
     render(
-      <ContactForm github='operator' reportPublicId='rpt_123' alreadySubmitted={false} />
+      <ContactForm reportPublicId='rpt_123' alreadySubmitted={false} />
     )
 
     expect(screen.getByText(/you've got our attention/i)).toBeTruthy()
@@ -27,7 +30,7 @@ describe('ContactForm', () => {
 
   it('shows thanks message when alreadySubmitted is true', () => {
     render(
-      <ContactForm github='operator' reportPublicId='rpt_123' alreadySubmitted />
+      <ContactForm reportPublicId='rpt_123' alreadySubmitted />
     )
 
     expect(screen.getByText(/we'll be in touch/i)).toBeTruthy()
@@ -35,14 +38,10 @@ describe('ContactForm', () => {
   })
 
   it('submits form data and shows thanks on success', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ ok: true })
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    submitContactMock.mockResolvedValue(undefined)
 
     render(
-      <ContactForm github='operator' reportPublicId='rpt_123' alreadySubmitted={false} />
+      <ContactForm reportPublicId='rpt_123' alreadySubmitted={false} />
     )
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane Doe' } })
@@ -53,27 +52,18 @@ describe('ContactForm', () => {
       expect(screen.getByText(/we'll be in touch/i)).toBeTruthy()
     })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        github: 'operator',
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-        reportPublicId: 'rpt_123'
-      })
+    expect(submitContactMock).toHaveBeenCalledWith({
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      reportPublicId: 'rpt_123'
     })
   })
 
   it('shows error message when submission fails', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({ error: 'report not found' })
-    })
-    vi.stubGlobal('fetch', fetchMock)
+    submitContactMock.mockRejectedValue(new Error('report not found'))
 
     render(
-      <ContactForm github='operator' reportPublicId='rpt_123' alreadySubmitted={false} />
+      <ContactForm reportPublicId='rpt_123' alreadySubmitted={false} />
     )
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane' } })
@@ -89,15 +79,14 @@ describe('ContactForm', () => {
 
   it('disables button while submitting', async () => {
     let resolveSubmit: (() => void) | undefined
-    const fetchMock = vi.fn().mockReturnValue(
-      new Promise<{ ok: boolean; json: () => Promise<{ ok: boolean }> }>((resolve) => {
-        resolveSubmit = () => resolve({ ok: true, json: async () => ({ ok: true }) })
+    submitContactMock.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveSubmit = resolve
       })
     )
-    vi.stubGlobal('fetch', fetchMock)
 
     render(
-      <ContactForm github='operator' reportPublicId='rpt_123' alreadySubmitted={false} />
+      <ContactForm reportPublicId='rpt_123' alreadySubmitted={false} />
     )
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane' } })

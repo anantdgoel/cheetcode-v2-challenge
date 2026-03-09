@@ -33,7 +33,7 @@ export function formatIncidents (incidents: Array<{ note: string; second: number
   return incidents.map((incident) => `t=${incident.second}s - ${incident.note}`).join('  ')
 }
 
-function getProbeCompletionMessage (probeKind: ShiftView['nextProbeKind'] | 'fit' | 'stress') {
+export function getProbeCompletionMessage (probeKind: ShiftView['nextProbeKind'] | 'fit' | 'stress') {
   return probeKind === 'fit'
     ? 'Day room read complete.'
     : 'Rush room read complete.'
@@ -68,6 +68,7 @@ export function getClockTone (shift: ShiftView, now: number): ClockTone {
 }
 
 export function getTimeCueLabel (shift: ShiftView, clockTone: ClockTone) {
+  if (shift.status === 'evaluating') return 'Chief operator reading'
   if (clockTone === 'critical') {
     return shift.latestValidSource ? 'Last bell armed' : 'No draft on the board'
   }
@@ -84,6 +85,12 @@ export function getAmbientNotice (params: {
   const { actionStatus, clockTone, shift } = params
   if (shift.finalEvaluation) {
     return { message: 'Shift complete - policy submitted', tone: 'success' as const }
+  }
+  if (shift.status === 'evaluating') {
+    return {
+      message: 'Live room engaged. Chief operator is reading your board. Your shift report will open automatically.',
+      tone: 'success' as const
+    }
   }
   if (actionStatus) {
     return {
@@ -119,15 +126,16 @@ function getStepStates (shift: ShiftView): [StepState, StepState, StepState] {
   const hasUsedAllProbes = shift.remainingProbes === 0
   const hasFinal = !!shift.finalEvaluation
   const isTerminal = shift.status === 'completed' || shift.status === 'expired_no_result'
+  const isEvaluating = shift.status === 'evaluating'
 
   return [
-    hasValidated ? 'completed' : isTerminal ? 'disabled' : 'active',
+    hasValidated ? 'completed' : isTerminal || isEvaluating ? 'disabled' : 'active',
     hasUsedAllProbes
       ? 'completed'
-      : !hasValidated || isTerminal || !shift.nextProbeKind || shift.status === 'active_phase_2'
+      : !hasValidated || isTerminal || isEvaluating || !shift.nextProbeKind || shift.status === 'active_phase_2'
           ? 'disabled'
           : 'active',
-    hasFinal ? 'completed' : shift.canGoLive ? 'active' : isTerminal ? 'disabled' : 'upcoming'
+    hasFinal ? 'completed' : isEvaluating ? 'disabled' : shift.canGoLive ? 'active' : isTerminal ? 'disabled' : 'upcoming'
   ]
 }
 
@@ -204,9 +212,9 @@ export function deriveShiftConsoleState (params: {
       {
         action: params.onGoLive,
         emphasized: shift.remainingProbes === 0 && shift.canGoLive,
-        label: 'Go Live',
-        loading: goingLive,
-        loadingLabel: 'Submitting...',
+        label: shift.status === 'evaluating' ? 'Reading Board' : 'Go Live',
+        loading: goingLive || shift.status === 'evaluating',
+        loadingLabel: shift.status === 'evaluating' ? 'Reading Board...' : 'Submitting...',
         number: '3',
         state: goLiveState
       }

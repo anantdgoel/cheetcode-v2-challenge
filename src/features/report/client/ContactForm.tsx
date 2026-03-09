@@ -1,21 +1,24 @@
 'use client'
 
+import { useMutation } from 'convex/react'
 import { useState } from 'react'
+import { api } from '../../../../convex/_generated/api'
+
+const submitContactMutation = api.contactSubmissions.submitContact
 
 export function ContactForm ({
-  github,
   reportPublicId,
   alreadySubmitted
 }: {
-  github: string;
   reportPublicId: string;
   alreadySubmitted: boolean;
 }) {
   const [submitted, setSubmitted] = useState(alreadySubmitted)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const submitContact = useMutation(submitContactMutation)
 
-  async function handleSubmit (event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit (event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
     setSubmitting(true)
@@ -32,17 +35,7 @@ export function ContactForm ({
     }
 
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ github, name, email, reportPublicId })
-      })
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string }
-        throw new Error(data.error ?? 'Submission failed')
-      }
-
+      await submitContact({ name, email, reportPublicId })
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

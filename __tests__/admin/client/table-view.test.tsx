@@ -7,8 +7,7 @@ import type { AdminCandidatePage } from '@/core/domain/views'
 const pushMock = vi.fn()
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock }),
-  useSearchParams: () => new URLSearchParams()
+  useRouter: () => ({ push: pushMock })
 }))
 
 vi.mock('next/image', () => ({
@@ -51,8 +50,9 @@ function makePage (overrides: Partial<AdminCandidatePage> = {}): AdminCandidateP
       }
     ],
     totalEntries: 2,
-    page: 0,
-    totalPages: 1,
+    startRank: 0,
+    nextCursor: null,
+    isDone: true,
     ...overrides
   }
 }
@@ -105,38 +105,36 @@ describe('AdminTableView', () => {
     expect(pushMock).toHaveBeenCalledWith('/admin?candidate=alice')
   })
 
-  it('does not show pagination when only one page', async () => {
+  it('shows Next button disabled when isDone', async () => {
     const { AdminTableView } = await import('@/features/admin/client/AdminTableView')
-    render(<AdminTableView data={makePage()} />)
+    render(<AdminTableView data={makePage({ isDone: true, nextCursor: null })} />)
 
-    expect(screen.queryByText('Previous')).toBeNull()
-    expect(screen.queryByText('Next')).toBeNull()
+    const nextButton = screen.getByText('Next')
+    expect((nextButton as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('shows pagination controls for multiple pages', async () => {
+  it('shows Next button enabled when not isDone', async () => {
     const { AdminTableView } = await import('@/features/admin/client/AdminTableView')
-    render(<AdminTableView data={makePage({ totalPages: 3 })} />)
+    render(<AdminTableView data={makePage({ isDone: false, nextCursor: 'cursor123' })} />)
 
-    expect(screen.getByText('Page 1 of 3')).toBeTruthy()
-    expect(screen.getByText('Previous')).toBeTruthy()
-    expect(screen.getByText('Next')).toBeTruthy()
+    const nextButton = screen.getByText('Next')
+    expect((nextButton as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('disables Previous button on first page', async () => {
+  it('does not show First page link on first page', async () => {
     const { AdminTableView } = await import('@/features/admin/client/AdminTableView')
-    render(<AdminTableView data={makePage({ totalPages: 3, page: 0 })} />)
+    render(<AdminTableView data={makePage({ startRank: 0 })} />)
 
-    const prevButton = screen.getByText('Previous')
-    expect((prevButton as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByText('← First page')).toBeNull()
   })
 
-  it('navigates to next page', async () => {
+  it('navigates to next page with cursor', async () => {
     const { AdminTableView } = await import('@/features/admin/client/AdminTableView')
-    render(<AdminTableView data={makePage({ totalPages: 3, page: 0 })} />)
+    render(<AdminTableView data={makePage({ isDone: false, nextCursor: 'cursor_abc', startRank: 0 })} />)
 
     fireEvent.click(screen.getByText('Next'))
 
-    expect(pushMock).toHaveBeenCalledWith('/admin?page=1')
+    expect(pushMock).toHaveBeenCalledWith('/admin?cursor=cursor_abc&start=2')
   })
 
   it('renders contact dot for candidates with contact', async () => {

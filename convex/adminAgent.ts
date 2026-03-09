@@ -16,19 +16,18 @@ export const generateSummary = internalAction({
       return { throttled: true, summary: detail.summary.summary }
     }
 
-    const model = process.env.JUDGE_MODEL ?? 'gpt-4o'
+    const model = process.env.JUDGE_MODEL ?? 'gpt-5-mini'
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not configured')
     }
 
-    // Build prompt from candidate data
     const lb = detail.leaderboardRow
     const shiftSummaries = detail.shifts.map((shift, i) => {
       const runs = shift.runs
         .filter((r) => r.metrics)
         .map((r) => {
-          const m = r.metrics!
+          const m = r.metrics
           return `  ${r.kind}(${r.trigger}): score=${m.hiddenScore}, efficiency=${(m.efficiency * 100).toFixed(1)}%, connected=${m.connectedCalls}/${m.totalCalls}, dropped=${m.droppedCalls}, avgHold=${m.avgHoldSeconds.toFixed(1)}s`
         })
         .join('\n')
@@ -36,7 +35,7 @@ export const generateSummary = internalAction({
       const probeInfo = shift.runs
         .filter((r) => r.probeSummary)
         .map((r) => {
-          const ps = r.probeSummary!
+          const ps = r.probeSummary
           return `  Probe(${ps.probeKind}): condition=${ps.deskCondition}, failureModes=[${ps.failureModes.join(', ')}]`
         })
         .join('\n')
@@ -96,8 +95,7 @@ ${shiftSummaries}
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3,
-        max_tokens: 1000
+        max_completion_tokens: 5000
       })
     })
 

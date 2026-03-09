@@ -4,7 +4,7 @@
 
 Firecrawl Exchange v3.2 is a routing challenge built to measure whether candidates can wield agents well: ingest messy evidence, fit a model, run probes, revise the model, and ship a better routing policy.
 
-The game remains a 1963 telephone exchange. The theme matters for product feel, but the authoritative surface is the runtime contract, artifact bundle, probe outputs, and deterministic simulator.
+The game remains a 1957 telephone exchange. The theme matters for product feel, but the authoritative surface is the runtime contract, artifact bundle, probe outputs, and deterministic simulator.
 
 v3.2 replaces the old 3-family permutation puzzle with a broader but simpler hidden model:
 - boards draw from `5` possible line families, with `3-5` active on any given board

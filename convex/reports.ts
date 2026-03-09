@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { internalMutation, internalQuery, query } from './_generated/server'
 import { loadShiftById, type ShiftRunDoc } from './records'
-import { finalReportValidator } from './validators'
+import { finalReportValidator, publicReportValidator } from './validators'
 
 export const getRecentReports = internalQuery({
   args: { limit: v.optional(v.number()) },
@@ -14,13 +14,27 @@ export const getRecentReports = internalQuery({
   }
 })
 
-export const getReportByPublicId = query({
+export const getByPublicIdInternal = internalQuery({
   args: { publicId: v.string() },
   handler: async (ctx, args) => {
     return ctx.db
       .query('reports')
       .withIndex('by_publicId', (query) => query.eq('publicId', args.publicId))
       .unique()
+  }
+})
+
+export const getReportByPublicId = query({
+  args: { publicId: v.string() },
+  returns: v.union(publicReportValidator, v.null()),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query('reports')
+      .withIndex('by_publicId', (query) => query.eq('publicId', args.publicId))
+      .unique()
+    if (!doc) return null
+    const { _id, _creationTime, hiddenScore: _, ...rest } = doc
+    return rest
   }
 })
 
@@ -35,12 +49,12 @@ export const upsertReport = internalMutation({
       .unique()
 
     if (existing) {
-      await ctx.db.patch(existing._id, args.report)
-      return await ctx.db.get(existing._id)
+      await ctx.db.patch('reports', existing._id, args.report)
+      return await ctx.db.get('reports', existing._id)
     }
 
     const id = await ctx.db.insert('reports', args.report)
-    return await ctx.db.get(id)
+    return await ctx.db.get('reports', id)
   }
 })
 

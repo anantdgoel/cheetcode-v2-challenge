@@ -39,7 +39,7 @@ function ShiftCard ({ shift, index }: { shift: AdminDetailShift; index: number }
     <article className='admin-shift-card'>
       <button
         className='admin-shift-header'
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => { setExpanded(!expanded) }}
         type='button'
       >
         <div className='shift-header-left'>
@@ -130,7 +130,6 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
     }
   }
 
-  // Score progression across shifts
   const scoreHistory = detail.shifts
     .flatMap((s) => s.runs
       .filter((r): r is typeof r & { metrics: NonNullable<typeof r.metrics> } => !!r.metrics)
@@ -147,13 +146,12 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
     <section className='admin-panel'>
       <button
         className='admin-back'
-        onClick={() => router.push('/admin')}
+        onClick={() => { router.push('/admin') }}
         type='button'
       >
         &larr; Back to Board
       </button>
 
-      {/* Profile Card */}
       <div className='admin-profile'>
         <Image
           className='admin-avatar admin-avatar--lg'
@@ -188,7 +186,6 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
         </div>
       </div>
 
-      {/* Contact Info */}
       {detail.contact && (
         <div className='admin-contact-card'>
           <p className='eyebrow'>Contact Info</p>
@@ -197,7 +194,6 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
         </div>
       )}
 
-      {/* LLM Summary */}
       <div className='admin-section'>
         <div className='section-heading'>
           <div>
@@ -245,7 +241,6 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
             )}
       </div>
 
-      {/* Score Progression */}
       {scoreHistory.length > 1 && (
         <div className='admin-section'>
           <p className='eyebrow'>Score Progression</p>
@@ -260,7 +255,6 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
         </div>
       )}
 
-      {/* Shifts List */}
       <div className='admin-section'>
         <p className='eyebrow'>Shift History ({detail.shifts.length})</p>
         <div className='admin-shifts-list'>

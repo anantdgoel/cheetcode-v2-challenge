@@ -3,18 +3,7 @@
 import { signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-
-type StartShiftResponse = {
-  activeShiftId?: string;
-  error?: string;
-  shift?: {
-    id: string;
-  } | null;
-}
-
-async function readJson<T> (response: Response): Promise<T> {
-  return response.json() as Promise<T>
-}
+import { useStartShift } from '@/features/shift/client/convex-api'
 
 export default function SessionControls ({
   activeShiftId,
@@ -26,26 +15,23 @@ export default function SessionControls ({
   const router = useRouter()
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+  const startShift = useStartShift()
 
-  function startShift () {
+  function handleStartShift () {
     setError('')
 
     startTransition(async () => {
       try {
-        const response = await fetch('/api/shifts/start', {
-          headers: { 'content-type': 'application/json' },
-          method: 'POST'
-        })
-        const data = await readJson<StartShiftResponse>(response)
-
-        if (response.status === 409 && data.activeShiftId) {
-          router.push(`/shift/${data.activeShiftId}`)
+        const result = await startShift() as
+          | { activeShiftId: string; kind: 'active_shift_exists' }
+          | { kind: 'started'; shift: { id: string } }
+        if (result.kind === 'active_shift_exists') {
+          router.push(`/shift/${result.activeShiftId}`)
           return
         }
-        if (!response.ok || !data.shift) {
-          throw new Error(data.error ?? 'Shift launch failed')
+        if (result.shift) {
+          router.push(`/shift/${result.shift.id}`)
         }
-        router.push(`/shift/${data.shift.id}`)
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : 'Shift launch failed')
       }
@@ -68,7 +54,7 @@ export default function SessionControls ({
             <button
               type='button'
               className='app-button'
-              onClick={() => router.push(`/shift/${activeShiftId}`)}
+              onClick={() => { router.push(`/shift/${activeShiftId}`) }}
             >
               Resume Shift
             </button>
@@ -78,7 +64,7 @@ export default function SessionControls ({
               type='button'
               className='app-button'
               disabled={isPending}
-              onClick={startShift}
+              onClick={handleStartShift}
             >
               {isPending ? 'Opening Exchange...' : 'Start Shift'}
             </button>

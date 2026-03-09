@@ -54,6 +54,7 @@
 .console-shell {
   display: flex;
   flex-direction: column;
+  position: relative;
   width: 100%;
   height: 100vh;
 }
@@ -174,6 +175,108 @@
 
 .console-header__clock--critical {
   color: var(--danger);
+}
+
+.console-live-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.console-live-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(249, 246, 239, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.console-live-modal__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, calc(100vw - 48px));
+  padding: 28px 32px;
+  border: 1px solid rgba(196, 154, 42, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(88, 62, 18, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(196, 154, 42, 0.12), transparent 48%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.98) 0%, rgba(249, 246, 239, 0.98) 100%);
+}
+
+.console-live-modal__signal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-live-modal__lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(196, 154, 42, 0.25);
+  box-shadow: 0 0 0 rgba(196, 154, 42, 0);
+  animation: console-live-status-pulse 1.6s ease-in-out infinite;
+}
+
+.console-live-modal__lamp--secondary {
+  animation-delay: 0.2s;
+}
+
+.console-live-modal__lamp--tertiary {
+  animation-delay: 0.4s;
+}
+
+.console-live-modal__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8e6713;
+  text-align: center;
+}
+
+.console-live-modal__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--ink);
+  text-align: center;
+}
+
+.console-live-modal__body {
+  margin: 0;
+  max-width: 360px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-secondary);
+  text-align: center;
+}
+
+@keyframes console-live-status-pulse {
+  0%, 100% {
+    transform: scale(0.92);
+    background: rgba(196, 154, 42, 0.24);
+    box-shadow: 0 0 0 rgba(196, 154, 42, 0);
+  }
+
+  50% {
+    transform: scale(1);
+    background: var(--gold);
+    box-shadow: 0 0 16px rgba(196, 154, 42, 0.38);
+  }
 }
 
 .console-body {

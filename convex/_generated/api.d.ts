@@ -11,11 +11,13 @@
 import type * as admin from "../admin.js";
 import type * as adminAgent from "../adminAgent.js";
 import type * as contactSubmissions from "../contactSubmissions.js";
+import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as records from "../records.js";
 import type * as reports from "../reports.js";
 import type * as sessions from "../sessions.js";
-import type * as shiftResolver from "../shiftResolver.js";
+import type * as shiftActions from "../shiftActions.js";
 import type * as shiftRuntime from "../shiftRuntime.js";
 import type * as validators from "../validators.js";
 
@@ -29,11 +31,13 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   adminAgent: typeof adminAgent;
   contactSubmissions: typeof contactSubmissions;
+  http: typeof http;
   leaderboard: typeof leaderboard;
+  "lib/auth": typeof lib_auth;
   records: typeof records;
   reports: typeof reports;
   sessions: typeof sessions;
-  shiftResolver: typeof shiftResolver;
+  shiftActions: typeof shiftActions;
   shiftRuntime: typeof shiftRuntime;
   validators: typeof validators;
 }>;

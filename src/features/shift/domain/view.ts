@@ -1,6 +1,12 @@
-import type { EvaluationRecordView, ShiftView } from '@/core/domain/views'
-import type { StoredRunRecord, StoredShiftRecord } from './persistence'
+import type { SimulationMetrics } from '@/core/domain/game'
+import type { ClientSimulationMetrics, EvaluationRecordView, ShiftView } from '@/core/domain/views'
+import type { ClientShiftRecord, StoredRunRecord } from './persistence'
 import { getAcceptedRun, getCurrentPhase, getNextProbeKind, getViewStatus, PROBE_ORDER, toViewRunKind } from './lifecycle'
+
+function stripHiddenScore (metrics: SimulationMetrics): ClientSimulationMetrics {
+  const { hiddenScore: _, ...rest } = metrics
+  return rest
+}
 
 function shapeRun (run: StoredRunRecord): EvaluationRecordView {
   return {
@@ -12,14 +18,14 @@ function shapeRun (run: StoredRunRecord): EvaluationRecordView {
     sourceSnapshot: run.sourceSnapshot,
     ...(run.resolvedAt !== undefined ? { resolvedAt: run.resolvedAt } : {}),
     ...(run.probeSummary ? { probeSummary: run.probeSummary } : {}),
-    ...(run.metrics ? { metrics: run.metrics } : {}),
+    ...(run.metrics ? { metrics: stripHiddenScore(run.metrics) } : {}),
     ...(run.title ? { title: run.title } : {}),
     ...(run.chiefOperatorNote ? { chiefOperatorNote: run.chiefOperatorNote } : {}),
     ...(run.reportPublicId ? { reportPublicId: run.reportPublicId } : {})
   }
 }
 
-export function shapeShiftView (shift: StoredShiftRecord, now: number): ShiftView {
+export function shapeShiftView (shift: ClientShiftRecord, now: number): ShiftView {
   const probeEvaluations: EvaluationRecordView[] = []
   let finalEvaluation: EvaluationRecordView | undefined
   let probesUsed = 0

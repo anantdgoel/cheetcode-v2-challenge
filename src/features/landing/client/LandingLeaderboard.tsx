@@ -4,14 +4,10 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { type CSSProperties, type ReactNode } from 'react'
 import { formatPercent, formatTitle } from '@/core/engine/report'
-import type { LeaderboardEntry, PaginatedLeaderboard } from '@/core/domain/views'
-
-/* ─── Section copy ─── */
+import type { LeaderboardEntry } from '@/core/domain/views'
 
 const SECTION_EYEBROW = 'from the archives'
 const SECTION_HEADING = 'Prior Operators'
-
-/* ─── Animation helpers ─── */
 
 const FADE_SPRING = { type: 'spring' as const, stiffness: 500, damping: 38 }
 const FADE_VARIANTS = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }
@@ -33,8 +29,6 @@ function FadeIn ({ children, delay = 0, className, style }: { children: ReactNod
   )
 }
 
-/* ─── Data formatting ─── */
-
 function formatHold (seconds?: number) {
   return seconds == null ? '—' : `${seconds.toFixed(1)}s`
 }
@@ -52,8 +46,6 @@ function efficiencyFillClass (index: number, title: LeaderboardEntry['title']) {
   if (index === 0) return 'line-efficiency__fill--gold'
   return ''
 }
-
-/* ─── Sub-components ─── */
 
 function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }) {
   if (!entry) {
@@ -133,15 +125,6 @@ function LineTile ({ entry, index }: { entry?: LeaderboardEntry; index: number }
   )
 }
 
-function Chevron ({ direction }: { direction: 'left' | 'right' }) {
-  const d = direction === 'left' ? 'M7.5 2.5L4 6l3.5 3.5' : 'M4.5 2.5L8 6l-3.5 3.5'
-  return (
-    <svg width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'>
-      <path d={d} />
-    </svg>
-  )
-}
-
 /* ─── Suspense skeleton (same copy, no data dependency) ─── */
 
 export function LandingLeaderboardSkeleton () {
@@ -156,19 +139,17 @@ export function LandingLeaderboardSkeleton () {
   )
 }
 
-/* ─── Main component ─── */
-
 export function LandingLeaderboard ({
-  leaderboard,
-  onPageChange
+  entries,
+  status,
+  loadMore
 }: {
-  leaderboard: PaginatedLeaderboard;
-  onPageChange: (page: number) => void;
+  entries: LeaderboardEntry[];
+  status: string;
+  loadMore: (n: number) => void;
 }) {
-  const { topEntries, dispatchEntries, totalEntries, dispatchPage, totalDispatchPages } = leaderboard
-  const pageSize = dispatchEntries.length || 7
-  const showStart = dispatchPage * pageSize + 4
-  const showEnd = showStart + dispatchEntries.length - 1
+  const topEntries = entries.slice(0, 3)
+  const dispatchEntries = entries.slice(3)
 
   return (
     <div className='leaderboard-card'>
@@ -198,12 +179,12 @@ export function LandingLeaderboard ({
           </FadeIn>
 
           {dispatchEntries.map((entry, i) => {
-            const globalIndex = dispatchPage * pageSize + i + 3
+            const globalIndex = i + 3
             const isOff = entry.title === 'off_the_board'
             const pct = Math.round(entry.boardEfficiency * 100)
 
             return (
-              <FadeIn key={entry.publicId} delay={0.55 + i * 0.07}>
+              <FadeIn key={entry.publicId} delay={0.55 + Math.min(i, 6) * 0.07}>
                 <Link
                   href={`/report/${entry.publicId}`}
                   className={`dispatch-log__row${isOff ? ' dispatch-log__row--muted' : ''}`}
@@ -227,20 +208,11 @@ export function LandingLeaderboard ({
             )
           })}
 
-          {totalDispatchPages > 1 && (
+          {status === 'CanLoadMore' && (
             <div className='dispatch-log__pagination'>
-              <span className='dispatch-log__pagination-info'>
-                Showing {showStart}–{showEnd} of {totalEntries}
-              </span>
-              <div className='dispatch-log__pagination-controls'>
-                <button type='button' className='dispatch-log__pagination-btn' disabled={dispatchPage === 0} onClick={() => onPageChange(Math.max(0, dispatchPage - 1))}>
-                  <Chevron direction='left' />
-                </button>
-                <span className='dispatch-log__pagination-label'>Page {dispatchPage + 1} of {totalDispatchPages}</span>
-                <button type='button' className='dispatch-log__pagination-btn' disabled={dispatchPage === totalDispatchPages - 1} onClick={() => onPageChange(Math.min(totalDispatchPages - 1, dispatchPage + 1))}>
-                  <Chevron direction='right' />
-                </button>
-              </div>
+              <button type='button' className='dispatch-log__pagination-btn' onClick={() => { loadMore(7) }}>
+                Load more
+              </button>
             </div>
           )}
         </div>

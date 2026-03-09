@@ -2,26 +2,24 @@
 
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import type { ShiftView } from '@/core/domain/views'
-import { goLive, runProbe, validateDraft } from '../api'
+import { useGoLive, useRunProbe, useValidateDraft } from '../convex-api'
+import { getProbeCompletionMessage } from '../selectors'
 import type { ActiveTab } from '../types'
-
-function getProbeCompletionMessage (probeKind: ShiftView['nextProbeKind'] | 'fit' | 'stress') {
-  return probeKind === 'fit'
-    ? 'Day room read complete.'
-    : 'Rush room read complete.'
-}
 
 export function useShiftActions (params: {
   draft: string;
   setActionError: Dispatch<SetStateAction<string>>;
   setActionStatus: Dispatch<SetStateAction<string>>;
   setActiveTab: Dispatch<SetStateAction<ActiveTab>>;
-  setShift: Dispatch<SetStateAction<ShiftView>>;
   shift: ShiftView;
 }) {
   const [validating, setValidating] = useState(false)
   const [runningProbe, setRunningProbe] = useState(false)
   const [goingLive, setGoingLive] = useState(false)
+
+  const validateDraft = useValidateDraft()
+  const runProbe = useRunProbe()
+  const goLive = useGoLive()
 
   function toActionMessage (error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -35,27 +33,16 @@ export function useShiftActions (params: {
     stateSetter: Dispatch<SetStateAction<boolean>>;
   }) {
     config.onBeforeAction?.()
-    await handleAction(config.stateSetter, async () => {
-      try {
-        const result = await config.request()
-        config.onSuccess(result)
-      } catch (error) {
-        params.setActionError(toActionMessage(error, config.fallbackError))
-      }
-    })
-  }
-
-  async function handleAction (
-    stateSetter: Dispatch<SetStateAction<boolean>>,
-    action: () => Promise<void>
-  ) {
-    stateSetter(true)
+    config.stateSetter(true)
     params.setActionError('')
     params.setActionStatus('')
     try {
-      await action()
+      const result = await config.request()
+      config.onSuccess(result)
+    } catch (error) {
+      params.setActionError(toActionMessage(error, config.fallbackError))
     } finally {
-      stateSetter(false)
+      config.stateSetter(false)
     }
   }
 
@@ -64,9 +51,8 @@ export function useShiftActions (params: {
     onGoLive: () => {
       void runShiftAction({
         fallbackError: 'Go Live failed',
-        onSuccess: (result) => {
-          params.setShift(result.shift)
-          params.setActionStatus('Shift complete - policy submitted')
+        onSuccess: () => {
+          params.setActionStatus('Live room engaged. Chief operator reading your board...')
         },
         request: () => goLive(params.shift.id),
         stateSetter: setGoingLive
@@ -75,9 +61,8 @@ export function useShiftActions (params: {
     onRunProbe: () => {
       void runShiftAction({
         fallbackError: 'Probe failed',
-        onSuccess: (result) => {
-          params.setShift(result.shift)
-          params.setActionStatus(getProbeCompletionMessage(result.probeKind))
+        onSuccess: (result: { probeKind: string }) => {
+          params.setActionStatus(getProbeCompletionMessage(result.probeKind as 'fit' | 'stress'))
         },
         request: () => runProbe(params.shift.id),
         stateSetter: setRunningProbe
@@ -89,8 +74,7 @@ export function useShiftActions (params: {
         onBeforeAction: () => {
           params.setActiveTab('editor')
         },
-        onSuccess: (result) => {
-          if (result.shift) params.setShift(result.shift)
+        onSuccess: () => {
           params.setActionStatus('Module validated - ready to go live')
         },
         request: () => validateDraft(params.shift.id, params.draft),

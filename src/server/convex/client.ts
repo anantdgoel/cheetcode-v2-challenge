@@ -17,8 +17,8 @@ function getConvexDeploymentUrl () {
 }
 
 function getConvexAdminKey () {
-  const key = process.env.CONVEX_ADMIN_KEY ?? process.env.CONVEX_MUTATION_SECRET
-  if (!key) throw new Error('CONVEX_ADMIN_KEY or CONVEX_MUTATION_SECRET is not configured')
+  const key = process.env.CONVEX_ADMIN_KEY
+  if (!key) throw new Error('CONVEX_ADMIN_KEY is not configured')
   return key
 }
 
@@ -49,14 +49,10 @@ function getPublicClient () {
 function coerceFunctionReference<Kind extends FunctionKind> (
   reference: FunctionReference<Kind, 'public' | 'internal'>
 ): FunctionReference<Kind> {
-  if (!reference) {
-    throw new Error('convex function reference is required')
-  }
-
   return reference as unknown as FunctionReference<Kind>
 }
 
-export async function fetchPublicQuery<Query extends FunctionReference<'query', 'public'>> (
+export async function fetchPublicQuery<Query extends FunctionReference<'query'>> (
   query: Query,
   args: FunctionArgs<Query>
 ): Promise<FunctionReturnType<Query>> {

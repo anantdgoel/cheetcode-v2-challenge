@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ShiftConsole from '@/features/shift/client/ShiftConsole'
+import type { ClientShiftRecord, StoredShiftRecord } from '@/features/shift/domain/persistence'
 import type { ShiftView } from '@/core/domain/views'
-import { createProbeSummary, createShiftView } from '../helpers/shift-fixtures'
+import { shapeShiftView } from '@/features/shift/domain/view'
+import { createProbeSummary, createShiftView, createStoredShiftRecord } from '../helpers/shift-fixtures'
 
 const pushMock = vi.fn()
 
@@ -25,7 +27,56 @@ vi.mock('next/link', () => ({
   }) => <a href={href}>{children}</a>
 }))
 
+// Mock Convex API hooks — test controls these via the exported mocks
+const mockValidateDraft = vi.fn()
+const mockRunProbe = vi.fn()
+const mockGoLive = vi.fn()
+const mockSaveDraft = vi.fn()
+const mockResolveShiftExpiry = vi.fn()
+
+vi.mock('@/features/shift/client/convex-api', () => ({
+  useMyCurrentShift: () => undefined,
+  useArtifactContent: () => null,
+  useStartShift: () => vi.fn(),
+  useSaveDraft: () => mockSaveDraft,
+  useValidateDraft: () => mockValidateDraft,
+  useRunProbe: () => mockRunProbe,
+  useGoLive: () => mockGoLive,
+  useResolveShiftExpiry: () => mockResolveShiftExpiry
+}))
+
 const initialShift: ShiftView = createShiftView()
+
+function toClientShiftRecord (record: StoredShiftRecord): ClientShiftRecord {
+  const { seed: _seed, ...clientRecord } = record
+  return clientRecord
+}
+
+function toShiftView (overrides: Partial<StoredShiftRecord> = {}): ShiftView {
+  return shapeShiftView(
+    toClientShiftRecord(createStoredShiftRecord(overrides)),
+    Date.now()
+  )
+}
+
+function ShiftConsoleHarness ({
+  onReady,
+  shift
+}: {
+  onReady: (setter: Dispatch<SetStateAction<ShiftView>> | null) => void;
+  shift: ShiftView;
+}) {
+  const [liveShift, updateLiveShift] = useState(shift)
+
+  useEffect(() => {
+    onReady(updateLiveShift)
+    return () => {
+      onReady(null)
+    }
+  }, [onReady])
+
+  return <ShiftConsole shift={liveShift} />
+}
 
 afterEach(() => {
   cleanup()
@@ -35,59 +86,26 @@ afterEach(() => {
 
 beforeEach(() => {
   pushMock.mockReset()
+  mockValidateDraft.mockReset()
+  mockRunProbe.mockReset()
+  mockGoLive.mockReset()
+  mockSaveDraft.mockReset()
+  mockResolveShiftExpiry.mockReset()
 })
 
 describe('ShiftConsole', () => {
   it('shows a calm early-phase clock cue before the room tightens', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<ShiftConsole initialShift={initialShift} />)
+    render(<ShiftConsole shift={initialShift} />)
 
     expect(await screen.findByText('Board open')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Trial Shift \(2\)/ })).toBeTruthy()
   })
 
-  it('loads the manual artifact on initial render', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<ShiftConsole initialShift={initialShift} />)
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/shifts/shift_123/artifacts/manual.md', {
-        cache: 'no-store'
-      })
-    })
-
-    expect(await screen.findByText('Manual')).toBeTruthy()
-    expect(await screen.findByText('Route the calls.')).toBeTruthy()
-  })
-
   it('debounces draft autosaves', async () => {
     vi.useFakeTimers()
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      return { ok: true, json: async () => ({}) }
-    })
+    mockSaveDraft.mockResolvedValue(null)
 
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<ShiftConsole initialShift={initialShift} />)
+    render(<ShiftConsole shift={initialShift} />)
     fireEvent.click(screen.getAllByRole('button', { name: 'Editor' })[0]!)
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: "export function connect() { return { lineId: 'line-1' }; }" }
@@ -96,41 +114,23 @@ describe('ShiftConsole', () => {
     act(() => {
       vi.advanceTimersByTime(499)
     })
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(mockSaveDraft).not.toHaveBeenCalled()
 
     await act(async () => {
       vi.advanceTimersByTime(1)
     })
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/shifts/shift_123/drafts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: "export function connect() { return { lineId: 'line-1' }; }" })
-    })
+    expect(mockSaveDraft).toHaveBeenCalledWith(
+      'shift_123',
+      "export function connect() { return { lineId: 'line-1' }; }"
+    )
   })
 
   it('shows an editor notice when autosave fails', async () => {
     vi.useFakeTimers()
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      if (url.endsWith('/drafts')) {
-        return {
-          ok: false,
-          json: async () => ({ error: 'Draft save failed' })
-        }
-      }
-      return { ok: true, json: async () => ({}) }
-    })
+    mockSaveDraft.mockRejectedValue(new Error('Draft save failed'))
 
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<ShiftConsole initialShift={initialShift} />)
+    render(<ShiftConsole shift={initialShift} />)
     fireEvent.click(screen.getAllByRole('button', { name: 'Editor' })[0]!)
     fireEvent.change(screen.getByRole('textbox'), {
       target: { value: "export function connect() { return { lineId: 'line-2' }; }" }
@@ -144,137 +144,93 @@ describe('ShiftConsole', () => {
     expect(await screen.findByText('Draft save failed')).toBeTruthy()
   })
 
-  it('shows an editor notice when expiry refresh fails', async () => {
-    const expiredShift: ShiftView = {
-      ...initialShift,
-      expiresAt: Date.now() - 1_000,
-      phase1EndsAt: Date.now() - 2_000,
-      status: 'active_phase_2'
-    }
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      if (url === '/api/shifts/shift_123') {
-        return {
-          ok: false,
-          json: async () => ({ error: 'Shift refresh failed' })
-        }
-      }
-      return { ok: true, json: async () => ({}) }
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    render(<ShiftConsole initialShift={expiredShift} />)
-    fireEvent.click(screen.getAllByRole('button', { name: 'Editor' })[0]!)
-
-    await waitFor(() => {
-      expect(screen.getByText('Shift refresh failed')).toBeTruthy()
-    })
-  })
-
   it('runs validate, probe, and go-live flows through the shared route contracts', async () => {
-    const validatedShift: ShiftView = {
-      ...initialShift,
-      latestValidAt: 50,
-      canGoLive: true
-    }
-    const probedShift: ShiftView = {
-      ...validatedShift,
-      probesUsed: 1,
-      remainingProbes: 1,
-      probeEvaluations: [
-        {
-          id: 'eval_probe',
+    const now = Date.now()
+    let setLiveShift: Dispatch<SetStateAction<ShiftView>> | null = null
+
+    mockValidateDraft.mockImplementation(async () => {
+      setLiveShift?.(toShiftView({
+        latestValidAt: now,
+        latestValidSource: 'normalized',
+        latestValidSourceHash: 'hash-1'
+      }))
+    })
+
+    mockRunProbe.mockImplementation(async () => {
+      setLiveShift?.(toShiftView({
+        latestValidAt: now,
+        latestValidSource: 'normalized',
+        latestValidSourceHash: 'hash-1',
+        runs: [{
+          id: 'run_probe',
           kind: 'fit',
+          trigger: 'manual',
           state: 'completed',
           acceptedAt: 100,
+          resolvedAt: 200,
           sourceHash: 'hash-1',
           sourceSnapshot: 'snapshot',
           probeSummary: createProbeSummary()
-        }
-      ]
-    }
-    const finalShift: ShiftView = {
-      ...probedShift,
-      status: 'completed',
-      reportPublicId: 'public_123',
-      finalEvaluation: {
-        id: 'eval_final',
-        kind: 'final',
-        state: 'completed',
-        acceptedAt: 200,
-        sourceHash: 'hash-2',
-        sourceSnapshot: 'snapshot',
-        reportPublicId: 'public_123',
-        title: 'operator',
-        metrics: {
-          connectedCalls: 8,
-          totalCalls: 10,
-          droppedCalls: 1,
-          avgHoldSeconds: 1,
-          totalHoldSeconds: 10,
-          premiumUsageCount: 1,
-          premiumUsageRate: 0.1,
-          trunkMisuseCount: 0,
-          efficiency: 0.8,
-          hiddenScore: 0.75
-        }
-      }
-    }
-
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      if (url.endsWith('/validate')) {
-        return {
-          ok: true,
-          json: async () => ({
-            validation: { ok: true, normalizedSource: 'normalized', sourceHash: 'hash-1' },
-            shift: validatedShift
-          })
-        }
-      }
-      if (url.endsWith('/probe')) {
-        return {
-          ok: true,
-          json: async () => ({
-            probeKind: 'fit',
-            summary: probedShift.probeEvaluations[0]?.probeSummary,
-            shift: probedShift
-          })
-        }
-      }
-      if (url.endsWith('/go-live')) {
-        return {
-          ok: true,
-          json: async () => ({
-            shift: finalShift
-          })
-        }
-      }
-      return { ok: true, json: async () => ({}) }
+        }]
+      }))
+      return { probeKind: 'fit' }
     })
 
-    vi.stubGlobal('fetch', fetchMock)
+    mockGoLive.mockImplementation(async () => {
+      setLiveShift?.(toShiftView({
+        state: 'completed',
+        completedAt: now + 5000,
+        reportPublicId: 'public_123',
+        latestValidAt: now,
+        latestValidSource: 'normalized',
+        latestValidSourceHash: 'hash-1',
+        runs: [
+          {
+            id: 'run_probe',
+            kind: 'fit',
+            trigger: 'manual',
+            state: 'completed',
+            acceptedAt: 100,
+            resolvedAt: 200,
+            sourceHash: 'hash-1',
+            sourceSnapshot: 'snapshot',
+            probeSummary: createProbeSummary()
+          },
+          {
+            id: 'run_final',
+            kind: 'final',
+            trigger: 'manual',
+            state: 'completed',
+            acceptedAt: 300,
+            resolvedAt: 400,
+            sourceHash: 'hash-2',
+            sourceSnapshot: 'snapshot',
+            reportPublicId: 'public_123',
+            title: 'operator',
+            metrics: {
+              connectedCalls: 8,
+              totalCalls: 10,
+              droppedCalls: 1,
+              avgHoldSeconds: 1,
+              totalHoldSeconds: 10,
+              premiumUsageCount: 1,
+              premiumUsageRate: 0.1,
+              trunkMisuseCount: 0,
+              efficiency: 0.8,
+              hiddenScore: 0.75
+            }
+          }
+        ]
+      }))
+    })
 
-    render(<ShiftConsole initialShift={initialShift} />)
+    render(<ShiftConsoleHarness onReady={(setter) => { setLiveShift = setter }} shift={initialShift} />)
 
     expect(screen.getByRole('button', { name: /Trial Shift \(2\)/ })).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: /Validate/ }))
     expect(await screen.findByText('Module validated - ready to go live')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: /Trial Shift \(2\)/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Trial Shift \(2\)/ }))
     expect(await screen.findByText('Day room read complete.')).toBeTruthy()
     expect(await screen.findByText('Chief Operator Notes')).toBeTruthy()
     expect(await screen.findByText('Likely final-shift sensitive')).toBeTruthy()
@@ -287,16 +243,9 @@ describe('ShiftConsole', () => {
   })
 
   it('keeps the trial action active while a second probe remains', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
     render(
       <ShiftConsole
-        initialShift={{
+        shift={{
           ...initialShift,
           latestValidAt: 25,
           canGoLive: true,
@@ -312,16 +261,9 @@ describe('ShiftConsole', () => {
   })
 
   it('shows zero trials after both probes are spent', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
     render(
       <ShiftConsole
-        initialShift={{
+        shift={{
           ...initialShift,
           latestValidAt: 25,
           canGoLive: true,
@@ -337,56 +279,13 @@ describe('ShiftConsole', () => {
   })
 
   it('redirects to the report after expiry auto-submits a valid draft', async () => {
-    const completedShift: ShiftView = {
-      ...initialShift,
-      status: 'completed',
-      reportPublicId: 'public_auto',
-      finalEvaluation: {
-        id: 'eval_auto',
-        kind: 'auto_final',
-        state: 'completed',
-        acceptedAt: 200,
-        sourceHash: 'hash-auto',
-        sourceSnapshot: 'snapshot',
-        reportPublicId: 'public_auto',
-        title: 'operator',
-        metrics: {
-          connectedCalls: 8,
-          totalCalls: 10,
-          droppedCalls: 1,
-          avgHoldSeconds: 1,
-          totalHoldSeconds: 10,
-          premiumUsageCount: 1,
-          premiumUsageRate: 0.1,
-          trunkMisuseCount: 0,
-          efficiency: 0.8,
-          hiddenScore: 0.75
-        }
-      }
-    }
-
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      if (url.endsWith('/api/shifts/shift_123')) {
-        return {
-          ok: true,
-          json: async () => ({ shift: completedShift })
-        }
-      }
-      return { ok: true, json: async () => ({}) }
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
+    const now = Date.now()
+    let setLiveShift: Dispatch<SetStateAction<ShiftView>> | null = null
 
     render(
-      <ShiftConsole
-        initialShift={{
+      <ShiftConsoleHarness
+        onReady={(setter) => { setLiveShift = setter }}
+        shift={{
           ...initialShift,
           status: 'active_phase_2',
           phase1EndsAt: Date.now() - 30_000,
@@ -397,34 +296,93 @@ describe('ShiftConsole', () => {
       />
     )
 
+    act(() => {
+      setLiveShift?.(toShiftView({
+        state: 'completed',
+        completedAt: now,
+        reportPublicId: 'public_auto',
+        phase1EndsAt: now - 30_000,
+        expiresAt: now - 1_000,
+        latestValidAt: now - 2_000,
+        latestValidSource: 'function connect() { return { lineId: null }; }',
+        latestValidSourceHash: 'hash-auto',
+        runs: [{
+          id: 'run_auto',
+          kind: 'final',
+          trigger: 'auto_expire',
+          state: 'completed',
+          acceptedAt: now - 500,
+          resolvedAt: now,
+          sourceHash: 'hash-auto',
+          sourceSnapshot: 'snapshot',
+          reportPublicId: 'public_auto',
+          title: 'operator',
+          metrics: {
+            connectedCalls: 8,
+            totalCalls: 10,
+            droppedCalls: 1,
+            avgHoldSeconds: 1,
+            totalHoldSeconds: 10,
+            premiumUsageCount: 1,
+            premiumUsageRate: 0.1,
+            trunkMisuseCount: 0,
+            efficiency: 0.8,
+            hiddenScore: 0.75
+          }
+        }]
+      }))
+    })
+
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/report/public_auto')
     })
   })
 
-  it('shows action errors ahead of stale validation errors', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      if (url.includes('/artifacts/manual.md')) {
-        return {
-          ok: true,
-          text: async () => '# Manual\nRoute the calls.'
-        }
-      }
-      if (url.endsWith('/validate')) {
-        return {
-          ok: false,
-          json: async () => ({ error: 'Route validation failed' })
-        }
-      }
-      return { ok: true, json: async () => ({}) }
-    })
+  it('shows a live-room loading state while the final read is in progress', async () => {
+    render(
+      <ShiftConsole
+        shift={{
+          ...initialShift,
+          status: 'evaluating'
+        }}
+      />
+    )
 
-    vi.stubGlobal('fetch', fetchMock)
+    expect(await screen.findByText('Chief operator reading your board')).toBeTruthy()
+    expect(screen.getByText('Live Room Engaged')).toBeTruthy()
+    expect(screen.getByText('Hold the line. Convex is finishing the final read and your shift report will open automatically.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Reading Board...' })).toBeTruthy()
+  })
+
+  it('requests expiry resolution when the countdown reaches zero', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-09T10:00:00.000Z'))
+    mockResolveShiftExpiry.mockResolvedValue('scheduled_final')
 
     render(
       <ShiftConsole
-        initialShift={{
+        shift={{
+          ...initialShift,
+          latestValidAt: Date.now() - 1_000,
+          latestValidSource: 'function connect() { return { lineId: null }; }',
+          expiresAt: Date.now() + 1_000
+        }}
+      />
+    )
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_000)
+    })
+
+    expect(mockResolveShiftExpiry).toHaveBeenCalledWith('shift_123')
+  })
+
+  it('shows action errors ahead of stale validation errors', async () => {
+    mockValidateDraft.mockRejectedValue(new Error('Route validation failed'))
+
+    render(
+      <ShiftConsole
+        shift={{
           ...initialShift,
           latestValidationError: 'Old validation error'
         }}
@@ -438,16 +396,9 @@ describe('ShiftConsole', () => {
   })
 
   it('warns about auto-submit during the final minute', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
     render(
       <ShiftConsole
-        initialShift={{
+        shift={{
           ...initialShift,
           status: 'active_phase_2',
           nextProbeKind: undefined,
@@ -466,16 +417,9 @@ describe('ShiftConsole', () => {
   })
 
   it('closes the trial action in phase two', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '# Manual\nRoute the calls.'
-    })
-
-    vi.stubGlobal('fetch', fetchMock)
-
     render(
       <ShiftConsole
-        initialShift={{
+        shift={{
           ...initialShift,
           status: 'active_phase_2',
           phase1EndsAt: Date.now() - 1_000,

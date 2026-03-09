@@ -175,7 +175,7 @@ export function ShiftConsoleArtifactPanel (props: {
             key={artifact}
             type='button'
             className={`console-tab${props.activeTab === artifact ? ' console-tab--active' : ''}`}
-            onClick={() => props.onTabChange(artifact)}
+            onClick={() => { props.onTabChange(artifact) }}
           >
             {SHIFT_ARTIFACT_LABELS[artifact]}
           </button>
@@ -183,7 +183,7 @@ export function ShiftConsoleArtifactPanel (props: {
         <button
           type='button'
           className={`console-tab console-tab--editor${props.activeTab === 'editor' ? ' console-tab--editor-active' : ' console-tab--editor-inactive'}`}
-          onClick={() => props.onTabChange('editor')}
+          onClick={() => { props.onTabChange('editor') }}
         >
           Editor
         </button>
@@ -216,7 +216,7 @@ export function ShiftConsoleArtifactPanel (props: {
                 value={props.draft}
                 readOnly={props.isCompleted || props.isEvaluating}
                 spellCheck={false}
-                onChange={(event) => props.onDraftChange(event.target.value)}
+                onChange={(event) => { props.onDraftChange(event.target.value) }}
               />
             </div>
             <ShiftConsoleArtifactNotice

@@ -1,8 +1,15 @@
 import { v } from 'convex/values'
-import { internalMutation, internalQuery } from './_generated/server'
-import { loadOwnedShift, loadShiftById, toShiftRecord, type ShiftDoc, type ShiftRunDoc } from './records'
+import { internal } from './_generated/api'
+import { internalMutation, internalQuery, mutation, query } from './_generated/server'
+import { requireAuthenticatedGithub } from './lib/auth'
+import { loadOwnedShift, loadShiftById, toClientShiftRecord, toShiftRecord, type ShiftDoc, type ShiftRunDoc } from './records'
+import { buildArtifactContent } from '../src/core/engine/artifacts'
+import { hasLiveActiveShift } from '../src/features/shift/domain/lifecycle'
 import {
+  clientShiftRecordValidator,
+  finalReportValidator,
   policyValidationResultValidator,
+  probeKindValidator,
   probeSummaryValidator,
   simulationMetricsValidator,
   storedRunKindValidator,
@@ -105,7 +112,7 @@ export const start = internalMutation({
       .order('desc')
       .first()
 
-    if (latest?.state === 'active') {
+    if (latest && hasLiveActiveShift(latest, args.now)) {
       return {
         activeShiftId: latest._id,
         kind: 'active_shift_exists' as const
@@ -148,7 +155,7 @@ export const saveDraft = internalMutation({
   handler: async (ctx, args) => {
     const shift = ensureOwnedShift(await loadOwnedShift(ctx.db, args.github, args.shiftId), args.github)
     ensureEditableShift(shift)
-    await ctx.db.patch(shift._id, {
+    await ctx.db.patch('shifts', shift._id, {
       latestDraftSource: args.source,
       latestDraftSavedAt: args.savedAt
     })
@@ -167,7 +174,7 @@ export const storeValidation = internalMutation({
   handler: async (ctx, args) => {
     const shift = ensureOwnedShift(await loadOwnedShift(ctx.db, args.github, args.shiftId), args.github)
     ensureEditableShift(shift)
-    const patch: Record<string, unknown> = {
+    const patch: Partial<ShiftDoc> = {
       latestDraftSource: args.source,
       latestDraftSavedAt: args.checkedAt,
       latestValidationCheckedAt: args.checkedAt
@@ -180,7 +187,7 @@ export const storeValidation = internalMutation({
     } else if ('error' in args.validation) {
       patch.latestValidationError = args.validation.error
     }
-    await ctx.db.patch(shift._id, patch)
+    await ctx.db.patch('shifts', shift._id, patch)
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
   }
 })
@@ -202,7 +209,7 @@ export const recordArtifactFetch = internalMutation({
     if (shift.state !== 'active') {
       throw new Error('shift not found')
     }
-    await ctx.db.patch(shift._id, {
+    await ctx.db.patch('shifts', shift._id, {
       artifactFetchAt: {
         ...shift.artifactFetchAt,
         [artifactFieldName(args.name)]: shift.artifactFetchAt?.[artifactFieldName(args.name)] ?? args.at
@@ -252,7 +259,7 @@ export const acceptRun = internalMutation({
         state: 'accepted' as const
       }
     ]
-    await ctx.db.patch(shift._id, { runs: nextRuns })
+    await ctx.db.patch('shifts', shift._id, { runs: nextRuns })
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
   }
 })
@@ -285,7 +292,7 @@ export const completeProbeRun = internalMutation({
       throw new Error('accepted probe run not found')
     }
 
-    await ctx.db.patch(shift._id, { runs: next.runs })
+    await ctx.db.patch('shifts', shift._id, { runs: next.runs })
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
   }
 })
@@ -324,7 +331,7 @@ export const claimRunForProcessing = internalMutation({
       }
     }
 
-    await ctx.db.patch(shift._id, { runs: next.runs })
+    await ctx.db.patch('shifts', shift._id, { runs: next.runs })
     return {
       kind: 'claimed' as const,
       shift: toShiftRecord(await loadShiftById(ctx.db, shift._id))
@@ -366,12 +373,111 @@ export const completeFinalRun = internalMutation({
       throw new Error('accepted final run not found')
     }
 
-    await ctx.db.patch(shift._id, {
+    await ctx.db.patch('shifts', shift._id, {
       runs: next.runs,
       state: 'completed',
       completedAt: args.resolvedAt,
       reportPublicId: args.reportPublicId
     })
+    return toShiftRecord(await loadShiftById(ctx.db, shift._id))
+  }
+})
+
+/**
+ * Atomic mutation that completes a final run and writes report + leaderboard
+ * in a single transaction. Replaces the 3-mutation sequence in finishFinalRun.
+ */
+export const completeFinalRunWithReport = internalMutation({
+  args: {
+    shiftId: v.id('shifts'),
+    runId: v.string(),
+    report: finalReportValidator,
+    title: titleValidator,
+    metrics: simulationMetricsValidator,
+    chiefOperatorNote: v.string(),
+    resolvedAt: v.number()
+  },
+  handler: async (ctx, args) => {
+    const existingReport = await ctx.db
+      .query('reports')
+      .withIndex('by_publicId', (q) => q.eq('publicId', args.report.publicId))
+      .unique()
+    if (existingReport) {
+      await ctx.db.patch('reports', existingReport._id, args.report)
+    } else {
+      await ctx.db.insert('reports', args.report)
+    }
+
+    const shift = await loadShiftById(ctx.db, args.shiftId)
+    if (!shift) throw new Error('shift not found')
+    const next = mapRuns(shift, args.runId, (candidate) => ({
+      ...candidate,
+      state: 'completed' as const,
+      resolvedAt: args.resolvedAt,
+      reportPublicId: args.report.publicId,
+      title: args.title,
+      metrics: args.metrics,
+      chiefOperatorNote: args.chiefOperatorNote
+    }))
+    if (!next || next.run.kind !== 'final') {
+      throw new Error('accepted final run not found')
+    }
+    if (next.run.state !== 'accepted' && next.run.state !== 'processing') {
+      if (next.run.state === 'completed') {
+        return toShiftRecord(shift)
+      }
+      throw new Error('accepted final run not found')
+    }
+    await ctx.db.patch('shifts', shift._id, {
+      runs: next.runs,
+      state: 'completed',
+      completedAt: args.resolvedAt,
+      reportPublicId: args.report.publicId
+    })
+
+    const existingEntry = await ctx.db
+      .query('leaderboardBest')
+      .withIndex('by_github', (q) => q.eq('github', args.report.github))
+      .unique()
+    const candidate = {
+      hiddenScore: args.report.hiddenScore,
+      boardEfficiency: args.report.boardEfficiency,
+      achievedAt: args.report.achievedAt
+    }
+    const isBetter = !existingEntry ||
+      (candidate.hiddenScore !== existingEntry.hiddenScore
+        ? candidate.hiddenScore > existingEntry.hiddenScore
+        : candidate.boardEfficiency !== existingEntry.boardEfficiency
+          ? candidate.boardEfficiency > existingEntry.boardEfficiency
+          : candidate.achievedAt < existingEntry.achievedAt)
+
+    if (isBetter) {
+      const entry = {
+        github: args.report.github,
+        title: args.report.title,
+        boardEfficiency: args.report.boardEfficiency,
+        hiddenScore: args.report.hiddenScore,
+        achievedAt: args.report.achievedAt,
+        shiftId: args.report.shiftId,
+        publicId: args.report.publicId,
+        connectedCalls: args.report.connectedCalls,
+        totalCalls: args.report.totalCalls,
+        droppedCalls: args.report.droppedCalls,
+        avgHoldSeconds: args.report.avgHoldSeconds
+      }
+      if (existingEntry) {
+        await ctx.db.patch('leaderboardBest', existingEntry._id, entry)
+      } else {
+        await ctx.db.insert('leaderboardBest', entry)
+        const counter = await ctx.db.query('leaderboardMeta').first()
+        if (counter) {
+          await ctx.db.patch('leaderboardMeta', counter._id, { totalEntries: counter.totalEntries + 1 })
+        } else {
+          await ctx.db.insert('leaderboardMeta', { totalEntries: 1 })
+        }
+      }
+    }
+
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
   }
 })
@@ -389,10 +495,211 @@ export const markExpiredNoResult = internalMutation({
     if (shift.state !== 'active' || hasFinalRun(shift) || getAcceptedRun(shift)) {
       return toShiftRecord(shift)
     }
-    await ctx.db.patch(shift._id, {
+    await ctx.db.patch('shifts', shift._id, {
       state: 'expired',
       completedAt: args.completedAt
     })
     return toShiftRecord(await loadShiftById(ctx.db, shift._id))
+  }
+})
+
+export const getMyCurrentShift = query({
+  args: {},
+  returns: v.union(clientShiftRecordValidator, v.null()),
+  handler: async (ctx) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    const doc = await ctx.db
+      .query('shifts')
+      .withIndex('by_github_and_startedAt', (q) => q.eq('github', github))
+      .order('desc')
+      .first()
+    return toClientShiftRecord(doc)
+  }
+})
+
+export const getMyShift = query({
+  args: { shiftId: v.id('shifts') },
+  returns: v.union(clientShiftRecordValidator, v.null()),
+  handler: async (ctx, args) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    return toClientShiftRecord(await loadOwnedShift(ctx.db, github, args.shiftId))
+  }
+})
+
+export const getArtifactContent = query({
+  args: {
+    shiftId: v.id('shifts'),
+    name: v.union(
+      v.literal('manual.md'),
+      v.literal('starter.js'),
+      v.literal('lines.json'),
+      v.literal('observations.jsonl')
+    )
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    const shift = await loadOwnedShift(ctx.db, github, args.shiftId)
+    if (!shift || shift.state !== 'active') return null
+    return buildArtifactContent(args.name, shift.seed)
+  }
+})
+
+export const requestProbe = mutation({
+  args: { shiftId: v.id('shifts') },
+  returns: v.object({ runId: v.string(), probeKind: probeKindValidator }),
+  handler: async (ctx, args) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    const shift = ensureOwnedShift(
+      await ctx.db.get('shifts', args.shiftId),
+      github
+    )
+    const now = Date.now()
+    if (shift.state !== 'active' || now >= shift.expiresAt) {
+      throw new Error('shift expired')
+    }
+    if (now >= shift.phase1EndsAt) {
+      throw new Error('trial window closed')
+    }
+    if (getAcceptedRun(shift)) {
+      throw new Error('evaluation already in progress')
+    }
+    if (!shift.latestValidSource || !shift.latestValidSourceHash) {
+      throw new Error('valid module required')
+    }
+
+    const PROBE_ORDER = ['fit', 'stress'] as const
+    const nextProbeKind = PROBE_ORDER.find(
+      (kind) => !shift.runs.some((run: ShiftRunDoc) => run.kind === kind && run.state === 'completed')
+    )
+    if (!nextProbeKind) {
+      throw new Error('all probes exhausted')
+    }
+
+    const runId = crypto.randomUUID()
+    const nextRuns = [
+      ...shift.runs,
+      {
+        id: runId,
+        kind: nextProbeKind,
+        trigger: 'manual' as const,
+        state: 'accepted' as const,
+        acceptedAt: now,
+        sourceHash: shift.latestValidSourceHash,
+        sourceSnapshot: shift.latestValidSource
+      }
+    ]
+    await ctx.db.patch('shifts', shift._id, { runs: nextRuns })
+
+    await ctx.scheduler.runAfter(0, internal.shiftRuntime.processProbeRun, {
+      github,
+      shiftId: args.shiftId,
+      runId
+    })
+
+    return { runId, probeKind: nextProbeKind }
+  }
+})
+
+export const requestGoLive = mutation({
+  args: { shiftId: v.id('shifts') },
+  returns: v.object({ runId: v.string() }),
+  handler: async (ctx, args) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    const shift = ensureOwnedShift(
+      await ctx.db.get('shifts', args.shiftId),
+      github
+    )
+    if (shift.state !== 'active') {
+      throw new Error('shift expired')
+    }
+    if (getAcceptedRun(shift)) {
+      throw new Error('evaluation already in progress')
+    }
+    if (hasFinalRun(shift)) {
+      throw new Error('final evaluation already submitted')
+    }
+    if (!shift.latestValidSource || !shift.latestValidSourceHash) {
+      throw new Error('valid module required')
+    }
+
+    const runId = crypto.randomUUID()
+    const now = Date.now()
+    const nextRuns = [
+      ...shift.runs,
+      {
+        id: runId,
+        kind: 'final' as const,
+        trigger: 'manual' as const,
+        state: 'accepted' as const,
+        acceptedAt: now,
+        sourceHash: shift.latestValidSourceHash,
+        sourceSnapshot: shift.latestValidSource
+      }
+    ]
+    await ctx.db.patch('shifts', shift._id, { runs: nextRuns })
+
+    await ctx.scheduler.runAfter(0, internal.shiftRuntime.processFinalRun, {
+      github,
+      shiftId: args.shiftId,
+      runId
+    })
+
+    return { runId }
+  }
+})
+
+export const resolveShiftExpiry = mutation({
+  args: { shiftId: v.id('shifts') },
+  returns: v.union(
+    v.literal('noop'),
+    v.literal('scheduled_final'),
+    v.literal('expired_no_result')
+  ),
+  handler: async (ctx, args) => {
+    const github = await requireAuthenticatedGithub(ctx)
+    const shift = ensureOwnedShift(
+      await ctx.db.get('shifts', args.shiftId),
+      github
+    )
+    const now = Date.now()
+
+    if (shift.state !== 'active' || now < shift.expiresAt) {
+      return 'noop'
+    }
+    if (getAcceptedRun(shift) || hasFinalRun(shift)) {
+      return 'noop'
+    }
+
+    if (shift.latestValidSource && shift.latestValidSourceHash) {
+      const runId = crypto.randomUUID()
+      const nextRuns = [
+        ...shift.runs,
+        {
+          id: runId,
+          kind: 'final' as const,
+          trigger: 'auto_expire' as const,
+          state: 'accepted' as const,
+          acceptedAt: shift.expiresAt,
+          sourceHash: shift.latestValidSourceHash,
+          sourceSnapshot: shift.latestValidSource
+        }
+      ]
+      await ctx.db.patch('shifts', shift._id, { runs: nextRuns })
+
+      await ctx.scheduler.runAfter(0, internal.shiftRuntime.processFinalRun, {
+        github,
+        shiftId: args.shiftId,
+        runId
+      })
+
+      return 'scheduled_final'
+    }
+
+    await ctx.db.patch('shifts', shift._id, {
+      state: 'expired',
+      completedAt: shift.expiresAt
+    })
+    return 'expired_no_result'
   }
 })

@@ -1,35 +1,35 @@
 'use client'
 
-import { useQuery } from 'convex/react'
-import { useMemo, useState } from 'react'
+import { usePaginatedQuery } from 'convex/react'
+import { useMemo } from 'react'
 import { api } from '../../../../convex/_generated/api'
-import { normalizePaginatedLeaderboard } from '@/core/domain/normalizers'
-import type { PaginatedLeaderboard } from '@/core/domain/views'
+import { normalizeLeaderboardRecord } from '@/core/domain/normalizers'
+import type { LeaderboardEntry } from '@/core/domain/views'
 import { LandingLeaderboard } from './LandingLeaderboard'
 
-const PAGE_SIZE = 7
+const leaderboardQuery = api.leaderboard.list
 
 export function LiveLandingLeaderboard ({
-  initialLeaderboard
+  initialEntries
 }: {
-  initialLeaderboard: PaginatedLeaderboard;
+  initialEntries: LeaderboardEntry[];
 }) {
-  const [dispatchPage, setDispatchPage] = useState(0)
+  const { results, status, loadMore } = usePaginatedQuery(
+    leaderboardQuery,
+    {},
+    { initialNumItems: 10 }
+  )
 
-  const liveData = useQuery(api.leaderboard.getPublic, {
-    dispatchPage,
-    dispatchPageSize: PAGE_SIZE
-  })
-
-  const leaderboard: PaginatedLeaderboard = useMemo(() => {
-    if (!liveData) return initialLeaderboard
-    return normalizePaginatedLeaderboard(liveData)
-  }, [liveData, initialLeaderboard])
+  const entries: LeaderboardEntry[] = useMemo(() => {
+    if (status === 'LoadingFirstPage') return initialEntries
+    return (results as Parameters<typeof normalizeLeaderboardRecord>[0][]).map(normalizeLeaderboardRecord)
+  }, [results, status, initialEntries])
 
   return (
     <LandingLeaderboard
-      leaderboard={leaderboard}
-      onPageChange={setDispatchPage}
+      entries={entries}
+      status={status}
+      loadMore={loadMore}
     />
   )
 }

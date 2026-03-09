@@ -3,28 +3,23 @@ import { internalMutation, internalQuery } from './_generated/server'
 
 export const getCandidates = internalQuery({
   args: {
-    page: v.number(),
+    cursor: v.optional(v.string()),
     pageSize: v.optional(v.number())
   },
   handler: async (ctx, args) => {
     const pageSize = args.pageSize ?? 25
-    const page = args.page
-    const needed = page * pageSize + pageSize
 
-    const entries = await ctx.db
+    const results = await ctx.db
       .query('leaderboardBest')
       .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
       .order('desc')
-      .take(needed)
+      .paginate({ cursor: args.cursor ?? null, numItems: pageSize })
 
     const counter = await ctx.db.query('leaderboardMeta').first()
-    const totalEntries = counter?.totalEntries ?? entries.length
-
-    const start = page * pageSize
-    const pageEntries = entries.slice(start, start + pageSize)
+    const totalEntries = counter?.totalEntries ?? 0
 
     const rows = await Promise.all(
-      pageEntries.map(async (entry) => {
+      results.page.map(async (entry) => {
         const shifts = await ctx.db
           .query('shifts')
           .withIndex('by_github_and_startedAt', (q) => q.eq('github', entry.github))
@@ -60,8 +55,8 @@ export const getCandidates = internalQuery({
     return {
       rows,
       totalEntries,
-      page,
-      totalPages: Math.max(1, Math.ceil(totalEntries / pageSize))
+      nextCursor: results.continueCursor,
+      isDone: results.isDone
     }
   }
 })
@@ -158,7 +153,7 @@ export const upsertSummary = internalMutation({
       .first()
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch('candidateSummaries', existing._id, {
         summary: args.summary,
         generatedAt: args.generatedAt
       })

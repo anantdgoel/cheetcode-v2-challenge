@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { getLandingLeaderboard } from '@/features/landing/server/queries'
-import { ConvexPublicProvider } from './ConvexPublicProvider'
+import { ConvexAuthProvider } from './ConvexAuthProvider'
 import { HeroSection, SwitchboardPattern } from './HeroSection'
 import { LiveLandingLeaderboard } from './LiveLandingLeaderboard'
 import { LandingLeaderboardSkeleton } from './LandingLeaderboard'
@@ -15,13 +15,9 @@ function Footer () {
 }
 
 async function LandingLeaderboardSection () {
-  const initialLeaderboard = await getLandingLeaderboard()
+  const initialEntries = await getLandingLeaderboard()
 
-  return (
-    <ConvexPublicProvider>
-      <LiveLandingLeaderboard initialLeaderboard={initialLeaderboard} />
-    </ConvexPublicProvider>
-  )
+  return <LiveLandingLeaderboard initialEntries={initialEntries} />
 }
 
 export function LandingPageContent ({
@@ -32,13 +28,15 @@ export function LandingPageContent ({
   github: string | null;
 }) {
   return (
-    <main className='landing-shell'>
-      <SwitchboardPattern />
-      <HeroSection github={github} activeShiftId={activeShiftId} />
-      <Suspense fallback={<LandingLeaderboardSkeleton />}>
-        <LandingLeaderboardSection />
-      </Suspense>
-      <Footer />
-    </main>
+    <ConvexAuthProvider>
+      <main className='landing-shell'>
+        <SwitchboardPattern />
+        <HeroSection github={github} activeShiftId={activeShiftId} />
+        <Suspense fallback={<LandingLeaderboardSkeleton />}>
+          <LandingLeaderboardSection />
+        </Suspense>
+        <Footer />
+      </main>
+    </ConvexAuthProvider>
   )
 }

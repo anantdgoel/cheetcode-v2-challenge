@@ -1,7 +1,7 @@
 # Firecrawl Exchange v1: Detailed High-Level Product Spec
 
 ## Summary
-- Firecrawl Exchange is one public, repeatable coding challenge with one identity and one fantasy: a live 1963 telephone exchange operated by submitted code.
+- Firecrawl Exchange is one public, repeatable coding challenge with one identity and one fantasy: a live 1957 telephone exchange operated by submitted code.
 - The browser is the official control surface. There is no public API for starting shifts, fetching bundles, running trials, or submitting results.
 - The player's real work happens locally: ingest the evidence bundle, infer hidden board behavior, generate a routing policy, use one Trial Shift if desired, then Go Live.
 - The product is public to browse, but official play is attributed. Anyone can view the landing page, leaderboard, and public Shift Reports; starting a shift requires GitHub sign-in.

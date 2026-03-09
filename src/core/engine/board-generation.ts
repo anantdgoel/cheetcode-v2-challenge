@@ -45,12 +45,12 @@ function buildVisibleFamilyMap (rng: Rng, activeFamilies: LineFamily[]) {
   const shuffled = shuffle(rng, [...activeFamilies])
   const hasIdentity = activeFamilies.some((family, index) => shuffled[index] === family)
   const rotated = hasIdentity && shuffled.length > 1 ? [...shuffled.slice(1), shuffled[0]] : shuffled
-  return activeFamilies.reduce(
+  return activeFamilies.reduce<Partial<Record<LineFamily, LineFamily>>>(
     (acc, family, index) => {
       acc[family] = rotated[index] ?? family
       return acc
     },
-    {} as Partial<Record<LineFamily, LineFamily>>
+    {}
   )
 }
 
@@ -269,7 +269,7 @@ function buildLines (
   )
   const chosenFamilies = Array.from({ length: totalLines }, () => weightedPick(rng, familyWeights))
   for (let index = 0; index < activeFamilies.length && index < chosenFamilies.length; index += 1) {
-    chosenFamilies[index] = activeFamilies[index]!
+    chosenFamilies[index] = activeFamilies[index]
   }
 
   return shuffle(rng, chosenFamilies).map((family, index) => {

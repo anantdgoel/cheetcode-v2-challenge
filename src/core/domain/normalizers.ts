@@ -1,5 +1,5 @@
 import { TITLES } from './game'
-import type { LeaderboardEntry, PaginatedLeaderboard, ReportView } from './views'
+import type { LeaderboardEntry, ReportView } from './views'
 
 export function expectLiteralValue<T extends string> (
   value: string,
@@ -39,7 +39,7 @@ export function normalizeLeaderboardRecord (entry: {
   github: string;
   title: string;
   boardEfficiency: number;
-  hiddenScore: number;
+  hiddenScore?: number;
   achievedAt: number;
   shiftId: string;
   publicId: string;
@@ -50,22 +50,7 @@ export function normalizeLeaderboardRecord (entry: {
 }): LeaderboardEntry {
   return {
     ...entry,
+    hiddenScore: entry.hiddenScore ?? 0,
     title: expectLiteralValue(entry.title, TITLES, 'leaderboard.title')
-  }
-}
-
-export function normalizePaginatedLeaderboard (raw: {
-  topEntries: Parameters<typeof normalizeLeaderboardRecord>[0][];
-  dispatchEntries: Parameters<typeof normalizeLeaderboardRecord>[0][];
-  totalEntries: number;
-  dispatchPage: number;
-  totalDispatchPages: number;
-}): PaginatedLeaderboard {
-  return {
-    topEntries: raw.topEntries.map(normalizeLeaderboardRecord),
-    dispatchEntries: raw.dispatchEntries.map(normalizeLeaderboardRecord),
-    totalEntries: raw.totalEntries,
-    dispatchPage: raw.dispatchPage,
-    totalDispatchPages: raw.totalDispatchPages
   }
 }

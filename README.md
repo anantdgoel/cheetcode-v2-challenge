@@ -1,90 +1,44 @@
 # Firecrawl Exchange
 
-Firecrawl Exchange is a public coding challenge staged as a 1963 telephone exchange. The browser is the official control surface, but the real work happens in the evidence bundle and the local tooling you build before you go live.
+Firecrawl Exchange is a coding challenge app built around a simulated 1960s telephone exchange. Players sign in with GitHub, start a timed Shift, inspect a generated evidence bundle, submit a JavaScript routing policy, use up to two probes, and finally go live. Each completed Shift produces a public report, while admins can review candidate performance and optionally generate LLM-written summaries.
 
-This repo now implements the v3 game shape:
-- one stateful submitted JavaScript policy
-- a compact hidden model built around line-family fit and live load
-- two structured probes: `fit` and `stress`
-- four live artifacts: `manual.md`, `starter.js`, `lines.json`, `observations.jsonl`
+## Quick overview
 
-## Core loop
+The repo is split into a few clear layers:
 
-1. Start a Shift on a fresh hidden board.
-2. Download the evidence bundle immediately.
-3. Analyze the bundle locally and prepare a policy.
-4. Run up to two probes on the active board.
-5. Tune locally.
-6. Go live for the final run.
-7. Review the public report and the richer postmortem for the spent board.
+- `src/app`: Next.js App Router pages and route handlers.
+- `src/features`: feature slices for landing, active shifts, public reports, and admin.
+- `src/core`: shared domain logic, simulator code, scoring, and policy execution.
+- `convex`: persistence, real-time queries/mutations/actions, auth config, and runtime state.
+- `auth.ts`: Auth.js v5 GitHub sign-in plus the JWT bridge used by Convex.
 
-Repeated fresh Shifts are intentional. Strong solvers are expected to improve their tooling across boards, not just hand-tune a single run.
+At a high level, the system works like this:
 
-## Policy contract
+1. A user lands on the marketing page and signs in with GitHub.
+2. Auth.js creates the web session and signs a Convex JWT for the client.
+3. The active Shift UI talks directly to Convex for live state, probes, saves, and final runs.
+4. Server-rendered pages and admin reads use a privileged Convex HTTP client.
+5. Completed runs are exposed as public Shift reports.
 
-The submitted file may export:
-- optional `init(context)`
-- required `connect(input)`
+## Main product surfaces
 
-`init(context)` runs once per probe or final run.
-`connect(input)` runs once per routing decision.
-State persists within a run and resets between runs.
-
-The live runtime exposes:
-- `clock.second`
-- `clock.remainingSeconds`
-- `board.load`
-- `board.tempo`
-- `board.queueDepth`
-- visible `call` fields
-- visible `lines` fields, including `lineGroupId`
-
-The runtime does not expose:
-- board seeds
-- hidden line families
-- exact success probabilities
-- per-line historical rankings
-
-## Artifacts
-
-Each Shift exposes exactly four live artifacts:
-
-- `manual.md`
-  Theme, explicit rules, probe descriptions, and strategic cautions.
-- `starter.js`
-  A valid but intentionally weak baseline.
-- `lines.json`
-  The visible inventory for the active board.
-- `observations.jsonl`
-  Historical evidence generated from the active board's own hidden parameters, with seeded noise.
-
-## Benchmark targets
-
-The v3.1 implementation is balanced against a fixed benchmark seed suite.
-
-- `starter.js`: under `10%` average score
-- snapshot baseline agent: roughly `25-35%`
-- old static heuristic: `40%` or lower
-- artifact-driven hiring-bar agent: roughly `75-85%`
-
-Those are acceptance gates for the simulator and benchmark harness, not public promises to players.
+- Landing page: `src/app/page.tsx`
+- Active Shift UI: `src/app/shift/[shiftId]/page.tsx`
+- Public report: `src/app/report/[publicId]/page.tsx`
+- Admin board: `src/app/admin/page.tsx`
 
 ## Stack
 
-- Next.js app in `src/`
-- Auth.js GitHub sign-in in `auth.ts`
-- Convex persistence in `convex/`
-- QuickJS policy validation and evaluation in [src/core/engine/policy-vm.ts](src/core/engine/policy-vm.ts)
+- Next.js 16
+- React 19
+- Auth.js v5 with GitHub OAuth
+- Convex for persistence and live app state
+- QuickJS for validating and executing submitted routing policies
+- Vitest and Playwright for test coverage
 
-## Architecture
+## Local development
 
-- `src/features/*`: feature slices for `shift`, `landing`, `report`, and `admin`
-- `src/core/*`: pure domain and engine code
-- `src/server/*`: auth, Convex client adapters, and HTTP/request helpers
-
-See [docs/architecture.md](docs/architecture.md) for dependency rules.
-
-## Local setup
+Install dependencies, create a local env file, and start the app:
 
 ```bash
 npm install
@@ -92,47 +46,162 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-## Environment
-
-- `NEXT_PUBLIC_CONVEX_URL`
-- `CONVEX_ADMIN_KEY`
-- `AUTH_GITHUB_ID`
-- `AUTH_GITHUB_SECRET`
-- `AUTH_SECRET`
-- `ADMIN_GITHUB_LOGINS`
-
-## Useful scripts
+Useful commands:
 
 ```bash
 npm run dev
+npm run build
+npm run start
+npm run lint
 npm run test
 npm run typecheck
-npm run typecheck:core
-npm run lint:core
-npx tsc --noEmit
 npm run test:e2e
-npm run agent:baseline
-npm run agent:hiring-bar
-npm run agent:user-flow
-npm run agent:hiring-bar:eval
-npm run agent:oracle:eval
 ```
 
-## Important files
+Open [http://localhost:3000](http://localhost:3000) after `npm run dev`.
 
-- [src/features/shift/server/index.ts](src/features/shift/server/index.ts): shift server entrypoints used by routes and pages
-- [src/features/shift/domain/view.ts](src/features/shift/domain/view.ts): shift DTO shaping
-- [src/features/shift/client/ShiftConsole.tsx](src/features/shift/client/ShiftConsole.tsx): active Shift UI entrypoint
-- [src/server/convex/client.ts](src/server/convex/client.ts): Convex transport boundary
-- [src/core/engine/index.ts](src/core/engine/index.ts): pure engine entrypoint
-- [scripts/v3-agent-policies.mjs](scripts/v3-agent-policies.mjs): benchmark policy definitions
-- [__tests__/shift/server/runtime.test.ts](__tests__/shift/server/runtime.test.ts): shift runtime concurrency coverage
+## Agent scripts
 
-## Benchmarks
+The `scripts/` directory contains offline benchmark agents and evaluation harnesses for the exchange simulator. These scripts verify that the game is properly balanced and serve as reference implementations for policy generation.
 
-- `npm run agent:hiring-bar`
-  Offline deterministic benchmark. Builds a board-specific policy from `lines.json` and `observations.jsonl`, then runs it directly against the local simulator without touching Next.js, Auth.js, or Convex.
-- `npm run agent:user-flow`
-  End-user-flow harness. Mints a local Auth.js session cookie from `AUTH_SECRET`, then uses the same `/api/shifts/*` routes the browser uses. This is intended for local/dev benchmarking against the real app surface, not for bypassing production auth.
+### Script architecture
+
+The agent code is organized in three layers:
+
+| File | Role |
+| --- | --- |
+| `scripts/exchange-agent-common.mjs` | Shared constants and utility functions (importable) |
+| `scripts/exchange-agent-models.mjs` | Artifact parsing, observation-based model inference, prior aggregation |
+| `scripts/exchange-agent-runtimes.mjs` | Decision logic, agent state, and QuickJS policy source generation |
+| `scripts/v3-agent-policies.mjs` | Public API — re-exports and convenience wrappers |
+| `scripts/benchmark-runner.mjs` | Shared benchmark runner with summary statistics |
+
+Runner and evaluation scripts:
+
+| Script | Command | What it does |
+| --- | --- | --- |
+| `run-baseline-agent.mjs` | `npm run agent:baseline` | Snapshot baseline (target: 25-35%) |
+| `run-hiring-bar-agent.mjs` | `npm run agent:hiring-bar` | Artifact-driven hiring-bar agent (target: 75-85%) |
+| `eval-hiring-bar-agent.mjs` | `npm run agent:hiring-bar:eval` | Per-seed JSON metrics for the hiring-bar agent |
+| `eval-oracle-agent.mjs` | `npm run agent:oracle:eval` | Perfect-information oracle as upper bound |
+| `eval-meta-learning-agent.mjs` | `npm run agent:meta-learning:eval` | Warm-start vs artifact-only on holdout seeds |
+| `run-user-flow-agent.mjs` | `npm run agent:user-flow` | End-to-end flow against a live Convex deployment |
+
+Utility scripts:
+
+| Script | Purpose |
+| --- | --- |
+| `ts-path-loader.mjs` | Node.js loader hook resolving `@/` and `.ts` imports for offline scripts |
+| `generate-convex-auth-keys.mjs` | Generates RSA keypair for Convex JWT auth |
+
+### Running benchmarks
+
+Quick verification (no infrastructure required):
+
+```bash
+npm run agent:baseline        # Should print average ~25-35%
+npm run agent:hiring-bar      # Should print average ~75-85%
+```
+
+See [docs/benchmarks.md](docs/benchmarks.md) for the full benchmark guide and [docs/engine-config.md](docs/engine-config.md) for tuning the simulator based on benchmark results.
+
+## Deployment
+
+This app has two runtimes that must be configured together:
+
+- Next.js runtime: hosts the UI, Auth.js session handling, and admin/server helpers.
+- Convex runtime: hosts the database, real-time API, runtime actions, and custom JWT validation.
+
+You will deploy both and wire them together with matching auth settings.
+
+### 1. Create the external services
+
+- Create a Convex deployment.
+- Create a GitHub OAuth app for sign-in.
+- Deploy the Next.js app to your preferred host.
+
+For the GitHub OAuth app, the callback URL should be:
+
+```text
+https://<your-app-domain>/api/auth/callback/github
+```
+
+### 2. Configure environment variables
+
+Set your own values in your deployment platform.
+
+#### Next.js runtime variables
+
+These are required for the web app and server code:
+
+- `NEXT_PUBLIC_CONVEX_URL`
+  Convex deployment URL used by both browser and server code.
+- `AUTH_GITHUB_ID`
+  GitHub OAuth client ID.
+- `AUTH_GITHUB_SECRET`
+  GitHub OAuth client secret.
+- `AUTH_SECRET`
+  Secret used by Auth.js to encrypt/sign session data.
+- `ADMIN_GITHUB_LOGINS`
+  Comma-separated GitHub usernames allowed to access `/admin`. Must be set in **both** Next.js and Convex environments — Next.js uses it to guard the route handler, Convex uses it to guard server-side admin queries.
+- `CONVEX_AUTH_PRIVATE_KEY`
+  RSA private key used by `auth.ts` to sign Convex JWTs for authenticated users.
+- `CONVEX_ADMIN_KEY`
+  Preferred server-side admin key for trusted Next.js reads, mutations, and actions.
+
+#### Convex runtime variables
+
+These are required in the Convex environment:
+
+- `CONVEX_AUTH_JWKS`
+  JWKS JSON containing the public key that matches `CONVEX_AUTH_PRIVATE_KEY`.
+- `ADMIN_GITHUB_LOGINS`
+  Same value as the Next.js variable — Convex needs its own copy to guard server-side admin queries.
+
+Optional admin-only variables:
+
+- `OPENAI_API_KEY`
+  Required only if you want the admin summary generation endpoint to call OpenAI.
+- `JUDGE_MODEL`
+  Optional model override for admin summaries. Defaults to `gpt-5-mini`.
+
+### 3. Keep Auth.js and Convex auth aligned
+
+This repo uses a custom JWT provider for Convex auth. The keypair must match across both runtimes:
+
+- Next.js signs user JWTs with `CONVEX_AUTH_PRIVATE_KEY`.
+- Convex verifies those JWTs with `CONVEX_AUTH_JWKS`.
+
+If you change issuer or audience behavior in auth-related files, update both:
+
+- `auth.ts`
+- `convex/auth.config.ts`
+
+### 4. Build and run
+
+For a standard Next.js deployment:
+
+```bash
+npm run build
+npm run start
+```
+
+Convex should be deployed separately using your normal Convex deployment workflow.
+
+## Important paths
+
+- `src/features/landing/client/ConvexAuthProvider.tsx`: bridges Auth.js sessions into `convex/react`
+- `src/features/shift/client/convex-api.ts`: main live client API surface for Shift actions
+- `src/features/shift/server/index.ts`: server-side Shift entrypoints
+- `src/server/convex/client.ts`: privileged and public Convex HTTP client helpers
+- `convex/schema.ts`: persistence model
+- `convex/sessions.ts`: Shift lifecycle queries and actions
+- `convex/shiftRuntime.ts`: probe and final run execution
+- `convex/admin.ts`: admin queries and summary persistence
+- `convex/adminAgent.ts`: OpenAI-backed candidate summaries
+
+## Notes
+
+- The active gameplay experience is designed for desktop.
+- The live Shift UI talks directly to Convex rather than through Next.js route handlers.
+- The admin summary feature is optional and only works when `OPENAI_API_KEY` is configured.

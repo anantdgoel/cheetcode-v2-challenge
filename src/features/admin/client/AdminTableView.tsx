@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { formatPercent, formatTitle } from '@/core/engine/report'
 import type { AdminCandidatePage } from '@/core/domain/views'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 function timeAgo (ts: number) {
   const diff = Date.now() - ts
@@ -17,13 +17,12 @@ function timeAgo (ts: number) {
 
 export function AdminTableView ({ data }: { data: AdminCandidatePage }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const currentPage = data.page
 
-  function goToPage (page: number) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('page', String(page))
-    params.delete('candidate')
+  function goNext () {
+    if (!data.nextCursor || data.isDone) return
+    const params = new URLSearchParams()
+    params.set('cursor', data.nextCursor)
+    params.set('start', String(data.startRank + data.rows.length))
     router.push(`/admin?${params.toString()}`)
   }
 
@@ -56,10 +55,10 @@ export function AdminTableView ({ data }: { data: AdminCandidatePage }) {
               <tr
                 key={row.github}
                 className='admin-table-row'
-                onClick={() => router.push(`/admin?candidate=${encodeURIComponent(row.github)}`)}
+                onClick={() => { router.push(`/admin?candidate=${encodeURIComponent(row.github)}`) }}
               >
                 <td className='col-rank'>
-                  {currentPage * 25 + i + 1}
+                  {data.startRank + i + 1}
                 </td>
                 <td className='col-callsign'>
                   <div className='callsign-cell'>
@@ -94,27 +93,26 @@ export function AdminTableView ({ data }: { data: AdminCandidatePage }) {
         </table>
       </div>
 
-      {data.totalPages > 1 && (
-        <div className='admin-pagination'>
+      <div className='admin-pagination'>
+        {data.startRank > 0 && (
           <button
             className='app-button app-button--sm'
-            disabled={currentPage === 0}
-            onClick={() => goToPage(currentPage - 1)}
+            onClick={() => { router.push('/admin') }}
           >
-            Previous
+            ← First page
           </button>
-          <span className='pagination-info'>
-            Page {currentPage + 1} of {data.totalPages}
-          </span>
-          <button
-            className='app-button app-button--sm'
-            disabled={currentPage >= data.totalPages - 1}
-            onClick={() => goToPage(currentPage + 1)}
-          >
-            Next
-          </button>
-        </div>
-      )}
+        )}
+        <span className='pagination-info'>
+          Showing {data.startRank + 1}–{data.startRank + data.rows.length} of {data.totalEntries}
+        </span>
+        <button
+          className='app-button app-button--sm'
+          disabled={data.isDone}
+          onClick={goNext}
+        >
+          Next
+        </button>
+      </div>
     </section>
   )
 }

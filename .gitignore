@@ -25,8 +25,5 @@ test-results/
 AGENTS.md
 CLAUDE.md
 
-# Local scripts
-scripts/
-
 # macOS system files
 .DS_Store

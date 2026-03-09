@@ -1,37 +1,12 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import {
-  shiftStateValidator,
-  storedRunValidator,
+  shiftTableValidator,
   titleValidator
 } from './validators'
 
 export default defineSchema({
-  shifts: defineTable({
-    github: v.string(),
-    seed: v.string(),
-    artifactVersion: v.number(),
-    state: shiftStateValidator,
-    startedAt: v.number(),
-    phase1EndsAt: v.number(),
-    expiresAt: v.number(),
-    completedAt: v.optional(v.number()),
-    latestDraftSource: v.string(),
-    latestDraftSavedAt: v.number(),
-    latestValidSource: v.optional(v.string()),
-    latestValidSourceHash: v.optional(v.string()),
-    latestValidAt: v.optional(v.number()),
-    latestValidationError: v.optional(v.string()),
-    latestValidationCheckedAt: v.optional(v.number()),
-    artifactFetchAt: v.object({
-      manualMd: v.optional(v.number()),
-      starterJs: v.optional(v.number()),
-      linesJson: v.optional(v.number()),
-      observationsJsonl: v.optional(v.number())
-    }),
-    runs: v.array(storedRunValidator),
-    reportPublicId: v.optional(v.string())
-  })
+  shifts: defineTable(shiftTableValidator)
     .index('by_github_and_startedAt', ['github', 'startedAt'])
     .index('by_state_and_expiresAt', ['state', 'expiresAt']),
 

@@ -47,41 +47,42 @@ describe('admin server queries', () => {
   })
 
   describe('getCandidates', () => {
-    it('passes page and pageSize to internal query', async () => {
+    it('passes cursor and pageSize to internal query', async () => {
       const mockPage = {
         rows: [makeCandidateRow('alice', 80), makeCandidateRow('bob', 60)],
         totalEntries: 2,
-        page: 0,
-        totalPages: 1
+        nextCursor: null,
+        isDone: true
       }
       mocks.fetchInternalQuery.mockResolvedValue(mockPage)
 
       const { getCandidates } = await import('@/features/admin/server/queries')
-      const result = await getCandidates(0)
+      const result = await getCandidates(null, 0)
 
       expect(mocks.fetchInternalQuery).toHaveBeenCalledWith(
         'admin:getCandidates',
-        { page: 0, pageSize: 25 }
+        { pageSize: 25 }
       )
       expect(result.rows).toHaveLength(2)
       expect(result.rows[0].github).toBe('alice')
       expect(result.totalEntries).toBe(2)
+      expect(result.startRank).toBe(0)
     })
 
-    it('requests correct page number', async () => {
+    it('passes cursor for subsequent pages', async () => {
       mocks.fetchInternalQuery.mockResolvedValue({
         rows: [],
         totalEntries: 50,
-        page: 1,
-        totalPages: 2
+        nextCursor: null,
+        isDone: true
       })
 
       const { getCandidates } = await import('@/features/admin/server/queries')
-      await getCandidates(1)
+      await getCandidates('cursor_abc', 25)
 
       expect(mocks.fetchInternalQuery).toHaveBeenCalledWith(
         'admin:getCandidates',
-        { page: 1, pageSize: 25 }
+        { cursor: 'cursor_abc', pageSize: 25 }
       )
     })
   })

@@ -25,11 +25,15 @@ export async function getAdminSnapshot (params: {
   return fetchInternalQuery(internal.reports.adminLookup, queryArgs) as Promise<AdminSnapshot>
 }
 
-export async function getCandidates (page: number) {
-  return fetchInternalQuery(internal.admin.getCandidates, {
-    page,
+export async function getCandidates (cursor: string | null, startRank: number): Promise<AdminCandidatePage> {
+  const result = await fetchInternalQuery(internal.admin.getCandidates, {
+    cursor: cursor ?? undefined,
     pageSize: 25
-  }) as Promise<AdminCandidatePage>
+  })
+  return {
+    ...(result as Omit<AdminCandidatePage, 'startRank'>),
+    startRank
+  }
 }
 
 export async function getCandidateDetail (github: string) {

@@ -2,7 +2,6 @@
 
 import { animate, motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-import { useDialKit } from 'dialkit'
 import SessionControls from './SessionControls'
 
 /* ─────────────────────────────────────────────────────────
@@ -116,45 +115,35 @@ const SWITCHING_WIRES = {
 const IDLE_RING_STROKE = 'rgba(26,20,16,0.12)'
 const IDLE_DOT_FILL = 'rgba(26,20,16,0.08)'
 
+const SWITCHBOARD_PARAMS = {
+  lamps: {
+    period: 2.5,
+    ringPeak: 0.75,
+    dotScale: 1.33
+  },
+  wires: {
+    period: 1.5,
+    dashLength: 15
+  },
+  switching: {
+    cycleScale: 1,
+    onFraction: 0.75
+  },
+  flicker: {
+    interval: 3,
+    duration: 0.4
+  }
+} as const
+
 export function SwitchboardPattern () {
   const prefersReduced = useReducedMotion()
   const [sbStage, setSbStage] = useState(0)
-  const [replayToken, setReplayToken] = useState(0)
   const stage = prefersReduced ? 4 : sbStage
 
   /* Refs for imperative flicker on idle junctions */
   const idleRingRefs = useRef<(SVGCircleElement | null)[]>([])
   const idleDotRefs = useRef<(SVGCircleElement | null)[]>([])
   const flickerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  /* DialKit live-tuning */
-  const params = useDialKit('Switchboard', {
-    lamps: {
-      period: [2.5, 1, 8],
-      ringPeak: [0.75, 0.5, 1],
-      dotScale: [1.33, 1, 1.4]
-    },
-    wires: {
-      period: [1.5, 1, 8],
-      dashLength: [15, 4, 20]
-    },
-    switching: {
-      cycleScale: [1, 0.3, 3],
-      onFraction: [0.75, 0.2, 0.8]
-    },
-    flicker: {
-      interval: [3, 2, 15],
-      duration: [0.4, 0.2, 1.5]
-    },
-    replay: { type: 'action' as const }
-  }, {
-    onAction: (action: string) => {
-      if (action === 'replay') {
-        setSbStage(0)
-        setReplayToken((current) => current + 1)
-      }
-    }
-  })
 
   /* Stage-driven entrance */
   useEffect(() => {
@@ -163,13 +152,13 @@ export function SwitchboardPattern () {
     }
 
     const timers = [
-      setTimeout(() => setSbStage(1), SB_TIMING.lampStart),
-      setTimeout(() => setSbStage(2), SB_TIMING.wireStart),
-      setTimeout(() => setSbStage(3), SB_TIMING.switchStart),
-      setTimeout(() => setSbStage(4), SB_TIMING.flickerStart)
+      setTimeout(() => { setSbStage(1) }, SB_TIMING.lampStart),
+      setTimeout(() => { setSbStage(2) }, SB_TIMING.wireStart),
+      setTimeout(() => { setSbStage(3) }, SB_TIMING.switchStart),
+      setTimeout(() => { setSbStage(4) }, SB_TIMING.flickerStart)
     ]
-    return () => timers.forEach(clearTimeout)
-  }, [prefersReduced, replayToken])
+    return () => { timers.forEach(clearTimeout) }
+  }, [prefersReduced])
 
   useEffect(() => {
     if (stage < 4 || prefersReduced) return
@@ -178,8 +167,8 @@ export function SwitchboardPattern () {
     const scheduleFlicker = () => {
       if (cancelled) return
 
-      const minMs = (params.flicker.interval - 2) * 1000
-      const maxMs = (params.flicker.interval + 4) * 1000
+      const minMs = (SWITCHBOARD_PARAMS.flicker.interval - 2) * 1000
+      const maxMs = (SWITCHBOARD_PARAMS.flicker.interval + 4) * 1000
       const nextMs = minMs + Math.random() * (maxMs - minMs)
 
       flickerTimerRef.current = setTimeout(() => {
@@ -189,13 +178,13 @@ export function SwitchboardPattern () {
 
         if (ring) {
           animate(ring, { opacity: [0.12, IDLE_JUNCTIONS.flickerPeakRing, 0.12] }, {
-            duration: params.flicker.duration,
+            duration: SWITCHBOARD_PARAMS.flicker.duration,
             ease: 'easeInOut'
           })
         }
         if (dot) {
           animate(dot, { opacity: [0.08, IDLE_JUNCTIONS.flickerPeakDot, 0.08] }, {
-            duration: params.flicker.duration,
+            duration: SWITCHBOARD_PARAMS.flicker.duration,
             ease: 'easeInOut'
           })
         }
@@ -209,7 +198,7 @@ export function SwitchboardPattern () {
       cancelled = true
       if (flickerTimerRef.current) clearTimeout(flickerTimerRef.current)
     }
-  }, [stage, prefersReduced, params.flicker.interval, params.flicker.duration])
+  }, [stage, prefersReduced])
 
   /* Reduced motion — render static SVG */
   if (prefersReduced) {
@@ -270,10 +259,10 @@ export function SwitchboardPattern () {
 
         {/* Active lamps — declarative pulse loops */}
         {LAMPS.items.map((l, i) => {
-          const periodScale = params.lamps.period / 3.5
+          const periodScale = SWITCHBOARD_PARAMS.lamps.period / 3.5
           const period = l.period * periodScale
-          const ringPeak = Math.min(l.ringOpacity[1] * (params.lamps.ringPeak / 0.85), 1)
-          const dotScaleMax = params.lamps.dotScale
+          const ringPeak = Math.min(l.ringOpacity[1] * (SWITCHBOARD_PARAMS.lamps.ringPeak / 0.85), 1)
+          const dotScaleMax = SWITCHBOARD_PARAMS.lamps.dotScale
 
           return (
             <g key={`lamp-${i}`}>
@@ -321,9 +310,9 @@ export function SwitchboardPattern () {
 
         {/* Permanent wires — always flowing */}
         {WIRES.items.map((w, i) => {
-          const periodScale = params.wires.period / 3
+          const periodScale = SWITCHBOARD_PARAMS.wires.period / 3
           const period = w.period * periodScale
-          const dash = `${params.wires.dashLength} ${40 - params.wires.dashLength}`
+          const dash = `${SWITCHBOARD_PARAMS.wires.dashLength} ${40 - SWITCHBOARD_PARAMS.wires.dashLength}`
 
           return (
             <motion.path
@@ -355,14 +344,14 @@ export function SwitchboardPattern () {
 
         {/* Switching wires — fade in/out on staggered cycles */}
         {SWITCHING_WIRES.items.map((sw, i) => {
-          const cycle = sw.cyclePeriod * params.switching.cycleScale
-          const on = params.switching.onFraction
+          const cycle = sw.cyclePeriod * SWITCHBOARD_PARAMS.switching.cycleScale
+          const on = SWITCHBOARD_PARAMS.switching.onFraction
           const fadeFrac = SWITCHING_WIRES.fadeSeconds / cycle
           const offPad = (1 - on) / 2
           /* opacity keyframes: off → fade in → hold → fade out → off */
           const times = [0, offPad, offPad + fadeFrac, offPad + on - fadeFrac, offPad + on, 1]
           const opacityKf = [0, 0, sw.peakOpacity, sw.peakOpacity, 0, 0]
-          const flowPeriod = sw.flowPeriod * params.switching.cycleScale
+          const flowPeriod = sw.flowPeriod * SWITCHBOARD_PARAMS.switching.cycleScale
 
           return (
             <motion.path

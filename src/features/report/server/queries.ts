@@ -1,12 +1,12 @@
 import { normalizeReportRecord } from '@/core/domain/normalizers'
-import { api, fetchInternalMutation, fetchPublicQuery, internal } from '@/server/convex/client'
+import { api, fetchInternalMutation, fetchInternalQuery, fetchPublicQuery, internal } from '@/server/convex/client'
 
 export async function getReportView (publicId: string) {
-  const report = await fetchPublicQuery(api.reports.getReportByPublicId, { publicId })
+  const report = await fetchInternalQuery(internal.reports.getByPublicIdInternal, { publicId })
   return report ? normalizeReportRecord(report) : null
 }
 
-export async function getContactSubmission (reportPublicId: string) {
+export async function getContactSubmission (reportPublicId: string): Promise<{ submitted: true } | null> {
   return fetchPublicQuery(api.contactSubmissions.getByReportPublicId, { reportPublicId })
 }
 

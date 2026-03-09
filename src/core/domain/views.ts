@@ -4,6 +4,9 @@ export type ShiftStatus = 'active_phase_1' | 'active_phase_2' | 'evaluating' | '
 export type EvaluationKind = ProbeKind | 'final' | 'auto_final'
 export type EvaluationState = 'accepted' | 'completed'
 
+/** Client-safe simulation metrics — hiddenScore stripped at the view boundary */
+export type ClientSimulationMetrics = Omit<SimulationMetrics, 'hiddenScore'>
+
 export type EvaluationRecordView = {
   id: string;
   kind: EvaluationKind;
@@ -13,7 +16,7 @@ export type EvaluationRecordView = {
   sourceHash: string;
   sourceSnapshot: string;
   probeSummary?: ProbeSummary;
-  metrics?: SimulationMetrics;
+  metrics?: ClientSimulationMetrics;
   title?: Title;
   chiefOperatorNote?: string;
   reportPublicId?: string;
@@ -63,14 +66,6 @@ export type LeaderboardEntry = {
   avgHoldSeconds?: number;
 }
 
-export type PaginatedLeaderboard = {
-  topEntries: LeaderboardEntry[];
-  dispatchEntries: LeaderboardEntry[];
-  totalEntries: number;
-  dispatchPage: number;
-  totalDispatchPages: number;
-}
-
 export type LandingView = {
   leaderboard: LeaderboardEntry[];
   activeShiftId?: string | null;
@@ -117,8 +112,9 @@ export type AdminCandidateRow = {
 export type AdminCandidatePage = {
   rows: AdminCandidateRow[];
   totalEntries: number;
-  page: number;
-  totalPages: number;
+  startRank: number;
+  nextCursor: string | null;
+  isDone: boolean;
 }
 
 export type AdminDetailRun = {

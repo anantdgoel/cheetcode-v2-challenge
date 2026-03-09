@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@/server/convex/client', () => ({
   api: {
-    leaderboard: { getPublic: 'leaderboard:getPublic' }
+    leaderboard: { list: 'leaderboard:list' }
   },
   internal: {
     shiftRuntime: {
@@ -28,20 +28,14 @@ describe('getLandingLeaderboard', () => {
     mocks.fetchPublicQuery.mockReset()
   })
 
-  it('logs and returns empty paginated shape when the leaderboard lookup fails', async () => {
+  it('logs and returns empty array when the leaderboard lookup fails', async () => {
     const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => {})
     mocks.fetchPublicQuery.mockRejectedValue(new Error('leaderboard unavailable'))
 
     const { getLandingLeaderboard } = await import('@/features/landing/server/queries')
     const result = await getLandingLeaderboard()
 
-    expect(result).toEqual({
-      topEntries: [],
-      dispatchEntries: [],
-      totalEntries: 0,
-      dispatchPage: 0,
-      totalDispatchPages: 1
-    })
+    expect(result).toEqual([])
     expect(consoleErrorMock).toHaveBeenCalledWith(
       '[landing] failed to load leaderboard',
       expect.objectContaining({ message: 'leaderboard unavailable' })
@@ -50,13 +44,12 @@ describe('getLandingLeaderboard', () => {
     consoleErrorMock.mockRestore()
   })
 
-  it('returns paginated leaderboard when the lookup succeeds', async () => {
+  it('returns normalized leaderboard entries when the lookup succeeds', async () => {
     const entry = {
       publicId: 'public-1',
       github: 'benchmark-agent',
       title: 'chief_operator',
       boardEfficiency: 0.8,
-      hiddenScore: 0.8,
       achievedAt: Date.now(),
       shiftId: 'shift-1',
       connectedCalls: 200,
@@ -66,13 +59,11 @@ describe('getLandingLeaderboard', () => {
     }
 
     mocks.fetchPublicQuery.mockImplementation(async (ref: string) => {
-      if (ref === 'leaderboard:getPublic') {
+      if (ref === 'leaderboard:list') {
         return {
-          topEntries: [entry],
-          dispatchEntries: [],
-          totalEntries: 1,
-          dispatchPage: 0,
-          totalDispatchPages: 1
+          page: [entry],
+          isDone: true,
+          continueCursor: 'cursor_end'
         }
       }
       throw new Error('leaderboard unavailable')
@@ -81,12 +72,10 @@ describe('getLandingLeaderboard', () => {
     const { getLandingLeaderboard } = await import('@/features/landing/server/queries')
     const result = await getLandingLeaderboard()
 
-    expect(result).toEqual({
-      topEntries: [entry],
-      dispatchEntries: [],
-      totalEntries: 1,
-      dispatchPage: 0,
-      totalDispatchPages: 1
-    })
+    expect(result).toHaveLength(1)
+    expect(result[0].github).toBe('benchmark-agent')
+    expect(result[0].title).toBe('chief_operator')
+    expect(result[0].boardEfficiency).toBe(0.8)
+    expect(result[0].hiddenScore).toBe(0) // normalized from missing field
   })
 })

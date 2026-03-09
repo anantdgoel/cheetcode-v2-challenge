@@ -1,20 +1,23 @@
 'use client'
 
-import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
-import { saveDraft } from '../api'
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useSaveDraft } from '../convex-api'
 import type { SavingState } from '../types'
 
 export function useDraftAutosave (
   shiftId: string,
-  mountedRef: RefObject<boolean>,
   setConsoleError: Dispatch<SetStateAction<string>>
 ) {
   const [savingState, setSavingState] = useState<SavingState>('idle')
+  const isMountedRef = useRef(true)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const saveResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const saveDraft = useSaveDraft()
 
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
+      isMountedRef.current = false
       if (saveTimer.current) clearTimeout(saveTimer.current)
       if (saveResetTimer.current) clearTimeout(saveResetTimer.current)
     }
@@ -28,20 +31,15 @@ export function useDraftAutosave (
     saveTimer.current = setTimeout(() => {
       void (async () => {
         try {
-          const response = await saveDraft(shiftId, nextValue)
-          if (!mountedRef.current) return
-          if (!response.ok) {
-            setSavingState('idle')
-            setConsoleError('Draft save failed')
-            return
-          }
+          await saveDraft(shiftId, nextValue)
+          if (!isMountedRef.current) return
           setConsoleError('')
           setSavingState('saved')
           saveResetTimer.current = setTimeout(() => {
-            if (mountedRef.current) setSavingState('idle')
+            if (isMountedRef.current) setSavingState('idle')
           }, 1200)
         } catch (error) {
-          if (mountedRef.current) {
+          if (isMountedRef.current) {
             setSavingState('idle')
             setConsoleError(error instanceof Error ? error.message : 'Draft save failed')
           }

@@ -1,5 +1,7 @@
 import { v } from 'convex/values'
-import type { MutationCtx, QueryCtx } from './_generated/server'
+import { paginationOptsValidator } from 'convex/server'
+import type { Doc } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 import { internalMutation, internalQuery, query } from './_generated/server'
 import { finalReportValidator, leaderboardEntryValidator } from './validators'
 
@@ -46,50 +48,29 @@ export function toPublicLeaderboard<T extends {
   return entries.sort(compareLeaderboardEntries).slice(0, 100)
 }
 
-async function getLeaderboardCount (ctx: QueryCtx) {
-  const counter = await ctx.db.query('leaderboardMeta').first()
-  return counter?.totalEntries ?? 0
-}
-
 async function incrementLeaderboardCount (ctx: MutationCtx) {
   const counter = await ctx.db.query('leaderboardMeta').first()
   if (counter) {
-    await ctx.db.patch(counter._id, { totalEntries: counter.totalEntries + 1 })
+    await ctx.db.patch('leaderboardMeta', counter._id, { totalEntries: counter.totalEntries + 1 })
   } else {
     await ctx.db.insert('leaderboardMeta', { totalEntries: 1 })
   }
 }
 
-export const getPublic = query({
-  args: {
-    dispatchPage: v.optional(v.number()),
-    dispatchPageSize: v.optional(v.number())
-  },
-  handler: async (ctx, args) => {
-    const pageSize = args.dispatchPageSize ?? 7
-    const page = args.dispatchPage ?? 0
-    const needed = 3 + page * pageSize + pageSize
+function stripLeaderboardEntry (entry: Doc<'leaderboardBest'>) {
+  const { _id, _creationTime, hiddenScore: _, ...rest } = entry
+  return rest
+}
 
-    const entries = await ctx.db
+export const list = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
       .query('leaderboardBest')
       .withIndex('by_hiddenScore_and_boardEfficiency_and_achievedAt')
       .order('desc')
-      .take(needed)
-
-    const totalEntries = await getLeaderboardCount(ctx)
-
-    const topEntries = entries.slice(0, 3)
-    const dispatchStart = 3 + page * pageSize
-    const dispatchEntries = entries.slice(dispatchStart, dispatchStart + pageSize)
-    const totalDispatchPages = Math.max(1, Math.ceil(Math.max(0, totalEntries - 3) / pageSize))
-
-    return {
-      topEntries,
-      dispatchEntries,
-      totalEntries,
-      dispatchPage: page,
-      totalDispatchPages
-    }
+      .paginate(args.paginationOpts)
+    return { ...results, page: results.page.map(stripLeaderboardEntry) }
   }
 })
 
@@ -114,13 +95,13 @@ export const upsertBest = internalMutation({
       .unique()
 
     if (existing) {
-      await ctx.db.patch(existing._id, args.entry)
-      return await ctx.db.get(existing._id)
+      await ctx.db.patch('leaderboardBest', existing._id, args.entry)
+      return await ctx.db.get('leaderboardBest', existing._id)
     }
 
     const id = await ctx.db.insert('leaderboardBest', args.entry)
     await incrementLeaderboardCount(ctx)
-    return await ctx.db.get(id)
+    return await ctx.db.get('leaderboardBest', id)
   }
 })
 
@@ -159,12 +140,12 @@ export const maybeUpsertFromReport = internalMutation({
     }
 
     if (existing) {
-      await ctx.db.patch(existing._id, entry)
-      return await ctx.db.get(existing._id)
+      await ctx.db.patch('leaderboardBest', existing._id, entry)
+      return await ctx.db.get('leaderboardBest', existing._id)
     }
 
     const id = await ctx.db.insert('leaderboardBest', entry)
     await incrementLeaderboardCount(ctx)
-    return await ctx.db.get(id)
+    return await ctx.db.get('leaderboardBest', id)
   }
 })

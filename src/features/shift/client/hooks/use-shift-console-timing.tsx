@@ -39,7 +39,7 @@ function getNowSnapshot () {
 function publishNow () {
   currentNow = Date.now()
   startTransition(() => {
-    nowListeners.forEach((listener) => listener())
+    nowListeners.forEach((listener) => { listener() })
   })
 }
 

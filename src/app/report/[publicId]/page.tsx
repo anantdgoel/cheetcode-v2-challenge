@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { ConvexAuthProvider } from '@/features/landing/client/ConvexAuthProvider'
 import { ReportCard } from '@/features/report/client/ReportCard'
 import { ContactForm } from '@/features/report/client/ContactForm'
 import { getContactSubmission, getReportView } from '@/features/report/server/queries'
@@ -30,11 +31,12 @@ export default async function ReportPage ({
     <main className='report-shell'>
       <ReportCard publicId={publicId} report={report} />
       {showContactForm && (
-        <ContactForm
-          github={report.github}
-          reportPublicId={publicId}
-          alreadySubmitted={!!contactCheck}
-        />
+        <ConvexAuthProvider>
+          <ContactForm
+            reportPublicId={publicId}
+            alreadySubmitted={!!contactCheck}
+          />
+        </ConvexAuthProvider>
       )}
     </main>
   )

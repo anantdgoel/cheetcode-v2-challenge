@@ -134,16 +134,27 @@ export function toShiftRecord (doc: ShiftDoc | null): StoredShiftRecord | null {
   }
 }
 
-export async function loadShift (db: DatabaseReader, shiftId: ShiftId) {
-  return db.get(shiftId)
+/** Client-safe shift record: strips seed and hiddenScore from run metrics */
+export function toClientShiftRecord (doc: ShiftDoc | null) {
+  const record = toShiftRecord(doc)
+  if (!record) return null
+  const { seed: _, ...rest } = record
+  return {
+    ...rest,
+    runs: record.runs.map((run) => {
+      if (!run.metrics) return run
+      const { hiddenScore: _h, ...metrics } = run.metrics
+      return { ...run, metrics }
+    })
+  }
 }
 
 export async function loadShiftById (db: DatabaseReader, shiftId: ShiftId) {
-  return db.get(shiftId)
+  return db.get('shifts', shiftId)
 }
 
 export async function loadOwnedShift (db: DatabaseReader, github: string, shiftId: ShiftId) {
-  const doc = await loadShift(db, shiftId)
+  const doc = await loadShiftById(db, shiftId)
   if (!doc || doc.github !== github) return null
   return doc
 }

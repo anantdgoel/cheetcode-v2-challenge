@@ -1,8 +1,15 @@
 import type { ProbeKind } from '@/core/domain/game'
 import type { EvaluationKind, ShiftStatus } from '@/core/domain/views'
-import type { StoredRunRecord, StoredShiftRecord } from './persistence'
+import type { ClientShiftRecord, StoredRunRecord } from './persistence'
 
 type ProbeProgressRun = Pick<StoredRunRecord, 'kind' | 'state'>
+type ShiftRecordLike = {
+  state: ClientShiftRecord['state'];
+  runs: ProbeProgressRun[];
+  expiresAt: number;
+  phase1EndsAt: number;
+  latestValidSource?: string;
+}
 
 export const PHASE_1_MS = 30_000
 export const SHIFT_MS = 60_000
@@ -25,11 +32,15 @@ export function getNextProbeKind (runs: ProbeProgressRun[]): ProbeKind | undefin
   return PROBE_ORDER.find((kind) => !completed.has(kind))
 }
 
-export function getAcceptedRun (runs: StoredRunRecord[]) {
+export function getAcceptedRun<Run extends Pick<StoredRunRecord, 'state'>> (runs: Run[]) {
   return runs.find((run) => run.state === 'accepted' || run.state === 'processing')
 }
 
-export function getViewStatus (shift: StoredShiftRecord, now: number): ShiftStatus {
+export function hasLiveActiveShift (shift: ShiftRecordLike, now: number) {
+  return shift.state === 'active' && (now < shift.expiresAt || !!getAcceptedRun(shift.runs))
+}
+
+export function getViewStatus (shift: ShiftRecordLike, now: number): ShiftStatus {
   const acceptedRun = getAcceptedRun(shift.runs)
   if (acceptedRun) return 'evaluating'
   if (shift.state === 'completed') return 'completed'
@@ -37,7 +48,7 @@ export function getViewStatus (shift: StoredShiftRecord, now: number): ShiftStat
   return now >= shift.phase1EndsAt ? 'active_phase_2' : 'active_phase_1'
 }
 
-export function getCurrentPhase (shift: StoredShiftRecord, now: number) {
+export function getCurrentPhase (shift: ShiftRecordLike, now: number) {
   const status = getViewStatus(shift, now)
   if (status === 'evaluating') return 'evaluating' as const
   if (status === 'completed') return 'completed' as const
@@ -45,14 +56,14 @@ export function getCurrentPhase (shift: StoredShiftRecord, now: number) {
   return 'active' as const
 }
 
-export function canEditShift (shift: StoredShiftRecord, now: number) {
+export function canEditShift (shift: ShiftRecordLike, now: number) {
   return shift.state === 'active' && now < shift.expiresAt && !getAcceptedRun(shift.runs)
 }
 
-export function shouldAutoFinalize (shift: StoredShiftRecord, now: number) {
+export function shouldAutoFinalize (shift: ShiftRecordLike, now: number) {
   return shift.state === 'active' && now >= shift.expiresAt && !!shift.latestValidSource && !shift.runs.some((run) => run.kind === 'final')
 }
 
-export function shouldExpireWithoutResult (shift: StoredShiftRecord, now: number) {
+export function shouldExpireWithoutResult (shift: ShiftRecordLike, now: number) {
   return shift.state === 'active' && now >= shift.expiresAt && !shift.latestValidSource
 }
