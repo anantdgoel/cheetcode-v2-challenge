@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import { formatPercent, formatTitle } from '@/core/engine/report'
 import type { AdminCandidatePage } from '@/core/domain/views'
+import { AdminAvatar } from './AdminAvatar'
 import { useRouter } from 'next/navigation'
 
 function timeAgo (ts: number) {
@@ -62,14 +62,7 @@ export function AdminTableView ({ data }: { data: AdminCandidatePage }) {
                 </td>
                 <td className='col-callsign'>
                   <div className='callsign-cell'>
-                    <Image
-                      className='admin-avatar'
-                      src={`https://github.com/${row.github}.png?size=40`}
-                      alt=''
-                      width={20}
-                      height={20}
-                      unoptimized
-                    />
+                    <AdminAvatar github={row.github} size='sm' />
                     <span>{row.github}</span>
                   </div>
                 </td>

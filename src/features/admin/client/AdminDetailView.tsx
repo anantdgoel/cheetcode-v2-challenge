@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import { formatPercent, formatTitle } from '@/core/engine/report'
 import type { AdminCandidateDetail, AdminDetailShift } from '@/core/domain/views'
+import { AdminAvatar } from './AdminAvatar'
 import { useRouter } from 'next/navigation'
 
 function ScoreBar ({ score, max = 100 }: { score: number; max?: number }) {
@@ -153,14 +153,7 @@ export function AdminDetailView ({ detail }: { detail: AdminCandidateDetail }) {
       </button>
 
       <div className='admin-profile'>
-        <Image
-          className='admin-avatar admin-avatar--lg'
-          src={`https://github.com/${detail.github}.png?size=80`}
-          alt=''
-          width={48}
-          height={48}
-          unoptimized
-        />
+        <AdminAvatar github={detail.github} size='lg' />
         <div className='admin-profile-info'>
           <h1>{detail.github}</h1>
           <div className='admin-profile-meta'>

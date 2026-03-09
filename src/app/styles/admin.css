@@ -113,6 +113,28 @@
   height: 48px;
 }
 
+.admin-avatar-fallback {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--row-bg);
+  color: var(--muted-ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-avatar-fallback--lg {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
 /* Title badges */
 .title-badge {
   display: inline-block;
