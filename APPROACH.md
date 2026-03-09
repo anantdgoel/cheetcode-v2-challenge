@@ -66,7 +66,7 @@ The difficulty curve is validated against the benchmark suite after every meanin
 
 The key evaluative question isn't whether a candidate scored high on one board, but whether their workflow improves systematically across boards. The hiring-bar benchmark tests this directly: it allows compact prior-board summaries (profile posteriors, family-count priors, collapse estimates, premium ROI) and checks whether they lift performance without becoming a crutch.
 
-That covers what candidates experience. The admin dashboard is what hiring managers use.
+The admin dashboard is what hiring managers use.
 
 The score is one signal. The dashboard surfaces the rest.
 
@@ -122,11 +122,11 @@ Tests, linters, and hooks gated what reached `main`. My agents did the heavy lif
 
 **Cross-board memory is the candidate's problem, by design.** The platform is stateless across shifts. Building memory that transfers — the thing that gets you from 50% to 85% — is on the candidate. Handing it to them removes the signal.
 
-**Noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility holds up against the benchmark suite. A determined attacker with enough runs could likely characterize the noise distribution. The fix is session-level noise re-seeding, not yet implemented.
+**Noise rate is tuned, not proven optimal.** 25% noise with grade-weighted credibility holds up against the benchmark suite. A determined attacker with enough runs could likely characterize the noise distribution. Session-level noise re-seeding would close this; not yet implemented.
 
-**Probe output is an ongoing calibration problem.** The feedback is intentionally unstructured — reading it and deciding what to act on is part of the skill being tested, and a machine-parseable format would hand that step to the LLM instead. But keeping the prose evidence-shaped without being prescriptive is maintenance work: each new board profile or family interaction is a potential leak. A future version might formalize a diagnostic grammar to make this more maintainable at scale. Both formats could coexist.
+**Probe output is an ongoing calibration problem.** The feedback is intentionally unstructured — reading it and deciding what to act on is part of the skill being tested, and a machine-parseable format would hand that step to the LLM instead. But keeping the prose evidence-shaped without being prescriptive is maintenance work: each new board profile or family interaction is a potential leak. A diagnostic grammar would make this easier to maintain without sacrificing the unstructured format.
 
-**The benchmark seeds are public.** The fixed seed suite used for calibration lives in the repo. A candidate who studies it carefully could optimize against the benchmark directly rather than against the general problem. The fix is either rotating seeds or keeping the suite private; neither is implemented yet.
+**The benchmark seeds are public.** The fixed seed suite used for calibration lives in the repo. A candidate who studies it carefully could optimize against the benchmark directly rather than against the general problem. Rotating seeds or keeping the suite private would close this; neither is implemented yet.
 
 **LLM assessments go stale.** The GPT summary is generated on demand and cached. It doesn't update when the candidate submits more shifts. A hiring manager working from a cached assessment could be looking at an incomplete picture if the candidate improved significantly after it was generated. Ideally, I would add a cron-job to run hourly, but that risks exploding costs if we have too many submissions. 
 
@@ -136,10 +136,10 @@ Tests, linters, and hooks gated what reached `main`. My agents did the heavy lif
 
 **Automated candidate digest.** The admin dashboard already generates LLM summaries per candidate. The next step is aggregating those into a periodic digest — a ranked shortlist of top candidates with their signals surfaced — so a hiring manager doesn't have to manually triage the table. The raw material is already there; it just needs a layer on top.
 
-**Real-time competitive mode.** The current model is turn-based: submit a policy, get a score. A more ambitious version would run candidate agents against a continuous stream of live traffic simultaneously, so policies compete against the same conditions at the same time rather than independently against fixed seeds. That removes seed variance as a confound and makes comparison between candidates more direct. It's a significantly larger infrastructure investment, but it's the more honest evaluation surface.
+**Real-time competitive mode.** The current model is turn-based: submit a policy, get a score. A more ambitious version would run candidate agents against a continuous stream of live traffic simultaneously, so policies compete against the same conditions at the same time rather than independently against fixed seeds. That removes seed variance as a confound and makes comparison between candidates more direct. It's a much larger build, but it's the more honest evaluation surface.
 
-**Deeper skeuomorphism.** The design system in `docs/design/` includes reference material for skeuomorphic elements that didn't make it into the final UI. With more time I would have leaned into this further — physical texture, tactile controls, the feeling of actual hardware — to deepen the immersion and make the 1957 switchboard feel more like a place you're operating in rather than a webpage you're looking at.
+**Deeper skeuomorphism.** The design system in `docs/design/` includes reference material for skeuomorphic elements that didn't make it into the final UI. With more time I would have leaned into this further — physical texture, tactile controls, the feeling of actual hardware — so the 1957 switchboard feels more like a place you're operating in rather than a webpage you're looking at.
 
-**Logging and error reporting.** The platform stores full run traces but has no structured logging pipeline or error reporting beyond what Convex provides out of the box. Adding proper observability — structured logs for shift lifecycle events, probe execution failures, sandbox timeouts, and admin actions — would make it much easier to debug issues in production and catch problems before a candidate reports them.
+**Logging and error reporting.** The platform stores full run traces but has no structured logging pipeline or error reporting beyond Convex defaults. Structured logs for shift lifecycle events, probe execution failures, sandbox timeouts, and admin actions would surface problems before candidates report them.
 
-**Code cleanup and repo organization.** The codebase reflects the pace of development — some modules are cleaner than others, and a few abstractions didn't survive contact with the final design. A focused cleanup pass to improve internal consistency and reduce cognitive overhead for anyone picking this up would make it easier to extend and maintain.
+**Code cleanup and repo organization.** Some modules are cleaner than others, and a few abstractions didn't survive contact with the final design. A cleanup pass would make it easier for someone else to pick up and extend.

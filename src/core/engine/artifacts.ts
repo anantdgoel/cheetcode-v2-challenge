@@ -90,7 +90,7 @@ When a call comes in, this is what lands on your desk:
 
 ## What I Left You
 
-I didn't have to leave these. Most people don't. But I sat in this chair cold once and I wouldn't wish that on anyone.
+Nobody left these for me. I figured it out, but it took longer than it should have.
 
 Four files in the desk:
 
